@@ -111,6 +111,9 @@ export function AuthDialog({
   const [password, setPassword] = useState("")
   const [email, setEmail] = useState("")
   const [showEmailSuggestions, setShowEmailSuggestions] = useState(false)
+  const [loginEmail, setLoginEmail] = useState("")
+  const [loginPassword, setLoginPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
 
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password])
   const emailSuggestions = useMemo(() => getEmailSuggestions(email), [email])
@@ -233,6 +236,8 @@ export function AuthDialog({
                 placeholder="支持 QQ、Gmail、163 等邮箱"
                 required
                 disabled={isLoading}
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -246,6 +251,8 @@ export function AuthDialog({
                   required
                   disabled={isLoading}
                   className="pr-10"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
                 />
                 <button
                   type="button"
@@ -386,6 +393,8 @@ export function AuthDialog({
                   required
                   disabled={isLoading}
                   className="pr-10"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                 />
                 <button
                   type="button"
