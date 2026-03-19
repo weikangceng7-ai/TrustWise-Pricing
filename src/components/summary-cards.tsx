@@ -2,46 +2,11 @@
 
 import { TrendingUp, TrendingDown, Minus, Package, Lightbulb } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { usePrices } from "@/hooks/use-prices"
+import { usePriceSummary } from "@/hooks/use-prices"
 import { Skeleton } from "@/components/ui/skeleton"
 
-// 计算下周预测均价
-function calculatePredictedAverage(data: { price: string }[]): number {
-  if (data.length < 2) return 0
-
-  const prices = data.map((d) => parseFloat(d.price))
-  const lastPrice = prices[prices.length - 1]
-  const avgChange = prices.reduce((acc, p, i) => {
-    if (i === 0) return 0
-    return acc + (p - prices[i - 1])
-  }, 0) / (prices.length - 1)
-
-  // 预测未来7天均价
-  let sum = 0
-  for (let i = 1; i <= 7; i++) {
-    sum += lastPrice + avgChange * i
-  }
-  return sum / 7
-}
-
-// 判断建议操作
-function getRecommendation(currentPrice: number, predictedAvg: number): {
-  action: string
-  trend: "up" | "down" | "stable"
-} {
-  const changePercent = ((predictedAvg - currentPrice) / currentPrice) * 100
-
-  if (changePercent > 3) {
-    return { action: "建议备库", trend: "up" }
-  } else if (changePercent < -3) {
-    return { action: "观望为主", trend: "down" }
-  } else {
-    return { action: "按需采购", trend: "stable" }
-  }
-}
-
 export function SummaryCards() {
-  const { data, isLoading, error } = usePrices()
+  const { data, isLoading, error } = usePriceSummary()
 
   if (isLoading) {
     return (
@@ -60,14 +25,25 @@ export function SummaryCards() {
     )
   }
 
-  if (error || !data?.data?.length) {
+  if (error || !data?.data) {
     return null
   }
 
-  const prices = data.data
-  const currentPrice = parseFloat(prices[prices.length - 1].price)
-  const predictedAvg = calculatePredictedAverage(prices)
-  const recommendation = getRecommendation(currentPrice, predictedAvg)
+  const summary = data.data
+  const currentPrice = parseFloat(summary.currentPrice || "0")
+  const predictedAvg = parseFloat(summary.avgPrice || "0")
+
+  // 判断建议操作
+  const changePercent = ((predictedAvg - currentPrice) / currentPrice) * 100
+  let recommendation: { action: string; trend: "up" | "down" | "stable" }
+
+  if (changePercent > 3) {
+    recommendation = { action: "建议备库", trend: "up" }
+  } else if (changePercent < -3) {
+    recommendation = { action: "观望为主", trend: "down" }
+  } else {
+    recommendation = { action: "按需采购", trend: "stable" }
+  }
 
   const TrendIcon =
     recommendation.trend === "up"
@@ -101,17 +77,17 @@ export function SummaryCards() {
             </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            数据来源: {prices[prices.length - 1].source}
+            {summary.market} - {summary.specification} | {summary.date}
           </p>
         </CardContent>
       </Card>
 
-      {/* 下周预测均价 */}
+      {/* 近期均价 */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <Package className="h-4 w-4" />
-            下周预测均价
+            近30日均价
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -122,8 +98,7 @@ export function SummaryCards() {
             </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            预计{predictedAvg > currentPrice ? "上涨" : predictedAvg < currentPrice ? "下跌" : "持平"}
-            {Math.abs(((predictedAvg - currentPrice) / currentPrice) * 100).toFixed(1)}%
+            价格区间: {summary.minPrice} - {summary.maxPrice} 元/吨
           </p>
         </CardContent>
       </Card>
@@ -142,7 +117,7 @@ export function SummaryCards() {
             {recommendation.action}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            基于价格趋势分析的建议
+            {summary.changePercent ? `今日涨跌: ${summary.changePercent}` : "基于价格趋势分析的建议"}
           </p>
         </CardContent>
       </Card>

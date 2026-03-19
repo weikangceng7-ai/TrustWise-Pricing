@@ -1,31 +1,78 @@
 import { db } from "@/db"
-import { sulfurPrices, type SulfurPrice } from "@/db/schema"
-import { asc } from "drizzle-orm"
-
-// Mock 价格数据（当数据库未配置时使用）
-const mockPrices: SulfurPrice[] = [
-  { id: 1, date: "2025-03-01", price: "850.00", unit: "元/吨", source: "中石化", createdAt: new Date("2025-03-01") },
-  { id: 2, date: "2025-03-02", price: "855.00", unit: "元/吨", source: "中石化", createdAt: new Date("2025-03-02") },
-  { id: 3, date: "2025-03-03", price: "860.00", unit: "元/吨", source: "中石化", createdAt: new Date("2025-03-03") },
-  { id: 4, date: "2025-03-04", price: "858.00", unit: "元/吨", source: "中石化", createdAt: new Date("2025-03-04") },
-  { id: 5, date: "2025-03-05", price: "865.00", unit: "元/吨", source: "中石化", createdAt: new Date("2025-03-05") },
-  { id: 6, date: "2025-03-06", price: "870.00", unit: "元/吨", source: "中石油", createdAt: new Date("2025-03-06") },
-  { id: 7, date: "2025-03-07", price: "875.00", unit: "元/吨", source: "中石油", createdAt: new Date("2025-03-07") },
-  { id: 8, date: "2025-03-08", price: "872.00", unit: "元/吨", source: "中石油", createdAt: new Date("2025-03-08") },
-  { id: 9, date: "2025-03-09", price: "880.00", unit: "元/吨", source: "中石油", createdAt: new Date("2025-03-09") },
-  { id: 10, date: "2025-03-10", price: "885.00", unit: "元/吨", source: "进口", createdAt: new Date("2025-03-10") },
-  { id: 11, date: "2025-03-11", price: "890.00", unit: "元/吨", source: "进口", createdAt: new Date("2025-03-11") },
-  { id: 12, date: "2025-03-12", price: "888.00", unit: "元/吨", source: "进口", createdAt: new Date("2025-03-12") },
-  { id: 13, date: "2025-03-13", price: "895.00", unit: "元/吨", source: "进口", createdAt: new Date("2025-03-13") },
-  { id: 14, date: "2025-03-14", price: "900.00", unit: "元/吨", source: "进口", createdAt: new Date("2025-03-14") },
-]
+import { sulfurPrices, portInventory, type SulfurPrice, type PortInventory } from "@/db/schema"
+import { desc } from "drizzle-orm"
 
 /**
  * 获取所有硫磺价格数据
  */
-export async function getPrices(): Promise<SulfurPrice[]> {
+export async function getPrices(limit?: number): Promise<SulfurPrice[]> {
   if (db) {
-    return await db.select().from(sulfurPrices).orderBy(asc(sulfurPrices.date))
+    const query = db.select().from(sulfurPrices).orderBy(desc(sulfurPrices.date))
+    if (limit) {
+      return await query.limit(limit)
+    }
+    return await query
   }
-  return mockPrices
+  return []
+}
+
+/**
+ * 获取价格数据统计摘要
+ */
+export async function getPriceSummary() {
+  if (!db) return null
+
+  const prices = await db.select().from(sulfurPrices).orderBy(desc(sulfurPrices.date)).limit(30)
+
+  if (prices.length === 0) return null
+
+  const latestPrice = prices[0]
+  const avgPrice = prices.reduce((sum, p) => sum + Number(p.mainPrice || 0), 0) / prices.length
+
+  return {
+    currentPrice: latestPrice.mainPrice,
+    minPrice: latestPrice.minPrice,
+    maxPrice: latestPrice.maxPrice,
+    avgPrice: avgPrice.toFixed(2),
+    changeValue: latestPrice.changeValue,
+    changePercent: latestPrice.changePercent,
+    date: latestPrice.date,
+    market: latestPrice.market,
+    specification: latestPrice.specification,
+  }
+}
+
+/**
+ * 获取港口库存数据
+ */
+export async function getInventory(limit?: number): Promise<PortInventory[]> {
+  if (db) {
+    const query = db.select().from(portInventory).orderBy(desc(portInventory.date))
+    if (limit) {
+      return await query.limit(limit)
+    }
+    return await query
+  }
+  return []
+}
+
+/**
+ * 获取库存数据统计摘要
+ */
+export async function getInventorySummary() {
+  if (!db) return null
+
+  const inventory = await db.select().from(portInventory).orderBy(desc(portInventory.date)).limit(30)
+
+  if (inventory.length === 0) return null
+
+  const latest = inventory[0]
+  const avgInventory = inventory.reduce((sum, i) => sum + Number(i.inventory || 0), 0) / inventory.length
+
+  return {
+    currentInventory: latest.inventory,
+    avgInventory: avgInventory.toFixed(2),
+    currentPrice: latest.price,
+    date: latest.date,
+  }
 }

@@ -25,7 +25,8 @@ export type AuthMiddleware = Hono<{
  * 2. 从请求中提取用户信息
  * 3. 验证用户权限
  */
-export const requireAuth = async (c: Context<{ Variables: AuthContext }>, next: Next) => {
+// Hono v4 中 Context 泛型是 <Env, Schema>，Variables 通过 c.set() 设置
+export const requireAuth = async (c: Context, next: Next) => {
   // 从请求中获取认证信息
   // 示例：从 Authorization header 获取 token
   const authHeader = c.req.header("Authorization")
@@ -58,7 +59,8 @@ export const requireAuth = async (c: Context<{ Variables: AuthContext }>, next: 
  * 可选认证中间件
  * 不强制要求认证，但如果提供了有效 token 则设置用户信息
  */
-export const optionalAuth = async (c: Context<{ Variables: AuthContext }>, next: Next) => {
+// Hono v4 中 Context 泛型是 <Env, Schema>，Variables 通过 c.set() 设置
+export const optionalAuth = async (c: Context, next: Next) => {
   const authHeader = c.req.header("Authorization")
 
   if (authHeader) {

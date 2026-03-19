@@ -3,14 +3,13 @@
  */
 
 // 默认使用的聊天模型
-export const DEFAULT_CHAT_MODEL = "deepseek/deepseek-chat-v3-0324:free"
+export const DEFAULT_CHAT_MODEL = "stepfun/step-3.5-flash:free"
 
 // 支持的聊天模型列表
 export const SUPPORTED_CHAT_MODELS = [
-  "deepseek/deepseek-chat-v3-0324:free",
-  "deepseek/deepseek-chat:free",
-  "google/gemma-3-27b-it:free",
-  "meta-llama/llama-3.3-70b-instruct:free",
+  "stepfun/step-3.5-flash:free",
+  "google/gemma-2-9b-it:free",
+  "qwen/qwen-2.5-72b-instruct:free",
 ] as const
 
 // 支持的聊天模型类型
@@ -28,10 +27,9 @@ export function isSupportedChatModel(modelId: string): modelId is SupportedChatM
  */
 export function getModelDisplayName(modelId: string): string {
   const modelMap: Record<string, string> = {
-    "deepseek/deepseek-chat-v3-0324:free": "DeepSeek V3",
-    "deepseek/deepseek-chat:free": "DeepSeek Chat",
-    "google/gemma-3-27b-it:free": "Google Gemma 3",
-    "meta-llama/llama-3.3-70b-instruct:free": "Meta Llama 3.3",
+    "stepfun/step-3.5-flash:free": "Step 3.5 Flash",
+    "google/gemma-2-9b-it:free": "Google Gemma 2",
+    "qwen/qwen-2.5-72b-instruct:free": "Qwen 2.5",
   }
   return modelMap[modelId] || modelId
 }

@@ -1,9 +1,10 @@
 "use client"
 
-import { Moon, Sun, Bell, User } from "lucide-react"
+import { Moon, Sun, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "@/components/theme-provider"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { UserDropdown } from "@/components/user-dropdown"
 
 export function TopNav() {
   const { setTheme, resolvedTheme } = useTheme()
@@ -55,15 +56,7 @@ export function TopNav() {
         </Button>
 
         {/* User menu */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          title="用户设置"
-        >
-          <User className="h-4 w-4" />
-          <span className="sr-only">用户菜单</span>
-        </Button>
+        <UserDropdown />
       </div>
     </header>
   )

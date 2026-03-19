@@ -1,7 +1,7 @@
 import { Hono } from "hono"
 import { cors } from "hono/cors"
 import { logger } from "hono/logger"
-import { getPrices } from "@/services/prices"
+import { getPrices, getPriceSummary, getInventory, getInventorySummary } from "@/services/prices"
 import { getReports } from "@/services/reports"
 import { getChatResponse, type ChatRequest, type ChatResponse } from "@/services/chat"
 import { chatRoutes } from "@/routes/chat"
@@ -24,11 +24,12 @@ app.use(
 
 /**
  * GET /api/prices
- * 获取所有硫磺价格数据，按日期升序排列
+ * 获取所有硫磺价格数据，按日期降序排列
  */
 app.get("/prices", async (c) => {
   try {
-    const prices = await getPrices()
+    const limit = c.req.query("limit") ? parseInt(c.req.query("limit")!) : undefined
+    const prices = await getPrices(limit)
     return c.json({
       success: true,
       data: prices,
@@ -40,6 +41,77 @@ app.get("/prices", async (c) => {
       {
         success: false,
         error: "获取价格数据失败",
+      },
+      500
+    )
+  }
+})
+
+/**
+ * GET /api/prices/summary
+ * 获取价格数据统计摘要
+ */
+app.get("/prices/summary", async (c) => {
+  try {
+    const summary = await getPriceSummary()
+    return c.json({
+      success: true,
+      data: summary,
+    })
+  } catch (error) {
+    console.error("获取价格摘要失败:", error)
+    return c.json(
+      {
+        success: false,
+        error: "获取价格摘要失败",
+      },
+      500
+    )
+  }
+})
+
+/**
+ * GET /api/inventory
+ * 获取港口库存数据
+ */
+app.get("/inventory", async (c) => {
+  try {
+    const limit = c.req.query("limit") ? parseInt(c.req.query("limit")!) : undefined
+    const inventory = await getInventory(limit)
+    return c.json({
+      success: true,
+      data: inventory,
+      total: inventory.length,
+    })
+  } catch (error) {
+    console.error("获取库存数据失败:", error)
+    return c.json(
+      {
+        success: false,
+        error: "获取库存数据失败",
+      },
+      500
+    )
+  }
+})
+
+/**
+ * GET /api/inventory/summary
+ * 获取库存数据统计摘要
+ */
+app.get("/inventory/summary", async (c) => {
+  try {
+    const summary = await getInventorySummary()
+    return c.json({
+      success: true,
+      data: summary,
+    })
+  } catch (error) {
+    console.error("获取库存摘要失败:", error)
+    return c.json(
+      {
+        success: false,
+        error: "获取库存摘要失败",
       },
       500
     )

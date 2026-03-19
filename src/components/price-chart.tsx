@@ -17,15 +17,17 @@ import { Skeleton } from "@/components/ui/skeleton"
 function generatePredictedPrices(data: PriceData[]) {
   if (data.length === 0) return []
 
-  const lastPrice = parseFloat(data[data.length - 1].price)
+  const lastPrice = parseFloat(data[0].mainPrice || "0") // 数据已按日期降序，第一条是最新的
   const avgChange = data.reduce((acc, item, i) => {
     if (i === 0) return 0
-    return acc + (parseFloat(item.price) - parseFloat(data[i - 1].price))
+    const prevPrice = parseFloat(data[i - 1].mainPrice || "0")
+    const currPrice = parseFloat(item.mainPrice || "0")
+    return acc + (prevPrice - currPrice)
   }, 0) / (data.length - 1)
 
   // 生成未来7天的预测
   const predictions = []
-  const lastDate = new Date(data[data.length - 1].date)
+  const lastDate = new Date(data[0].date)
 
   for (let i = 1; i <= 7; i++) {
     const futureDate = new Date(lastDate)
@@ -47,9 +49,12 @@ function generatePredictedPrices(data: PriceData[]) {
 
 // 处理图表数据
 function processChartData(data: PriceData[]) {
-  const actualData = data.map((item) => ({
+  // 数据按日期降序排列，需要反转为升序显示
+  const sortedData = [...data].reverse()
+
+  const actualData = sortedData.map((item) => ({
     date: item.date,
-    actualPrice: parseFloat(item.price),
+    actualPrice: item.mainPrice ? parseFloat(item.mainPrice) : null,
     predictedPrice: null,
   }))
 
@@ -58,7 +63,7 @@ function processChartData(data: PriceData[]) {
 }
 
 export function PriceChart() {
-  const { data, isLoading, error } = usePrices()
+  const { data, isLoading, error } = usePrices(60) // 获取最近60天数据
 
   if (isLoading) {
     return (
