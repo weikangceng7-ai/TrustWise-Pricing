@@ -5,7 +5,7 @@ export const maxDuration = 60
 
 // 创建 OpenRouter 实例
 const openrouter = new OpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY || "",
+  apiKey: process.env.OPENROUTER_API_KEY || "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",
 })
 
 export async function POST(req: Request) {
