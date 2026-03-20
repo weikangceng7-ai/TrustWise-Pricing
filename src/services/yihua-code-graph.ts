@@ -73,6 +73,7 @@ function inferTheme(text: string): string {
 export async function getYihuaCodeGraph(
   params: GetYihuaCodeGraphParams,
 ): Promise<CodeGraphResponse> {
+  // 统一处理查询参数，保证 API 对空值/默认值行为稳定。
   const q = normalizeSearch(params.q)
   const topFolder = (params.topFolder ?? "all").trim()
   const kind = (params.kind ?? "all").trim()
@@ -83,6 +84,7 @@ export async function getYihuaCodeGraph(
   const items: Array<YihuaCodeIndex> = []
 
   if (db) {
+    // 优先从数据库读取，避免每次都扫描文件系统。
     const rows = await db.select().from(yihuaCodeItems)
     for (const r of rows) {
       items.push({
@@ -95,7 +97,7 @@ export async function getYihuaCodeGraph(
       })
     }
   } else {
-    // 没有数据库时直接从文件系统扫一遍，保证页面不至于完全空白。
+    // 无数据库时降级为文件扫描，保证页面仍可展示基础图谱。
     const scanned = await buildYihuaCodeIndex()
     items.push(...scanned)
   }
@@ -133,7 +135,7 @@ export async function getYihuaCodeGraph(
     )
   }
 
-  // 限制文件节点数量，避免图谱拥挤
+  // 限制文件节点数量，避免图谱过载导致前端布局拥挤与交互卡顿。
   filtered.sort((a, b) => {
     if (a.topFolder !== b.topFolder) return a.topFolder.localeCompare(b.topFolder, "zh-CN")
     return a.fileName.localeCompare(b.fileName, "zh-CN")
@@ -175,7 +177,7 @@ export async function getYihuaCodeGraph(
     links.push({ source: tid, target: fileId, relation: "IMPLEMENTS_FILE" })
   }
 
-  // 去重链路
+  // 去重链路，防止同一关系重复绘制。
   const uniq = new Set<string>()
   const dedupLinks: CodeGraphLink[] = []
   for (const l of links) {

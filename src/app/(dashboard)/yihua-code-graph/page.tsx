@@ -4,8 +4,8 @@ export default function YihuaCodeGraphPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">代码知识图谱</h2>
-        <p className="text-muted-foreground">动态关系视图：目录-文件映射（支持搜索与类型筛选）</p>
+        <h2 className="text-2xl font-bold tracking-tight">价格预测知识图谱</h2>
+        <p className="text-muted-foreground">第一阶段：市场资讯库、企业经验库、制度规则库</p>
       </div>
       <YihuaCodeKnowledgeGraph />
     </div>

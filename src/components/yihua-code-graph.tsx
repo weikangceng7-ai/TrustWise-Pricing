@@ -1,177 +1,449 @@
 "use client"
 
-import { useMemo, useState, useEffect, useRef } from "react"
+import { useMemo, useState, useRef, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { useYihuaCodeGraph, type CodeGraphNode } from "@/hooks/use-yihua-code-graph"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Code, Search, Folder, FileCode2 } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Network, TrendingUp, Database, Building2, FileText, Lightbulb, AlertTriangle, DollarSign, BarChart3, Newspaper, BookOpen, RefreshCw, ExternalLink, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react"
+import { useMarketDataOverview } from "@/hooks/use-external-data"
 
-type KindFilter = "all" | "python" | "notebook" | "matlab" | "markdown"
+// 硫磺价格预测知识图谱数据 - 第一阶段：市场资讯库、企业经验库、制度规则库
+const KNOWLEDGE_DATA = {
+  // 核心实体：硫磺价格
+  core: [
+    { id: "sulfur-price", name: "硫磺价格", description: "核心预测目标，受供需、成本、政策等多因素影响" },
+  ],
 
-function uniqBy<T>(arr: T[], keyFn: (t: T) => string) {
-  const m = new Map<string, T>()
-  for (const it of arr) {
-    const k = keyFn(it)
-    if (!m.has(k)) m.set(k, it)
-  }
-  return Array.from(m.values())
+  // 数据源（新增）
+  dataSources: [
+    { id: "akshare", name: "AkShare", category: "market", description: "开源财经数据接口，提供大宗商品、期货、汇率等实时数据" },
+    { id: "fred", name: "FRED", category: "macro", description: "美联储经济数据，提供全球经济指标、利率、通胀等历史数据" },
+    { id: "gdelt", name: "GDELT", category: "news", description: "全球事件、情感和位置数据库，实时监测全球新闻事件" },
+    { id: "longzhong", name: "隆众资讯", category: "industry", description: "硫磺行业专业数据源，提供价格、库存、供需数据" },
+  ],
+
+  // 市场资讯库
+  marketNews: [
+    { id: "supply-factor", name: "供应端因素", category: "supply", description: "国内产量、进口量、港口库存" },
+    { id: "demand-factor", name: "需求端因素", category: "demand", description: "磷肥需求、硫酸需求、化工需求" },
+    { id: "cost-factor", name: "成本因素", category: "cost", description: "原油价格、天然气价格、运输成本" },
+    { id: "macro-factor", name: "宏观因素", category: "macro", description: "汇率波动、经济周期、贸易政策" },
+    { id: "international", name: "国际市场", category: "international", description: "中东硫磺价格、国际运费、海外需求" },
+    { id: "inventory", name: "港口库存", category: "inventory", description: "主要港口硫磺库存水平" },
+    { id: "seasonal", name: "季节性规律", category: "seasonal", description: "春耕备肥、淡旺季交替" },
+    { id: "news-event", name: "市场资讯", category: "news", description: "行业新闻、政策公告、突发事件" },
+    // 新增价格预测相关因素
+    { id: "crude-oil", name: "原油价格", category: "upstream", description: "WTI、布伦特原油期货价格，硫磺生产成本基准" },
+    { id: "natural-gas", name: "天然气价格", category: "upstream", description: "天然气是硫磺主要来源，影响供应成本" },
+    { id: "usd-cny", name: "美元汇率", category: "macro", description: "人民币汇率影响进口成本" },
+    { id: "freight", name: "海运运费", category: "logistics", description: "BDI指数、航线运费影响到岸价格" },
+    { id: "fertilizer", name: "磷肥市场", category: "downstream", description: "磷酸一铵、二铵价格反映下游需求" },
+    { id: "sulfuric-acid", name: "硫酸市场", category: "downstream", description: "硫酸价格影响硫磺需求" },
+  ],
+
+  // 企业经验库
+  enterpriseExp: [
+    { id: "purchase-record", name: "采购历史", description: "历史采购时机、价格、数量记录" },
+    { id: "price-judgment", name: "价格研判经验", description: "专家经验、趋势判断、拐点识别" },
+    { id: "inventory-strategy", name: "库存策略", description: "安全库存、备货周期、库存预警" },
+    { id: "supplier-relation", name: "供应商关系", description: "供应商资质、合作历史、信用评估" },
+    { id: "risk-case", name: "风险案例", description: "历史价格波动案例、应对措施" },
+  ],
+
+  // 制度规则库
+  rules: [
+    { id: "procurement-rule", name: "采购制度", description: "采购流程、审批权限、供应商管理" },
+    { id: "quality-standard", name: "质量标准", description: "硫磺品质要求、检验标准" },
+    { id: "contract-rule", name: "合同规则", description: "定价机制、结算方式、违约条款" },
+    { id: "risk-policy", name: "风控政策", description: "价格预警阈值、应对预案" },
+    { id: "storage-rule", name: "仓储规范", description: "存储条件、安全要求、损耗标准" },
+  ],
+
+  // 预测应用
+  applications: [
+    { id: "short-forecast", name: "短期预测", description: "1-4周价格趋势预测" },
+    { id: "medium-forecast", name: "中期预测", description: "1-3个月价格走势研判" },
+    { id: "decision-support", name: "采购决策", description: "采购时机、批量建议" },
+    { id: "risk-warning", name: "风险预警", description: "价格异常波动预警" },
+  ],
+
+  // 关系定义
+  relations: [
+    // 数据源提供数据
+    { source: "akshare", target: "crude-oil", type: "提供", weight: 0.95 },
+    { source: "akshare", target: "usd-cny", type: "提供", weight: 0.95 },
+    { source: "akshare", target: "fertilizer", type: "提供", weight: 0.9 },
+    { source: "fred", target: "macro-factor", type: "提供", weight: 0.85 },
+    { source: "gdelt", target: "news-event", type: "提供", weight: 0.8 },
+    { source: "longzhong", target: "sulfur-price", type: "提供", weight: 1.0 },
+    { source: "longzhong", target: "inventory", type: "提供", weight: 0.95 },
+
+    // 核心关系：各因素影响硫磺价格
+    { source: "supply-factor", target: "sulfur-price", type: "影响", weight: 0.9 },
+    { source: "demand-factor", target: "sulfur-price", type: "影响", weight: 0.85 },
+    { source: "cost-factor", target: "sulfur-price", type: "影响", weight: 0.8 },
+    { source: "macro-factor", target: "sulfur-price", type: "影响", weight: 0.6 },
+    { source: "international", target: "sulfur-price", type: "影响", weight: 0.75 },
+    { source: "inventory", target: "sulfur-price", type: "影响", weight: 0.7 },
+    { source: "seasonal", target: "sulfur-price", type: "影响", weight: 0.5 },
+    { source: "news-event", target: "sulfur-price", type: "影响", weight: 0.4 },
+
+    // 新增因素影响硫磺价格
+    { source: "crude-oil", target: "cost-factor", type: "影响", weight: 0.9 },
+    { source: "natural-gas", target: "supply-factor", type: "影响", weight: 0.85 },
+    { source: "usd-cny", target: "international", type: "影响", weight: 0.8 },
+    { source: "freight", target: "international", type: "影响", weight: 0.75 },
+    { source: "fertilizer", target: "demand-factor", type: "影响", weight: 0.85 },
+    { source: "sulfuric-acid", target: "demand-factor", type: "影响", weight: 0.7 },
+
+    // 因素间的关联
+    { source: "international", target: "supply-factor", type: "关联", weight: 0.6 },
+    { source: "cost-factor", target: "international", type: "关联", weight: 0.5 },
+    { source: "inventory", target: "supply-factor", type: "关联", weight: 0.6 },
+    { source: "seasonal", target: "demand-factor", type: "关联", weight: 0.7 },
+    { source: "macro-factor", target: "cost-factor", type: "关联", weight: 0.5 },
+    { source: "news-event", target: "macro-factor", type: "关联", weight: 0.4 },
+
+    // 企业经验支撑价格研判
+    { source: "purchase-record", target: "sulfur-price", type: "参考", weight: 0.5 },
+    { source: "price-judgment", target: "sulfur-price", type: "研判", weight: 0.6 },
+    { source: "inventory-strategy", target: "decision-support", type: "支撑", weight: 0.7 },
+    { source: "risk-case", target: "risk-warning", type: "参考", weight: 0.6 },
+    { source: "supplier-relation", target: "decision-support", type: "支撑", weight: 0.5 },
+
+    // 制度规则约束
+    { source: "procurement-rule", target: "decision-support", type: "约束", weight: 0.8 },
+    { source: "risk-policy", target: "risk-warning", type: "约束", weight: 0.9 },
+    { source: "quality-standard", target: "purchase-record", type: "规范", weight: 0.6 },
+    { source: "contract-rule", target: "supplier-relation", type: "规范", weight: 0.5 },
+    { source: "storage-rule", target: "inventory-strategy", type: "规范", weight: 0.5 },
+
+    // 预测应用输出
+    { source: "sulfur-price", target: "short-forecast", type: "预测", weight: 1.0 },
+    { source: "sulfur-price", target: "medium-forecast", type: "预测", weight: 1.0 },
+    { source: "short-forecast", target: "decision-support", type: "支撑", weight: 0.8 },
+    { source: "medium-forecast", target: "decision-support", type: "支撑", weight: 0.7 },
+    { source: "sulfur-price", target: "risk-warning", type: "监测", weight: 0.9 },
+  ],
+
+  // 价格影响权重
+  factorWeights: [
+    { factor: "供应端因素", weight: 0.9, trend: "up" },
+    { factor: "需求端因素", weight: 0.85, trend: "stable" },
+    { factor: "原油价格", weight: 0.82, trend: "up" },
+    { factor: "成本因素", weight: 0.8, trend: "up" },
+    { factor: "磷肥市场", weight: 0.78, trend: "stable" },
+    { factor: "国际市场", weight: 0.75, trend: "down" },
+    { factor: "港口库存", weight: 0.7, trend: "stable" },
+    { factor: "天然气价格", weight: 0.68, trend: "up" },
+    { factor: "美元汇率", weight: 0.65, trend: "down" },
+    { factor: "海运运费", weight: 0.6, trend: "stable" },
+    { factor: "宏观因素", weight: 0.55, trend: "up" },
+    { factor: "季节性规律", weight: 0.5, trend: "stable" },
+    { factor: "市场资讯", weight: 0.4, trend: "down" },
+  ],
+
+  // 数据源说明
+  dataSourceInfo: [
+    {
+      name: "AkShare",
+      url: "https://akshare.akfamily.xyz/",
+      description: "开源财经数据接口库",
+      apiKey: "无需API密钥，直接调用",
+      dataTypes: ["期货价格", "汇率", "大宗商品", "A股行情"]
+    },
+    {
+      name: "FRED",
+      url: "https://fred.stlouisfed.org/",
+      description: "美联储经济数据",
+      apiKey: "需要申请API Key",
+      dataTypes: ["经济指标", "利率", "通胀率", "GDP"]
+    },
+    {
+      name: "GDELT",
+      url: "https://www.gdeltproject.org/",
+      description: "全球事件数据库",
+      apiKey: "无需API密钥",
+      dataTypes: ["全球新闻", "事件情感", "地理数据"]
+    },
+    {
+      name: "隆众资讯",
+      url: "https://www.oilchem.net/",
+      description: "硫磺行业专业数据",
+      apiKey: "需要企业账号",
+      dataTypes: ["硫磺价格", "港口库存", "供需数据"]
+    }
+  ]
 }
 
-function relationColor(rel: "BELONGS_TO_DIR" | "HAS_CODE_KIND" | "USES_THEME" | "IMPLEMENTS_FILE") {
-  if (rel === "HAS_CODE_KIND") return "hsl(var(--chart-1))"
-  if (rel === "USES_THEME") return "hsl(var(--chart-4))"
-  if (rel === "IMPLEMENTS_FILE") return "hsl(var(--chart-2))"
-  return "hsl(var(--muted-foreground)/0.4)"
+type NodeType = "core" | "dataSource" | "market" | "enterprise" | "rule" | "application"
+type RelationType = "影响" | "关联" | "参考" | "研判" | "支撑" | "约束" | "规范" | "预测" | "监测" | "提供"
+
+interface GraphNode {
+  id: string
+  name: string
+  type: NodeType
+  description: string
+  category?: string
+}
+
+interface GraphLink {
+  source: string
+  target: string
+  type: RelationType
+  weight: number
 }
 
 export function YihuaCodeKnowledgeGraph() {
-  const [keyword, setKeyword] = useState("")
-  const [q, setQ] = useState("")
-  const [kind, setKind] = useState<KindFilter>("all")
-  const [theme, setTheme] = useState("all")
-  const [ontologyView, setOntologyView] = useState<"business" | "algorithm" | "data">("algorithm")
-  const [topFolder, setTopFolder] = useState("all")
-  const [maxFiles, setMaxFiles] = useState(60)
-  const [zoom, setZoom] = useState(1)
-  const [pan, setPan] = useState({ x: 0, y: 0 })
-  const [nodeOffset, setNodeOffset] = useState<Record<string, { x: number; y: number }>>({})
-  const [boxSelect, setBoxSelect] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null)
-  const [multiSelectedIds, setMultiSelectedIds] = useState<string[]>([])
-  const [pinnedIds, setPinnedIds] = useState<Record<string, boolean>>({})
-
-  const { data, isLoading, error } = useYihuaCodeGraph({
-    q,
-    kind,
-    theme,
-    ontologyView,
-    topFolder,
-    maxFiles,
-  })
-
-  const [selected, setSelected] = useState<CodeGraphNode | null>(null)
-  const dragNodeRef = useRef<{ id: string; startX: number; startY: number; ox: number; oy: number } | null>(null)
-  const panRef = useRef<{ startX: number; startY: number; px: number; py: number } | null>(null)
-  const boxRef = useRef<{ x0: number; y0: number } | null>(null)
+  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
+  const [filterType, setFilterType] = useState<NodeType | "all">("all")
   const svgRef = useRef<SVGSVGElement | null>(null)
 
-  useEffect(() => {
-    const t = window.setTimeout(() => setQ(keyword.trim()), 220)
-    return () => window.clearTimeout(t)
-  }, [keyword])
+  // 获取外部数据
+  const marketData = useMarketDataOverview()
+  const [dataVersion, setDataVersion] = useState(0)
+
+  // 手动刷新数据
+  const handleRefresh = () => {
+    setDataVersion(v => v + 1)
+  }
+
+  // 更新因子权重数据（基于实时数据）
+  const [liveWeights, setLiveWeights] = useState(KNOWLEDGE_DATA.factorWeights)
 
   useEffect(() => {
-    // 过滤条件变化后清空选择，避免显示与图不一致
-    setSelected(null)
-    setMultiSelectedIds([])
-    setBoxSelect(null)
-  }, [q, kind, theme, topFolder, maxFiles])
+    if (marketData.loading) return
 
-  useEffect(() => {
-    setNodeOffset((prev) => {
-      const keep: Record<string, { x: number; y: number }> = {}
-      for (const [id, p] of Object.entries(prev)) {
-        if (pinnedIds[id]) keep[id] = p
+    const updated = [...KNOWLEDGE_DATA.factorWeights]
+
+    // 根据实时数据更新趋势
+    if (marketData.oil?.data?.latest) {
+      const oilChange = marketData.oil.data.latest.changePercent
+      const oilFactor = updated.find(f => f.factor === "原油价格")
+      if (oilFactor) {
+        oilFactor.trend = oilChange > 0.5 ? "up" : oilChange < -0.5 ? "down" : "stable"
       }
-      return keep
+    }
+
+    if (marketData.usdcny?.data?.latest) {
+      const rateChange = marketData.usdcny.data.latest.changePercent
+      const rateFactor = updated.find(f => f.factor === "美元汇率")
+      if (rateFactor) {
+        rateFactor.trend = rateChange > 0.2 ? "up" : rateChange < -0.2 ? "down" : "stable"
+      }
+    }
+
+    if (marketData.bdi?.data?.latest) {
+      const bdiChange = marketData.bdi.data.latest.changePercent
+      const freightFactor = updated.find(f => f.factor === "海运运费")
+      if (freightFactor) {
+        freightFactor.trend = bdiChange > 1 ? "up" : bdiChange < -1 ? "down" : "stable"
+      }
+    }
+
+    setLiveWeights(updated)
+  }, [marketData.loading, marketData.oil, marketData.usdcny, marketData.bdi])
+
+  // 构建节点列表
+  const nodes: GraphNode[] = useMemo(() => {
+    const allNodes: GraphNode[] = []
+
+    KNOWLEDGE_DATA.core.forEach(c => {
+      allNodes.push({ id: c.id, name: c.name, type: "core", description: c.description })
     })
-    setPan({ x: 0, y: 0 })
-    setZoom(1)
-  }, [q, kind, theme, topFolder, maxFiles, pinnedIds])
 
-  const fileNodes = useMemo(() => (data?.nodes ?? []).filter((n) => n.type === "file"), [data])
+    KNOWLEDGE_DATA.dataSources.forEach(d => {
+      allNodes.push({ id: d.id, name: d.name, type: "dataSource", description: d.description, category: d.category })
+    })
 
-  const graph = useMemo(() => {
-    const nodes = data?.nodes ?? []
-    const links = data?.links ?? []
-    if (!nodes.length) return { positioned: false, nodes: [], links: [], positions: new Map<string, { x: number; y: number; r: number }>() }
+    KNOWLEDGE_DATA.marketNews.forEach(m => {
+      allNodes.push({ id: m.id, name: m.name, type: "market", description: m.description, category: m.category })
+    })
 
-    // 统一 SVG 坐标系：1000x600
-    const W = 1000
+    KNOWLEDGE_DATA.enterpriseExp.forEach(e => {
+      allNodes.push({ id: e.id, name: e.name, type: "enterprise", description: e.description })
+    })
+
+    KNOWLEDGE_DATA.rules.forEach(r => {
+      allNodes.push({ id: r.id, name: r.name, type: "rule", description: r.description })
+    })
+
+    KNOWLEDGE_DATA.applications.forEach(a => {
+      allNodes.push({ id: a.id, name: a.name, type: "application", description: a.description })
+    })
+
+    return allNodes
+  }, [])
+
+  // 构建连接关系
+  const links: GraphLink[] = useMemo(() => {
+    return KNOWLEDGE_DATA.relations.map(r => ({
+      source: r.source,
+      target: r.target,
+      type: r.type as RelationType,
+      weight: r.weight || 0.5,
+    }))
+  }, [])
+
+  // 四舍五入到固定小数位，避免 SSR hydration 不匹配
+  const round = (n: number, decimals: number = 2) => Number(n.toFixed(decimals))
+
+  // 计算节点位置 - 放射状布局
+  const positions = useMemo(() => {
+    const pos = new Map<string, { x: number; y: number; r: number; angle: number }>()
+    const W = 900
     const H = 600
     const cx = W / 2
     const cy = H / 2
 
-    const groups = nodes.filter((n) => n.type === "group")
-    const kinds = nodes.filter((n) => n.type === "kind")
-    const themes = nodes.filter((n) => n.type === "theme")
-    const files = nodes.filter((n) => n.type === "file")
+    // 按类型分组
+    const coreNodes = nodes.filter(n => n.type === "core")
+    const dataSourceNodes = nodes.filter(n => n.type === "dataSource")
+    const marketNodes = nodes.filter(n => n.type === "market")
+    const enterpriseNodes = nodes.filter(n => n.type === "enterprise")
+    const ruleNodes = nodes.filter(n => n.type === "rule")
+    const appNodes = nodes.filter(n => n.type === "application")
 
-    const radiusGroup = 250
-    const radiusKind = 190
-    const radiusTheme = 130
-    const radiusFile = 80
-    const baseAngle = -Math.PI / 2
-
-    const pos = new Map<string, { x: number; y: number; r: number }>()
-
-    const placeRing = (ringNodes: CodeGraphNode[], radius: number, r: number) => {
-      const count = Math.max(1, ringNodes.length)
-      ringNodes
-        .slice()
-        .sort((a, b) => a.label.localeCompare(b.label, "zh-CN"))
-        .forEach((n, i) => {
-          const angle = baseAngle + (i / count) * Math.PI * 2
-          pos.set(n.id, { x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle), r })
-        })
-    }
-
-    placeRing(groups, radiusGroup, 9)
-    placeRing(kinds, radiusKind, 8)
-    placeRing(themes, radiusTheme, 7)
-    placeRing(files, radiusFile, 4.5)
-
-    return { positioned: true, nodes, links, positions: pos }
-  }, [data])
-
-  const sortedFiles = useMemo(() => {
-    return [...fileNodes].sort((a, b) => {
-      const ka = `${a.topFolder ?? ""}/${a.fileName ?? ""}`
-      const kb = `${b.topFolder ?? ""}/${b.fileName ?? ""}`
-      return ka.localeCompare(kb, "zh-CN")
+    // 核心节点 - 中心
+    coreNodes.forEach((n, i) => {
+      pos.set(n.id, { x: cx, y: cy, r: 24, angle: 0 })
     })
-  }, [fileNodes])
 
-  const neighborIds = useMemo(() => {
-    if (!selected || !data) return new Set<string>()
-    const set = new Set<string>([selected.id])
-    for (const l of data.links) {
-      if (l.source === selected.id) set.add(l.target)
-      if (l.target === selected.id) set.add(l.source)
-    }
+    // 数据源 - 内环（最靠近核心）
+    dataSourceNodes.forEach((n, i) => {
+      const angle = (2 * Math.PI * i) / dataSourceNodes.length - Math.PI / 2
+      const radius = 120
+      pos.set(n.id, {
+        x: round(cx + radius * Math.cos(angle)),
+        y: round(cy + radius * Math.sin(angle)),
+        r: 14,
+        angle: angle
+      })
+    })
+
+    // 市场因素 - 第二环
+    marketNodes.forEach((n, i) => {
+      const angle = (2 * Math.PI * i) / marketNodes.length - Math.PI / 2
+      const radius = 200
+      pos.set(n.id, {
+        x: round(cx + radius * Math.cos(angle)),
+        y: round(cy + radius * Math.sin(angle)),
+        r: 14,
+        angle: angle
+      })
+    })
+
+    // 企业经验 - 第三环
+    enterpriseNodes.forEach((n, i) => {
+      const angle = (2 * Math.PI * i) / enterpriseNodes.length - Math.PI / 4
+      const radius = 300
+      pos.set(n.id, {
+        x: round(cx + radius * Math.cos(angle)),
+        y: round(cy + radius * Math.sin(angle)),
+        r: 12,
+        angle: angle
+      })
+    })
+
+    // 制度规则 - 第四环
+    ruleNodes.forEach((n, i) => {
+      const angle = (2 * Math.PI * i) / ruleNodes.length + Math.PI / 6
+      const radius = 380
+      pos.set(n.id, {
+        x: round(cx + radius * Math.cos(angle)),
+        y: round(cy + radius * Math.sin(angle)),
+        r: 10,
+        angle: angle
+      })
+    })
+
+    // 应用场景 - 第五环（最外层）
+    appNodes.forEach((n, i) => {
+      const angle = (2 * Math.PI * i) / appNodes.length
+      const radius = 440
+      pos.set(n.id, {
+        x: round(cx + radius * Math.cos(angle)),
+        y: round(cy + radius * Math.sin(angle)),
+        r: 16,
+        angle: angle
+      })
+    })
+
+    return pos
+  }, [nodes])
+
+  // 过滤后的数据
+  const filteredNodes = useMemo(() => {
+    if (filterType === "all") return nodes
+    return nodes.filter(n => n.type === filterType)
+  }, [nodes, filterType])
+
+  const filteredLinks = useMemo(() => {
+    const filteredIds = new Set(filteredNodes.map(n => n.id))
+    return links.filter(l => filteredIds.has(l.source) && filteredIds.has(l.target))
+  }, [links, filteredNodes])
+
+  // 相关节点
+  const relatedIds = useMemo(() => {
+    if (!selectedNode) return new Set<string>()
+    const set = new Set<string>([selectedNode.id])
+    links.forEach(l => {
+      if (l.source === selectedNode.id) set.add(l.target)
+      if (l.target === selectedNode.id) set.add(l.source)
+    })
     return set
-  }, [selected, data])
+  }, [selectedNode, links])
 
-  const isDimmed = (id: string) => selected != null && !neighborIds.has(id)
-  const strongSelectedIds = useMemo(() => {
-    const ids = new Set<string>(multiSelectedIds)
-    if (selected?.id) ids.add(selected.id)
-    return ids
-  }, [multiSelectedIds, selected])
+  const isDimmed = (id: string) => selectedNode != null && !relatedIds.has(id)
 
-  const toSvgPoint = (clientX: number, clientY: number) => {
-    const svg = svgRef.current
-    if (!svg) return null
-    const rect = svg.getBoundingClientRect()
-    if (!rect.width || !rect.height) return null
-    return {
-      x: ((clientX - rect.left) / rect.width) * 1000,
-      y: ((clientY - rect.top) / rect.height) * 600,
+  // 节点颜色
+  const getNodeColor = (type: NodeType) => {
+    switch (type) {
+      case "core":
+        return { fill: "rgba(239, 68, 68, 0.9)", stroke: "#EF4444", glow: "rgba(239, 68, 68, 0.6)" }
+      case "dataSource":
+        return { fill: "rgba(6, 182, 212, 0.8)", stroke: "#06B6D4", glow: "rgba(6, 182, 212, 0.5)" }
+      case "market":
+        return { fill: "rgba(59, 130, 246, 0.8)", stroke: "#3B82F6", glow: "rgba(59, 130, 246, 0.5)" }
+      case "enterprise":
+        return { fill: "rgba(16, 185, 129, 0.8)", stroke: "#10B981", glow: "rgba(16, 185, 129, 0.5)" }
+      case "rule":
+        return { fill: "rgba(245, 158, 11, 0.8)", stroke: "#F59E0B", glow: "rgba(245, 158, 11, 0.5)" }
+      case "application":
+        return { fill: "rgba(139, 92, 246, 0.8)", stroke: "#8B5CF6", glow: "rgba(139, 92, 246, 0.5)" }
+      default:
+        return { fill: "rgba(148, 163, 184, 0.8)", stroke: "#94A3B8", glow: "rgba(148, 163, 184, 0.5)" }
     }
   }
 
-  const getExportMeta = () => {
-    const now = new Date().toLocaleString("zh-CN")
-    const filters = [
-      `本体=${ontologyView}`,
-      `目录=${topFolder}`,
-      `类型=${kind}`,
-      `主题=${theme}`,
-      `关键词=${q || "无"}`,
-      `节点上限=${maxFiles}`,
-    ].join(" | ")
-    return { now, filters }
+  // 连线颜色
+  const getLinkColor = (type: RelationType) => {
+    switch (type) {
+      case "提供": return "rgba(6, 182, 212, 0.5)"
+      case "影响": return "rgba(239, 68, 68, 0.5)"
+      case "关联": return "rgba(59, 130, 246, 0.4)"
+      case "参考": return "rgba(16, 185, 129, 0.4)"
+      case "研判": return "rgba(16, 185, 129, 0.5)"
+      case "支撑": return "rgba(139, 92, 246, 0.4)"
+      case "约束": return "rgba(245, 158, 11, 0.5)"
+      case "规范": return "rgba(245, 158, 11, 0.4)"
+      case "预测": return "rgba(236, 72, 153, 0.5)"
+      case "监测": return "rgba(236, 72, 153, 0.4)"
+      default: return "rgba(148, 163, 184, 0.3)"
+    }
+  }
+
+  // 柔和曲线
+  const linkPathD = (sx: number, sy: number, tx: number, ty: number) => {
+    const mx = round((sx + tx) / 2)
+    const my = round((sy + ty) / 2)
+    const dx = tx - sx
+    const dy = ty - sy
+    const len = Math.hypot(dx, dy) || 1
+    const bend = Math.min(30, len * 0.2)
+    const cpx = round(mx - dy / len * bend)
+    const cpy = round(my + dx / len * bend)
+    return `M ${sx} ${sy} Q ${cpx} ${cpy} ${tx} ${ty}`
   }
 
   return (
@@ -181,669 +453,548 @@ export function YihuaCodeKnowledgeGraph() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Code className="h-5 w-5" />
-                代码知识图谱
+                <Network className="h-5 w-5" />
+                硫磺价格预测知识图谱
               </CardTitle>
               <CardDescription>
-                基于 `宜化价格预测/宜化价格预测/代码` 的关键文件元数据生成的关系图谱，可按目录/类型/关键字动态筛选，并支持本体视图切换。
+                第一阶段：市场资讯库、企业经验库、制度规则库
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:flex items-center gap-2">
-                <Button
-                  variant={ontologyView === "business" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setOntologyView("business")}
-                >
-                  业务本体
-                </Button>
-                <Button
-                  variant={ontologyView === "algorithm" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setOntologyView("algorithm")}
-                >
-                  算法本体
-                </Button>
-                <Button
-                  variant={ontologyView === "data" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setOntologyView("data")}
-                >
-                  数据本体
-                </Button>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setMaxFiles((v) => (v === 60 ? 90 : 60))}
-              >
-                显示上限：{maxFiles}
-              </Button>
-            </div>
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={marketData.loading}>
+              <RefreshCw className={`h-4 w-4 mr-1 ${marketData.loading ? "animate-spin" : ""}`} />
+              刷新数据
+            </Button>
           </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {data?.ontology && (
-            <div className="rounded-lg border bg-muted/20 p-3">
-              <div className="mb-2 text-sm font-medium">本体模型（Ontology）</div>
-              <div className="grid gap-3 md:grid-cols-2">
-                <div>
-                  <div className="mb-1 text-xs text-muted-foreground">实体类</div>
-                  <div className="space-y-1">
-                    {data.ontology.classes.map((c) => (
-                      <div key={c.id} className="rounded border bg-background px-2 py-1 text-xs">
-                        <span className="font-medium">{c.label}</span> · {c.description}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <div className="mb-1 text-xs text-muted-foreground">关系类</div>
-                  <div className="space-y-1">
-                    {data.ontology.relations.map((r) => (
-                      <div key={r.id} className="rounded border bg-background px-2 py-1 text-xs">
-                        <span className="font-medium">{r.label}</span>（{r.from} → {r.to}）
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          {data && (
-            <div className="grid gap-3 md:grid-cols-4">
-              <div className="rounded-lg border bg-muted/20 p-3">
-                <div className="text-xs text-muted-foreground">代码总量</div>
-                <div className="mt-1 text-xl font-semibold tabular-nums">{data.totals.allFiles}</div>
-              </div>
-              <div className="rounded-lg border bg-muted/20 p-3">
-                <div className="text-xs text-muted-foreground">筛选命中</div>
-                <div className="mt-1 text-xl font-semibold tabular-nums">{data.totals.filteredFiles}</div>
-              </div>
-              <div className="rounded-lg border bg-muted/20 p-3">
-                <div className="text-xs text-muted-foreground">当前目录节点</div>
-                <div className="mt-1 text-xl font-semibold tabular-nums">{data.totals.groups}</div>
-              </div>
-              <div className="rounded-lg border bg-muted/20 p-3">
-                <div className="text-xs text-muted-foreground">当前文件节点</div>
-                <div className="mt-1 text-xl font-semibold tabular-nums">{data.totals.files}</div>
-              </div>
-            </div>
-          )}
-
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="md:col-span-2">
-              <div className="flex items-center gap-2">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <Input
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  placeholder="搜索文件名 / 相对路径 / 目录（例如：EEMD / LSTM）"
-                  className="flex-1"
-                />
-                {keyword.trim() && (
-                  <Button variant="ghost" size="sm" onClick={() => setKeyword("")}>
-                    清空
-                  </Button>
+          {/* 实时市场数据卡片 */}
+          <div className="grid gap-3 md:grid-cols-4">
+            <div className="rounded-lg border bg-linear-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20 p-3">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <BarChart3 className="h-3 w-3" />
+                  WTI原油
+                </span>
+                {marketData.oil?.data?.latest && (
+                  <span className={marketData.oil.data.latest.changePercent > 0 ? "text-red-500" : marketData.oil.data.latest.changePercent < 0 ? "text-green-500" : "text-muted-foreground"}>
+                    {marketData.oil.data.latest.changePercent > 0 ? <ArrowUpRight className="h-3 w-3 inline" /> : marketData.oil.data.latest.changePercent < 0 ? <ArrowDownRight className="h-3 w-3 inline" /> : <Minus className="h-3 w-3 inline" />}
+                    {marketData.oil.data.latest.changePercent > 0 ? "+" : ""}{marketData.oil.data.latest.changePercent.toFixed(2)}%
+                  </span>
                 )}
               </div>
-            </div>
-
-            <div>
-              <div className="flex flex-wrap gap-2">
-                {(
-                  [
-                    ["all", "全部"],
-                    ["python", "Python"],
-                    ["notebook", "Notebook"],
-                    ["matlab", "Matlab"],
-                    ["markdown", "Markdown"],
-                  ] as const
-                ).map(([k, label]) => (
-                  <Button
-                    key={k}
-                    variant={kind === k ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setKind(k)}
-                    className="h-7"
-                  >
-                    {label}
-                  </Button>
-                ))}
+              <div className="mt-1 text-xl font-semibold tabular-nums">
+                {marketData.loading ? "..." : marketData.oil?.data?.latest?.value?.toFixed(2) || "--"}
               </div>
+              <div className="text-xs text-muted-foreground">美元/桶</div>
+            </div>
+            <div className="rounded-lg border bg-linear-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 p-3">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <DollarSign className="h-3 w-3" />
+                  美元汇率
+                </span>
+                {marketData.usdcny?.data?.latest && (
+                  <span className={marketData.usdcny.data.latest.changePercent > 0 ? "text-red-500" : marketData.usdcny.data.latest.changePercent < 0 ? "text-green-500" : "text-muted-foreground"}>
+                    {marketData.usdcny.data.latest.changePercent > 0 ? <ArrowUpRight className="h-3 w-3 inline" /> : marketData.usdcny.data.latest.changePercent < 0 ? <ArrowDownRight className="h-3 w-3 inline" /> : <Minus className="h-3 w-3 inline" />}
+                    {marketData.usdcny.data.latest.changePercent > 0 ? "+" : ""}{marketData.usdcny.data.latest.changePercent.toFixed(2)}%
+                  </span>
+                )}
+              </div>
+              <div className="mt-1 text-xl font-semibold tabular-nums">
+                {marketData.loading ? "..." : marketData.usdcny?.data?.latest?.value?.toFixed(4) || "--"}
+              </div>
+              <div className="text-xs text-muted-foreground">人民币/美元</div>
+            </div>
+            <div className="rounded-lg border bg-linear-to-br from-cyan-50 to-cyan-100/50 dark:from-cyan-950/30 dark:to-cyan-900/20 p-3">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <TrendingUp className="h-3 w-3" />
+                  BDI指数
+                </span>
+                {marketData.bdi?.data?.latest && (
+                  <span className={marketData.bdi.data.latest.changePercent > 0 ? "text-red-500" : marketData.bdi.data.latest.changePercent < 0 ? "text-green-500" : "text-muted-foreground"}>
+                    {marketData.bdi.data.latest.changePercent > 0 ? <ArrowUpRight className="h-3 w-3 inline" /> : marketData.bdi.data.latest.changePercent < 0 ? <ArrowDownRight className="h-3 w-3 inline" /> : <Minus className="h-3 w-3 inline" />}
+                    {marketData.bdi.data.latest.changePercent > 0 ? "+" : ""}{marketData.bdi.data.latest.changePercent.toFixed(2)}%
+                  </span>
+                )}
+              </div>
+              <div className="mt-1 text-xl font-semibold tabular-nums">
+                {marketData.loading ? "..." : marketData.bdi?.data?.latest?.value?.toFixed(0) || "--"}
+              </div>
+              <div className="text-xs text-muted-foreground">波罗的海干散货</div>
+            </div>
+            <div className="rounded-lg border bg-linear-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 p-3">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Newspaper className="h-3 w-3" />
+                  相关新闻
+                </span>
+              </div>
+              <div className="mt-1 text-xl font-semibold tabular-nums">
+                {marketData.loading ? "..." : (marketData.news?.data as any)?.totalArticles || "--"}
+              </div>
+              <div className="text-xs text-muted-foreground">GDELT数据源</div>
             </div>
           </div>
 
-          <div className="rounded-lg border bg-muted/20 p-3">
-            <div className="flex items-center gap-2 mb-2 text-sm font-medium text-muted-foreground">
-              <Folder className="h-4 w-4" />
-              目录筛选（点击节点可聚焦）
+          {/* 统计卡片 */}
+          <div className="grid gap-3 md:grid-cols-6">
+            <div className="rounded-lg border bg-linear-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20 p-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <DollarSign className="h-3 w-3" />
+                核心实体
+              </div>
+              <div className="mt-1 text-xl font-semibold tabular-nums">{KNOWLEDGE_DATA.core.length}</div>
             </div>
-            {isLoading ? (
-              <div className="flex gap-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <Skeleton key={i} className="h-8 w-24 rounded-full" />
-                ))}
+            <div className="rounded-lg border bg-linear-to-br from-cyan-50 to-cyan-100/50 dark:from-cyan-950/30 dark:to-cyan-900/20 p-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Database className="h-3 w-3" />
+                数据源
               </div>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                <Button variant={topFolder === "all" ? "default" : "outline"} size="sm" onClick={() => setTopFolder("all")}>
-                  全部目录
-                </Button>
-                {(data?.folderOptions ?? [])
-                  .slice(0, 12)
-                  .map((g) => (
-                    <Button
-                      key={g.label}
-                      variant={topFolder === g.label ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setTopFolder(g.label)}
-                      className="h-7"
-                      title={`${g.label} (${g.count})`}
-                    >
-                      {g.label} ({g.count})
-                    </Button>
-                  ))}
+              <div className="mt-1 text-xl font-semibold tabular-nums">{KNOWLEDGE_DATA.dataSources.length}</div>
+            </div>
+            <div className="rounded-lg border bg-linear-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 p-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Newspaper className="h-3 w-3" />
+                市场资讯
               </div>
-            )}
+              <div className="mt-1 text-xl font-semibold tabular-nums">{KNOWLEDGE_DATA.marketNews.length}</div>
+            </div>
+            <div className="rounded-lg border bg-linear-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 p-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Building2 className="h-3 w-3" />
+                企业经验
+              </div>
+              <div className="mt-1 text-xl font-semibold tabular-nums">{KNOWLEDGE_DATA.enterpriseExp.length}</div>
+            </div>
+            <div className="rounded-lg border bg-linear-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20 p-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <FileText className="h-3 w-3" />
+                制度规则
+              </div>
+              <div className="mt-1 text-xl font-semibold tabular-nums">{KNOWLEDGE_DATA.rules.length}</div>
+            </div>
+            <div className="rounded-lg border bg-linear-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20 p-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Lightbulb className="h-3 w-3" />
+                预测应用
+              </div>
+              <div className="mt-1 text-xl font-semibold tabular-nums">{KNOWLEDGE_DATA.applications.length}</div>
+            </div>
           </div>
 
-          <div className="rounded-lg border bg-muted/20 p-3">
-            <div className="mb-2 text-sm font-medium text-muted-foreground">主题筛选</div>
-            {isLoading ? (
-              <div className="flex gap-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <Skeleton key={i} className="h-8 w-20 rounded-full" />
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                <Button variant={theme === "all" ? "default" : "outline"} size="sm" onClick={() => setTheme("all")}>
-                  全部主题
-                </Button>
-                {(data?.themeOptions ?? []).slice(0, 10).map((t) => (
-                  <Button
-                    key={t.label}
-                    variant={theme === t.label ? "default" : "outline"}
-                    size="sm"
-                    className="h-7"
-                    onClick={() => setTheme(t.label)}
-                  >
-                    {t.label} ({t.count})
-                  </Button>
-                ))}
-              </div>
-            )}
+          {/* 过滤器 */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={filterType === "all" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilterType("all")}
+            >
+              全部
+            </Button>
+            <Button
+              variant={filterType === "core" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilterType("core")}
+            >
+              核心实体
+            </Button>
+            <Button
+              variant={filterType === "dataSource" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilterType("dataSource")}
+            >
+              数据源
+            </Button>
+            <Button
+              variant={filterType === "market" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilterType("market")}
+            >
+              市场资讯
+            </Button>
+            <Button
+              variant={filterType === "enterprise" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilterType("enterprise")}
+            >
+              企业经验
+            </Button>
+            <Button
+              variant={filterType === "rule" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilterType("rule")}
+            >
+              制度规则
+            </Button>
+            <Button
+              variant={filterType === "application" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilterType("application")}
+            >
+              预测应用
+            </Button>
           </div>
 
-          <div className="rounded-lg border">
-            <div className="relative">
-              {isLoading ? (
-                <div className="p-6">
-                  <Skeleton className="h-[420px] w-full" />
-                </div>
-              ) : error || !data ? (
-                <div className="p-6 text-sm text-muted-foreground">无法加载知识图谱，请稍后重试。</div>
-              ) : data.nodes.length === 0 ? (
-                <div className="p-6 text-sm text-muted-foreground">当前筛选条件下暂无可用的代码文件元数据。</div>
-              ) : (
-                <svg
-                  ref={svgRef}
-                  viewBox="0 0 1000 600"
-                  className="w-full h-[420px]"
-                  onWheel={(e) => {
-                    e.preventDefault()
-                    const p = toSvgPoint(e.clientX, e.clientY)
-                    if (!p) return
-                    const next = Math.max(0.6, Math.min(1.8, Number((zoom + (e.deltaY > 0 ? -0.08 : 0.08)).toFixed(2))))
-                    const worldX = (p.x - pan.x) / zoom
-                    const worldY = (p.y - pan.y) / zoom
-                    setZoom(next)
-                    setPan({
-                      x: p.x - worldX * next,
-                      y: p.y - worldY * next,
-                    })
-                  }}
-                >
-                  <rect
-                    x={0}
-                    y={0}
-                    width={1000}
-                    height={600}
-                    fill="transparent"
-                    style={{ cursor: panRef.current ? "grabbing" : "grab" }}
-                    onMouseDown={(e) => {
-                      const p = toSvgPoint(e.clientX, e.clientY)
-                      if (!p) return
-                      if (e.shiftKey) {
-                        boxRef.current = { x0: p.x, y0: p.y }
-                        setBoxSelect({ x0: p.x, y0: p.y, x1: p.x, y1: p.y })
-                        return
-                      }
-                      panRef.current = { startX: e.clientX, startY: e.clientY, px: pan.x, py: pan.y }
-                    }}
-                    onMouseMove={(e) => {
-                      if (boxRef.current) {
-                        const p = toSvgPoint(e.clientX, e.clientY)
-                        if (!p) return
-                        setBoxSelect({ x0: boxRef.current.x0, y0: boxRef.current.y0, x1: p.x, y1: p.y })
-                        return
-                      }
-                      if (!panRef.current) return
-                      const dx = e.clientX - panRef.current.startX
-                      const dy = e.clientY - panRef.current.startY
-                      setPan({ x: panRef.current.px + dx, y: panRef.current.py + dy })
-                    }}
-                    onMouseUp={() => {
-                      if (boxRef.current && boxSelect) {
-                        const xMin = Math.min(boxSelect.x0, boxSelect.x1)
-                        const xMax = Math.max(boxSelect.x0, boxSelect.x1)
-                        const yMin = Math.min(boxSelect.y0, boxSelect.y1)
-                        const yMax = Math.max(boxSelect.y0, boxSelect.y1)
+          {/* 知识图谱 */}
+          <div className="rounded-lg border overflow-hidden">
+            <svg
+              ref={svgRef}
+              viewBox="0 0 900 600"
+              className="w-full h-[500px]"
+              style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)" }}
+            >
+              <defs>
+                {/* 发光效果 */}
+                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                  <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
 
-                        const canvasMinX = (xMin - pan.x) / zoom
-                        const canvasMaxX = (xMax - pan.x) / zoom
-                        const canvasMinY = (yMin - pan.y) / zoom
-                        const canvasMaxY = (yMax - pan.y) / zoom
+                {/* 柔和阴影 */}
+                <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur in="SourceAlpha" stdDeviation="3" />
+                  <feOffset dx="0" dy="2" />
+                  <feComponentTransfer>
+                    <feFuncA type="linear" slope="0.3" />
+                  </feComponentTransfer>
+                  <feMerge>
+                    <feMergeNode />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
 
-                        const picked: string[] = []
-                        for (const n of graph.nodes) {
-                          if (n.type !== "file") continue
-                          const base = graph.positions.get(n.id)
-                          if (!base) continue
-                          const off = nodeOffset[n.id] ?? { x: 0, y: 0 }
-                          const x = base.x + off.x
-                          const y = base.y + off.y
-                          if (x >= canvasMinX && x <= canvasMaxX && y >= canvasMinY && y <= canvasMaxY) {
-                            picked.push(n.id)
-                          }
-                        }
-                        setMultiSelectedIds(picked)
-                      }
-                      boxRef.current = null
-                      setBoxSelect(null)
-                      panRef.current = null
-                    }}
-                    onMouseLeave={() => {
-                      boxRef.current = null
-                      setBoxSelect(null)
-                      panRef.current = null
-                    }}
-                  />
-                  <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`}>
-                  {/* 中心标签 */}
-                  <circle cx="500" cy="300" r="22" fill="hsl(var(--primary)/0.12)" stroke="hsl(var(--primary))" />
-                  <text x="500" y="308" textAnchor="middle" className="fill-foreground font-semibold text-sm">
-                    代码知识图谱
-                  </text>
+                {/* 流体效果滤镜 */}
+                <filter id="fluid" x="-20%" y="-20%" width="140%" height="140%">
+                  <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="2" result="noise" seed="1">
+                    <animate attributeName="seed" values="1;20;1" dur="15s" repeatCount="indefinite" />
+                  </feTurbulence>
+                  <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
+                </filter>
 
-                  {/* 关系线 */}
-                  {graph.links.map((l, idx) => {
-                    const s = graph.positions.get(l.source)
-                    const t = graph.positions.get(l.target)
-                    if (!s || !t) return null
-                    return (
-                      <line
-                        key={idx}
-                        x1={s.x}
-                        y1={s.y}
-                        x2={t.x}
-                        y2={t.y}
-                        stroke={selected && (l.source === selected.id || l.target === selected.id)
-                          ? "hsl(var(--primary))"
-                          : relationColor(l.relation)}
-                        strokeWidth={selected && (l.source === selected.id || l.target === selected.id) ? 1.8 : 1}
-                        opacity={selected ? (l.source === selected.id || l.target === selected.id ? 0.9 : 0.2) : 1}
-                      />
-                    )
-                  })}
-
-                  {boxSelect && (
-                    <rect
-                      x={(Math.min(boxSelect.x0, boxSelect.x1) - pan.x) / zoom}
-                      y={(Math.min(boxSelect.y0, boxSelect.y1) - pan.y) / zoom}
-                      width={Math.abs(boxSelect.x1 - boxSelect.x0) / zoom}
-                      height={Math.abs(boxSelect.y1 - boxSelect.y0) / zoom}
-                      fill="hsl(var(--primary)/0.15)"
-                      stroke="hsl(var(--primary))"
-                      strokeDasharray="4 2"
-                    />
-                  )}
-
-                  {/* 节点 */}
-                  {graph.nodes
-                    .filter((n) => n.type === "group" || n.type === "kind" || n.type === "theme" || n.type === "file")
-                    .map((n) => {
-                      const p = graph.positions.get(n.id)
-                      if (!p) return null
-                      const isSelected = selected?.id === n.id
-                      const isMulti = strongSelectedIds.has(n.id)
-                      const isGroup = n.type === "group"
-                      const isKind = n.type === "kind"
-                      const isTheme = n.type === "theme"
-                      return (
-                        <g
-                          key={n.id}
-                          style={{ cursor: "pointer" }}
-                          onClick={() => {
-                            if (n.type === "group") {
-                              setTopFolder((n.label as string) || "all")
-                              return
-                            }
-                            if (n.type === "theme") {
-                              setTheme((n.label as string) || "all")
-                              return
-                            }
-                            setSelected(n)
-                          }}
-                          onMouseDown={(e) => {
-                            if (n.type === "group" || n.type === "kind" || n.type === "theme") return
-                            e.stopPropagation()
-                            const cur = nodeOffset[n.id] ?? { x: 0, y: 0 }
-                            dragNodeRef.current = {
-                              id: n.id,
-                              startX: e.clientX,
-                              startY: e.clientY,
-                              ox: cur.x,
-                              oy: cur.y,
-                            }
-                          }}
-                          onMouseMove={(e) => {
-                            if (!dragNodeRef.current || dragNodeRef.current.id !== n.id) return
-                            e.stopPropagation()
-                            const dx = (e.clientX - dragNodeRef.current.startX) / zoom
-                            const dy = (e.clientY - dragNodeRef.current.startY) / zoom
-                            setNodeOffset((prev) => ({
-                              ...prev,
-                              [n.id]: { x: dragNodeRef.current!.ox + dx, y: dragNodeRef.current!.oy + dy },
-                            }))
-                          }}
-                          onMouseUp={() => {
-                            dragNodeRef.current = null
-                          }}
-                          onMouseLeave={() => {
-                            dragNodeRef.current = null
-                          }}
-                        >
-                          {(() => {
-                            const off = nodeOffset[n.id] ?? { x: 0, y: 0 }
-                            const x = p.x + off.x
-                            const y = p.y + off.y
-                            return (
-                              <>
-                          <circle
-                            cx={x}
-                            cy={y}
-                            r={p.r + (isSelected ? 2 : 0)}
-                            fill={
-                              isGroup
-                                ? isSelected
-                                  ? "hsl(var(--primary))"
-                                  : "hsl(var(--primary)/0.18)"
-                                : isKind
-                                  ? isSelected
-                                    ? "hsl(var(--chart-3))"
-                                    : "hsl(var(--chart-3)/0.2)"
-                                : isTheme
-                                  ? isSelected
-                                    ? "hsl(var(--chart-4))"
-                                    : "hsl(var(--chart-4)/0.2)"
-                                : isSelected
-                                  ? "hsl(var(--chart-2))"
-                                  : "hsl(var(--chart-2)/0.18)"
-                            }
-                            stroke={isSelected ? "hsl(var(--primary))" : "hsl(var(--border))"}
-                            strokeWidth={isSelected ? 1.8 : isMulti ? 1.5 : 1.25}
-                            strokeDasharray={pinnedIds[n.id] ? "3 2" : undefined}
-                            opacity={isDimmed(n.id) ? 0.25 : 1}
-                          >
-                            <title>
-                              {n.type === "group"
-                                ? `目录：${n.label}`
-                                : n.type === "kind"
-                                  ? `类型：${n.label}`
-                                : n.type === "theme"
-                                  ? `主题：${n.label}`
-                                : `文件：${n.fileName}\n类型：${n.kind}\n路径：${n.relativePath}`}
-                            </title>
-                          </circle>
-                          {(isGroup || isKind || isTheme) && (
-                            <text
-                              x={x}
-                              y={y - 16}
-                              textAnchor="middle"
-                              className="fill-muted-foreground text-[11px]"
-                              opacity={isDimmed(n.id) ? 0.35 : 1}
-                            >
-                              {String(n.label).length > 10 ? `${String(n.label).slice(0, 10)}…` : n.label}
-                            </text>
-                          )}
-                              </>
-                            )
-                          })()}
-                        </g>
-                      )
-                    })}
-                  </g>
-                </svg>
-              )}
-              <div className="absolute right-3 top-3 z-10 flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setZoom((z) => Math.max(0.6, Number((z - 0.1).toFixed(2))))}
-                >
-                  -
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setZoom((z) => Math.min(1.8, Number((z + 0.1).toFixed(2))))}
-                >
-                  +
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setZoom(1)
-                    setPan({ x: 0, y: 0 })
-                    setNodeOffset({})
-                  }}
-                >
-                  重置视图
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    if (!multiSelectedIds.length) return
-                    setPinnedIds((prev) => {
-                      const next = { ...prev }
-                      for (const id of multiSelectedIds) next[id] = true
-                      return next
-                    })
-                  }}
-                >
-                  固定选中
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    if (!multiSelectedIds.length) return
-                    setPinnedIds((prev) => {
-                      const next = { ...prev }
-                      for (const id of multiSelectedIds) delete next[id]
-                      return next
-                    })
-                  }}
-                >
-                  取消固定
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setMultiSelectedIds([])}
-                >
-                  清空框选
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    const svg = svgRef.current
-                    if (!svg) return
-                    const { now, filters } = getExportMeta()
-                    const serializer = new XMLSerializer()
-                    const source = serializer.serializeToString(svg)
-                    const wrapped = `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1060" viewBox="0 0 1600 1060">
-  <rect width="1600" height="1060" fill="#ffffff"/>
-  <text x="36" y="44" font-size="28" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#111827">宜化代码知识图谱（${ontologyView}）</text>
-  <text x="36" y="74" font-size="15" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#4b5563">导出时间：${now}</text>
-  <text x="36" y="98" font-size="13" font-family="Arial, PingFang SC, Microsoft YaHei, sans-serif" fill="#6b7280">${filters}</text>
-  <g transform="translate(0,100)">
-    ${source}
-  </g>
-</svg>`
-                    const blob = new Blob([wrapped], { type: "image/svg+xml;charset=utf-8" })
-                    const url = URL.createObjectURL(blob)
-                    const a = document.createElement("a")
-                    a.href = url
-                    a.download = `yihua-kg-${ontologyView}.svg`
-                    a.click()
-                    URL.revokeObjectURL(url)
-                  }}
-                >
-                  导出 SVG
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    const svg = svgRef.current
-                    if (!svg) return
-                    const { now, filters } = getExportMeta()
-                    const serializer = new XMLSerializer()
-                    const source = serializer.serializeToString(svg)
-                    const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" })
-                    const url = URL.createObjectURL(blob)
-                    const img = new Image()
-                    img.onload = () => {
-                      const canvas = document.createElement("canvas")
-                      canvas.width = 1600
-                      canvas.height = 1060
-                      const ctx = canvas.getContext("2d")
-                      if (!ctx) return
-                      ctx.fillStyle = "#ffffff"
-                      ctx.fillRect(0, 0, canvas.width, canvas.height)
-                      ctx.fillStyle = "#111827"
-                      ctx.font = "bold 28px Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif"
-                      ctx.fillText(`宜化代码知识图谱（${ontologyView}）`, 36, 48)
-                      ctx.fillStyle = "#4b5563"
-                      ctx.font = "15px Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif"
-                      ctx.fillText(`导出时间：${now}`, 36, 76)
-                      ctx.fillStyle = "#6b7280"
-                      ctx.font = "13px Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif"
-                      ctx.fillText(filters, 36, 100)
-                      ctx.drawImage(img, 0, 100, canvas.width, 960)
-                      const png = canvas.toDataURL("image/png")
-                      const a = document.createElement("a")
-                      a.href = png
-                      a.download = `yihua-kg-${ontologyView}.png`
-                      a.click()
-                      URL.revokeObjectURL(url)
+                <style>
+                  {`
+                    .kg-line {
+                      stroke-linecap: round;
+                      transition: opacity 0.3s ease;
                     }
-                    img.src = url
-                  }}
-                >
-                  导出 PNG
-                </Button>
-              </div>
-            </div>
+                    .kg-node {
+                      transition: all 0.3s ease;
+                      cursor: pointer;
+                    }
+                    .kg-node:hover {
+                      filter: url(#glow);
+                    }
+
+                    /* 节点浮动动画 */
+                    @keyframes float {
+                      0%, 100% { transform: translateY(0px); }
+                      50% { transform: translateY(-8px); }
+                    }
+
+                    @keyframes floatSlow {
+                      0%, 100% { transform: translateY(0px); }
+                      50% { transform: translateY(-5px); }
+                    }
+
+                    @keyframes pulse {
+                      0%, 100% { opacity: 0.4; }
+                      50% { opacity: 0.8; }
+                    }
+
+                    @keyframes dash {
+                      to { stroke-dashoffset: -20; }
+                    }
+
+                    @keyframes ripple {
+                      0% { r: 0; opacity: 0.6; }
+                      100% { r: 40; opacity: 0; }
+                    }
+
+                    @keyframes glow-pulse {
+                      0%, 100% { opacity: 0.3; }
+                      50% { opacity: 0.6; }
+                    }
+
+                    @keyframes rotate {
+                      from { transform: rotate(0deg); }
+                      to { transform: rotate(360deg); }
+                    }
+
+                    .node-float {
+                      animation: float 5s ease-in-out infinite;
+                    }
+
+                    .node-float-slow {
+                      animation: floatSlow 7s ease-in-out infinite;
+                    }
+
+                    .line-pulse {
+                      animation: pulse 4s ease-in-out infinite;
+                    }
+
+                    .line-flow {
+                      stroke-dasharray: 6, 4;
+                      animation: dash 1.5s linear infinite;
+                    }
+
+                    .ripple {
+                      animation: ripple 2.5s ease-out infinite;
+                    }
+
+                    .glow-pulse {
+                      animation: glow-pulse 3s ease-in-out infinite;
+                    }
+                  `}
+                </style>
+              </defs>
+
+              {/* 背景装饰圆环 */}
+              <circle cx="450" cy="300" r="180" fill="none" stroke="rgba(59, 130, 246, 0.1)" strokeWidth="1" className="line-pulse" />
+              <circle cx="450" cy="300" r="280" fill="none" stroke="rgba(16, 185, 129, 0.1)" strokeWidth="1" style={{ animationDelay: "0.5s" }} className="line-pulse" />
+              <circle cx="450" cy="300" r="360" fill="none" stroke="rgba(245, 158, 11, 0.1)" strokeWidth="1" style={{ animationDelay: "1s" }} className="line-pulse" />
+              <circle cx="450" cy="300" r="430" fill="none" stroke="rgba(139, 92, 246, 0.1)" strokeWidth="1" style={{ animationDelay: "1.5s" }} className="line-pulse" />
+
+              {/* 关系线 */}
+              {filteredLinks.map((l, idx) => {
+                const s = positions.get(l.source)
+                const t = positions.get(l.target)
+                if (!s || !t) return null
+                const isHighlighted = selectedNode && (l.source === selectedNode.id || l.target === selectedNode.id)
+                return (
+                  <path
+                    key={idx}
+                    d={linkPathD(s.x, s.y, t.x, t.y)}
+                    className={`kg-line ${isHighlighted ? "line-flow" : ""}`}
+                    stroke={isHighlighted ? "#60A5FA" : getLinkColor(l.type)}
+                    strokeWidth={isHighlighted ? 2.5 : Math.max(1, l.weight * 2)}
+                    opacity={selectedNode ? (isHighlighted ? 1 : 0.08) : 0.5}
+                    fill="none"
+                  />
+                )
+              })}
+
+              {/* 节点 */}
+              {filteredNodes.map((n, nodeIdx) => {
+                const p = positions.get(n.id)
+                if (!p) return null
+                const isSelected = selectedNode?.id === n.id
+                const colors = getNodeColor(n.type)
+                const dimmed = isDimmed(n.id)
+
+                return (
+                  <g
+                    key={n.id}
+                    className={`kg-node ${n.type === "core" ? "node-float" : n.type === "market" ? "node-float-slow" : ""}`}
+                    style={{ animationDelay: `${nodeIdx * 0.1}s` }}
+                    onClick={() => setSelectedNode(n)}
+                  >
+                    {/* 选中涟漪 */}
+                    {isSelected && (
+                      <>
+                        <circle
+                          cx={p.x}
+                          cy={p.y}
+                          r={p.r + 4}
+                          fill="none"
+                          stroke={colors.stroke}
+                          strokeWidth="2"
+                          className="ripple"
+                        />
+                        <circle
+                          cx={p.x}
+                          cy={p.y}
+                          r={p.r + 20}
+                          fill="none"
+                          stroke={colors.stroke}
+                          strokeWidth="1"
+                          className="ripple"
+                          style={{ animationDelay: "0.5s" }}
+                        />
+                      </>
+                    )}
+                    {/* 节点光晕 */}
+                    <circle
+                      cx={p.x}
+                      cy={p.y}
+                      r={p.r + 6}
+                      fill={colors.glow}
+                      opacity={dimmed ? 0.05 : 0.3}
+                      className="glow-pulse"
+                    />
+                    {/* 节点主体 */}
+                    <circle
+                      cx={p.x}
+                      cy={p.y}
+                      r={p.r + (isSelected ? 4 : 0)}
+                      fill={colors.fill}
+                      stroke={isSelected ? "#fff" : colors.stroke}
+                      strokeWidth={isSelected ? 2.5 : 1.5}
+                      opacity={dimmed ? 0.15 : 1}
+                      filter="url(#softShadow)"
+                    />
+                    {/* 高光 */}
+                    <circle
+                      cx={p.x - p.r * 0.25}
+                      cy={p.y - p.r * 0.25}
+                      r={p.r * 0.3}
+                      fill="rgba(255,255,255,0.4)"
+                      opacity={dimmed ? 0.05 : 1}
+                    />
+                    {/* 标签 */}
+                    <text
+                      x={p.x}
+                      y={p.y - p.r - 10}
+                      textAnchor="middle"
+                      fill="#E2E8F0"
+                      fontSize="11"
+                      fontWeight="500"
+                      opacity={dimmed ? 0.3 : 1}
+                    >
+                      {n.name.length > 8 ? `${n.name.slice(0, 8)}…` : n.name}
+                    </text>
+                    <title>{`${n.name} - ${n.description}`}</title>
+                  </g>
+                )
+              })}
+            </svg>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-            <span className="rounded border px-2 py-1">关系图例</span>
-            <span className="rounded border px-2 py-1" style={{ borderColor: relationColor("HAS_CODE_KIND"), color: relationColor("HAS_CODE_KIND") }}>包含类型</span>
-            <span className="rounded border px-2 py-1" style={{ borderColor: relationColor("USES_THEME"), color: relationColor("USES_THEME") }}>关联主题</span>
-            <span className="rounded border px-2 py-1" style={{ borderColor: relationColor("IMPLEMENTS_FILE"), color: relationColor("IMPLEMENTS_FILE") }}>实例化为文件</span>
+
+          {/* 图例 */}
+          <div className="flex flex-wrap gap-4 text-xs">
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-red-500" />
+              核心实体
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-cyan-500" />
+              数据源
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-blue-500" />
+              市场资讯
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-emerald-500" />
+              企业经验
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-amber-500" />
+              制度规则
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-violet-500" />
+              预测应用
+            </span>
           </div>
         </CardContent>
       </Card>
 
+      {/* 详情面板 */}
       <div className="grid gap-4 lg:grid-cols-2">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <FileCode2 className="h-4 w-4" />
-            详情
-          </CardTitle>
-          <CardDescription>点击任意“文件节点”查看元信息。</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          {selected ? (
-            <>
-              <div className="rounded-lg border bg-muted/10 p-3">
-                <div className="font-semibold">{selected.fileName}</div>
-                <div className="mt-1 text-muted-foreground">
-                  类型：{selected.kind} · 扩展名：{selected.ext}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">节点详情</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {selectedNode ? (
+              <div className="rounded-lg border bg-muted/10 p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">
+                    {selectedNode.type === "core" ? "核心实体" :
+                      selectedNode.type === "dataSource" ? "数据源" :
+                      selectedNode.type === "market" ? "市场资讯" :
+                      selectedNode.type === "enterprise" ? "企业经验" :
+                      selectedNode.type === "rule" ? "制度规则" : "预测应用"}
+                  </Badge>
+                  {selectedNode.category && (
+                    <Badge variant="secondary">{selectedNode.category}</Badge>
+                  )}
                 </div>
-                <div className="mt-1 text-muted-foreground">目录：{selected.topFolder}</div>
-                <div className="mt-2 text-xs text-muted-foreground break-all">
-                  相对路径：{selected.relativePath}
+                <div className="font-semibold text-lg">{selectedNode.name}</div>
+                <p className="text-muted-foreground">{selectedNode.description}</p>
+
+                {/* 显示相关关系 */}
+                <div className="mt-3 pt-3 border-t">
+                  <div className="text-xs text-muted-foreground mb-2">相关关系</div>
+                  <div className="space-y-1">
+                    {links
+                      .filter(l => l.source === selectedNode.id || l.target === selectedNode.id)
+                      .slice(0, 6)
+                      .map((l, i) => {
+                        const isSource = l.source === selectedNode.id
+                        const otherId = isSource ? l.target : l.source
+                        const otherNode = nodes.find(n => n.id === otherId)
+                        return (
+                          <div key={i} className="flex items-center gap-2 text-xs">
+                            <span className="text-muted-foreground">
+                              {isSource ? "→" : "←"}
+                            </span>
+                            <Badge variant="outline" className="text-[10px]">{l.type}</Badge>
+                            <span className="font-medium">{otherNode?.name || otherId}</span>
+                          </div>
+                        )
+                      })}
+                  </div>
                 </div>
               </div>
-            </>
-          ) : (
-            <div className="text-muted-foreground">尚未选择节点。</div>
-          )}
+            ) : (
+              <p className="text-muted-foreground">点击图谱中的节点查看详细信息</p>
+            )}
+          </CardContent>
+        </Card>
 
-          {data && (
-            <div className="text-muted-foreground text-xs">
-              当前图谱：{data.totals.groups} 目录 · {data.totals.kinds} 类型 · {data.totals.themes} 主题 · {data.totals.files} 文件（筛选命中 {data.totals.filteredFiles}）
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">价格影响因子权重</CardTitle>
+              <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={marketData.loading}>
+                <RefreshCw className={`h-4 w-4 ${marketData.loading ? "animate-spin" : ""}`} />
+              </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">节点文件清单</CardTitle>
-          <CardDescription>点击文件可同步定位到“详情”。</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
+          </CardHeader>
+          <CardContent>
             <div className="space-y-2">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className="h-8 w-full" />
-              ))}
-            </div>
-          ) : sortedFiles.length === 0 ? (
-            <div className="text-sm text-muted-foreground">暂无可展示文件。</div>
-          ) : (
-            <div className="max-h-[260px] overflow-y-auto rounded-lg border">
-              {sortedFiles.map((f) => (
-                <button
-                  key={f.id}
-                  type="button"
-                  className={`w-full border-b px-3 py-2 text-left text-sm last:border-b-0 hover:bg-muted/40 ${
-                    selected?.id === f.id ? "bg-muted/60" : ""
-                  }`}
-                  onClick={() => setSelected(f)}
-                >
-                  <div className="truncate font-medium">{f.fileName}</div>
-                  <div className="truncate text-xs text-muted-foreground">
-                    {f.topFolder} · {f.kind}
+              {liveWeights
+                .sort((a, b) => b.weight - a.weight)
+                .map((f, i) => (
+                  <div key={f.factor} className="flex items-center gap-3 text-sm">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                      i === 0 ? "bg-red-500 text-white" :
+                      i === 1 ? "bg-slate-400 text-white" :
+                      i === 2 ? "bg-amber-700 text-white" :
+                      "bg-muted text-muted-foreground"
+                    }`}>
+                      {i + 1}
+                    </div>
+                    <div className="flex-1 font-medium">{f.factor}</div>
+                    <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-linear-to-r from-blue-500 to-purple-500 rounded-full"
+                        style={{ width: `${f.weight * 100}%` }}
+                      />
+                    </div>
+                    <div className="text-xs text-muted-foreground w-10 text-right">
+                      {(f.weight * 100).toFixed(0)}%
+                    </div>
+                    <div className={`text-xs ${
+                      f.trend === "up" ? "text-red-500" :
+                      f.trend === "down" ? "text-green-500" :
+                      "text-muted-foreground"
+                    }`}>
+                      {f.trend === "up" ? "↑" : f.trend === "down" ? "↓" : "→"}
+                    </div>
                   </div>
-                </button>
-              ))}
+                ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
       </div>
-    </div>
+
+          </div>
   )
 }
-

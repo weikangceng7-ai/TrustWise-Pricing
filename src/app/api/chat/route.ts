@@ -4,11 +4,9 @@ import { SYSTEM_PROMPT } from "@/lib/system-prompt"
 export const maxDuration = 60
 
 // 创建 OpenRouter 实例
-function getOpenRouter() {
-  return new OpenRouter({
-    apiKey: process.env.OPENROUTER_API_KEY || "",
-  })
-}
+const openrouter = new OpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY || "",
+})
 
 export async function POST(req: Request) {
   try {
@@ -25,7 +23,7 @@ export async function POST(req: Request) {
     if (!process.env.OPENROUTER_API_KEY) {
       return new Response(
         JSON.stringify({
-          error: "OpenRouter API Key 未配置，请设置 OPENROUTER_API_KEY 环境变量",
+          error: "OpenRouter API Key 未配置。\n\n请按以下步骤获取：\n1. 访问 https://openrouter.ai/keys\n2. 注册/登录账户\n3. 创建 API Key\n4. 在 .env.local 中设置 OPENROUTER_API_KEY=你的密钥",
         }),
         {
           status: 500,
@@ -50,7 +48,6 @@ export async function POST(req: Request) {
     ]
 
     // 使用 OpenRouter SDK 调用模型
-    const openrouter = getOpenRouter()
     const stream = await openrouter.chat.send({
       chatGenerationParams: {
         model: "stepfun/step-3.5-flash:free",
@@ -86,9 +83,25 @@ export async function POST(req: Request) {
     })
   } catch (error) {
     console.error("Chat API error:", error)
+
+    // 检查是否是 API Key 相关错误
+    const errorMessage = error instanceof Error ? error.message : "处理请求失败，请稍后重试"
+
+    if (errorMessage.includes("401") || errorMessage.includes("Unauthorized") || errorMessage.includes("User not found")) {
+      return new Response(
+        JSON.stringify({
+          error: "OpenRouter API Key 无效或已过期。\n\n请按以下步骤获取新的 Key：\n1. 访问 https://openrouter.ai/keys\n2. 注册/登录账户\n3. 创建新的 API Key\n4. 更新 .env.local 中的 OPENROUTER_API_KEY",
+        }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }
+      )
+    }
+
     return new Response(
       JSON.stringify({
-        error: "处理请求失败，请稍后重试",
+        error: errorMessage,
       }),
       {
         status: 500,

@@ -22,6 +22,7 @@ interface UseChatWithHistoryOptions {
   conversationId?: string
 }
 
+
 export function useChatWithHistory(options: UseChatWithHistoryOptions = {}) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -212,7 +213,8 @@ export function useChatWithHistory(options: UseChatWithHistoryOptions = {}) {
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorData = await response.json().catch(() => ({ error: "请求失败" }))
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
       }
 
       const reader = response.body?.getReader()
@@ -239,7 +241,7 @@ export function useChatWithHistory(options: UseChatWithHistoryOptions = {}) {
       }
 
       // 保存 AI 回复到数据库
-      if (conversationId && options.userId) {
+      if (conversationId && options.userId && fullContent) {
         await saveMessage(conversationId, "assistant", fullContent)
       }
     } catch (err) {
@@ -309,7 +311,8 @@ export function useChatWithHistory(options: UseChatWithHistoryOptions = {}) {
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorData = await response.json().catch(() => ({ error: "请求失败" }))
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
       }
 
       const reader = response.body?.getReader()
@@ -336,7 +339,7 @@ export function useChatWithHistory(options: UseChatWithHistoryOptions = {}) {
       }
 
       // 保存 AI 回复到数据库
-      if (currentConversationId && options.userId) {
+      if (currentConversationId && options.userId && fullContent) {
         await saveMessage(currentConversationId, "assistant", fullContent)
       }
     } catch (err) {

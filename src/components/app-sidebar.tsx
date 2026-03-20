@@ -31,10 +31,10 @@ const navItems = [
     description: "数据概览与价格趋势",
   },
   {
-    title: "代码知识图谱",
+    title: "价格预测知识图谱",
     url: "/yihua-code-graph",
     icon: Network,
-    description: "基于代码文件元数据的动态关系图谱",
+    description: "市场资讯、企业经验、制度规则知识库",
   },
   {
     title: "Agent 决策助手",

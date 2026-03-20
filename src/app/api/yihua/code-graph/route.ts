@@ -3,6 +3,7 @@ import { getYihuaCodeGraph } from "@/services/yihua-code-graph"
 
 export async function GET(request: Request) {
   try {
+    // 将查询参数转换为强约束的服务参数对象，避免前端拼参不规范导致异常。
     const url = new URL(request.url)
     const topFolder = url.searchParams.get("topFolder") ?? "all"
     const kind = url.searchParams.get("kind") ?? "all"
@@ -25,6 +26,7 @@ export async function GET(request: Request) {
       maxFiles,
     })
 
+    // 统一 success/data 返回协议，便于前端 hooks 复用。
     return NextResponse.json({ success: true, data })
   } catch (e) {
     console.error("yihua code graph:", e)

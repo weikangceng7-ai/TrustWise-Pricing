@@ -49,6 +49,7 @@ export interface GetYihuaCodeGraphParams {
 }
 
 async function fetchCodeGraph(params: GetYihuaCodeGraphParams): Promise<CodeGraphResponse> {
+  // 仅传递有效参数，避免 URL 出现冗余默认值，便于调试与缓存命中。
   const sp = new URLSearchParams()
   if (params.topFolder && params.topFolder !== "all") sp.set("topFolder", params.topFolder)
   if (params.kind && params.kind !== "all") sp.set("kind", params.kind)
@@ -67,6 +68,7 @@ async function fetchCodeGraph(params: GetYihuaCodeGraphParams): Promise<CodeGrap
 
 export function useYihuaCodeGraph(params: GetYihuaCodeGraphParams) {
   return useQuery({
+    // 参数对象作为 queryKey 的一部分，确保不同筛选条件独立缓存。
     queryKey: ["yihuaCodeGraph", params],
     queryFn: () => fetchCodeGraph(params),
     staleTime: 60_000,
