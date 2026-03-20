@@ -1,11 +1,12 @@
-import { OpenRouter } from "@openrouter/sdk"
+import OpenAI from "openai"
 import { SYSTEM_PROMPT } from "@/lib/system-prompt"
 
 export const maxDuration = 60
 
-// 创建 OpenRouter 实例
-const openrouter = new OpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY || "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",
+// 创建 OpenAI 实例 (使用 qnaigc API)
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || "sk-88df478c39ae4067df5bd6c5b2c72dcd63b944e0cb6ea5134a9564c21898ae12",
+  baseURL: process.env.OPENAI_BASE_URL || "https://api.qnaigc.com/v1",
 })
 
 export async function POST(req: Request) {
@@ -17,19 +18,6 @@ export async function POST(req: Request) {
         status: 400,
         headers: { "Content-Type": "application/json" },
       })
-    }
-
-    // 检查 API Key
-    if (!process.env.OPENROUTER_API_KEY) {
-      return new Response(
-        JSON.stringify({
-          error: "OpenRouter API Key 未配置。\n\n请按以下步骤获取：\n1. 访问 https://openrouter.ai/keys\n2. 注册/登录账户\n3. 创建 API Key\n4. 在 .env.local 中设置 OPENROUTER_API_KEY=你的密钥",
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      )
     }
 
     // 转换消息格式
@@ -47,13 +35,11 @@ export async function POST(req: Request) {
       ...formattedMessages,
     ]
 
-    // 使用 OpenRouter SDK 调用模型
-    const stream = await openrouter.chat.send({
-      chatGenerationParams: {
-        model: "stepfun/step-3.5-flash:free",
-        messages: messagesWithSystem,
-        stream: true,
-      },
+    // 使用 OpenAI API 调用模型
+    const stream = await openai.chat.completions.create({
+      model: "deepseek-v3-0324",
+      messages: messagesWithSystem,
+      stream: true,
     })
 
     // 创建流式响应
@@ -84,13 +70,12 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Chat API error:", error)
 
-    // 检查是否是 API Key 相关错误
     const errorMessage = error instanceof Error ? error.message : "处理请求失败，请稍后重试"
 
-    if (errorMessage.includes("401") || errorMessage.includes("Unauthorized") || errorMessage.includes("User not found")) {
+    if (errorMessage.includes("401") || errorMessage.includes("Unauthorized") || errorMessage.includes("Invalid")) {
       return new Response(
         JSON.stringify({
-          error: "OpenRouter API Key 无效或已过期。\n\n请按以下步骤获取新的 Key：\n1. 访问 https://openrouter.ai/keys\n2. 注册/登录账户\n3. 创建新的 API Key\n4. 更新 .env.local 中的 OPENROUTER_API_KEY",
+          error: "API Key 无效或已过期，请联系管理员更新密钥。",
         }),
         {
           status: 401,
