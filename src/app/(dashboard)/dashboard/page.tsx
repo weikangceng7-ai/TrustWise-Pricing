@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, Package, DollarSign } from "lucide-react"
 import { SummaryCards } from "@/components/summary-cards"
+import { YihuaKnowledgePanel } from "@/components/yihua-knowledge-panel"
 import { PriceChart } from "@/components/price-chart"
 
 export default function DashboardPage() {
@@ -15,6 +16,9 @@ export default function DashboardPage() {
 
       {/* 数据概览卡片 */}
       <SummaryCards />
+
+      {/* 宜化资料 / 图 / 文献：预处理统计与快捷入口 */}
+      <YihuaKnowledgePanel />
 
       {/* 价格趋势图 */}
       <Card>

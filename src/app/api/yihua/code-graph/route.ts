@@ -1,0 +1,37 @@
+import { NextResponse } from "next/server"
+import { getYihuaCodeGraph } from "@/services/yihua-code-graph"
+
+export async function GET(request: Request) {
+  try {
+    const url = new URL(request.url)
+    const topFolder = url.searchParams.get("topFolder") ?? "all"
+    const kind = url.searchParams.get("kind") ?? "all"
+    const theme = url.searchParams.get("theme") ?? "all"
+    const ontologyView = (url.searchParams.get("ontologyView") ?? "algorithm") as
+      | "business"
+      | "algorithm"
+      | "data"
+    const q = url.searchParams.get("q") ?? ""
+    const maxFiles = url.searchParams.get("maxFiles")
+      ? parseInt(url.searchParams.get("maxFiles")!, 10)
+      : undefined
+
+    const data = await getYihuaCodeGraph({
+      topFolder,
+      kind,
+      theme,
+      ontologyView,
+      q,
+      maxFiles,
+    })
+
+    return NextResponse.json({ success: true, data })
+  } catch (e) {
+    console.error("yihua code graph:", e)
+    return NextResponse.json(
+      { success: false, error: "获取代码知识图谱失败" },
+      { status: 500 },
+    )
+  }
+}
+

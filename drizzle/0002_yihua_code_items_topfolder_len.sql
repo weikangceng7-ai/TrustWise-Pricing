@@ -1,0 +1,1 @@
+ALTER TABLE "yihua_code_items" ALTER COLUMN "top_folder" SET DATA TYPE varchar(256);

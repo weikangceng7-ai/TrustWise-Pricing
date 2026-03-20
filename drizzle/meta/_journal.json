@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1773970197536,
+      "tag": "0000_yihua_knowledge",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1773989573016,
+      "tag": "0001_yihua_code_items",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773989749124,
+      "tag": "0002_yihua_code_items_topfolder_len",
+      "breakpoints": true
+    }
+  ]
+}

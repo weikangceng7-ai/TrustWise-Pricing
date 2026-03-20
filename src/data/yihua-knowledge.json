@@ -1,0 +1,434 @@
+{
+  "generatedAt": "2026-03-20T01:15:04.266Z",
+  "sections": [
+    {
+      "id": "materials",
+      "label": "资料与数据",
+      "dir": "资料",
+      "items": [
+        {
+          "name": "湖北宜化原料价格预判方案-A.docx",
+          "path": "/yihua/资料/湖北宜化原料价格预判方案-A.docx",
+          "relativePath": "湖北宜化原料价格预判方案-A.docx",
+          "kind": "document"
+        },
+        {
+          "name": "硫磺原材料采购价格预测分析的系统技术方法研究与辅助模块研发.docx",
+          "path": "/yihua/资料/硫磺原材料采购价格预测分析的系统技术方法研究与辅助模块研发.docx",
+          "relativePath": "硫磺原材料采购价格预测分析的系统技术方法研究与辅助模块研发.docx",
+          "kind": "document"
+        },
+        {
+          "name": "柔性供应链需求预测模型项目研发建议书.docx",
+          "path": "/yihua/资料/柔性供应链需求预测模型项目研发建议书.docx",
+          "relativePath": "柔性供应链需求预测模型项目研发建议书.docx",
+          "kind": "document"
+        },
+        {
+          "name": "10年港口库存与价格记录-硫磺-BC.xlsx",
+          "path": "/yihua/资料/数据/10年港口库存与价格记录-硫磺-BC.xlsx",
+          "relativePath": "数据/10年港口库存与价格记录-硫磺-BC.xlsx",
+          "kind": "spreadsheet"
+        },
+        {
+          "name": "4-二铵、磷矿及硫磺、北方煤价格走势图14年-22年.xlsx",
+          "path": "/yihua/资料/数据/4-二铵、磷矿及硫磺、北方煤价格走势图14年-22年.xlsx",
+          "relativePath": "数据/4-二铵、磷矿及硫磺、北方煤价格走势图14年-22年.xlsx",
+          "kind": "spreadsheet"
+        },
+        {
+          "name": "64%二铵-华中市场价格-20250717165218.xlsx",
+          "path": "/yihua/资料/数据/64%二铵-华中市场价格-20250717165218.xlsx",
+          "relativePath": "数据/64%二铵-华中市场价格-20250717165218.xlsx",
+          "kind": "spreadsheet"
+        },
+        {
+          "name": "港口库存-补充.xlsx",
+          "path": "/yihua/资料/数据/港口库存-补充.xlsx",
+          "relativePath": "数据/港口库存-补充.xlsx",
+          "kind": "spreadsheet"
+        },
+        {
+          "name": "港口库存.xlsx",
+          "path": "/yihua/资料/数据/港口库存.xlsx",
+          "relativePath": "数据/港口库存.xlsx",
+          "kind": "spreadsheet"
+        },
+        {
+          "name": "硫磺港存-2025年8月.xlsx",
+          "path": "/yihua/资料/数据/硫磺港存-2025年8月.xlsx",
+          "relativePath": "数据/硫磺港存-2025年8月.xlsx",
+          "kind": "spreadsheet"
+        },
+        {
+          "name": "隆众市场价格-硫磺-20250909103019.xlsx",
+          "path": "/yihua/资料/数据/隆众市场价格-硫磺-20250909103019.xlsx",
+          "relativePath": "数据/隆众市场价格-硫磺-20250909103019.xlsx",
+          "kind": "spreadsheet"
+        }
+      ]
+    },
+    {
+      "id": "figures",
+      "label": "图表",
+      "dir": "图",
+      "items": [
+        {
+          "name": "价格预测流程图2.jpg",
+          "path": "/yihua/图/价格预测流程图2.jpg",
+          "relativePath": "价格预测流程图2.jpg",
+          "kind": "image"
+        },
+        {
+          "name": "数学算法流程图.eddx",
+          "path": "/yihua/图/数学算法流程图.eddx",
+          "relativePath": "数学算法流程图.eddx",
+          "kind": "diagram"
+        },
+        {
+          "name": "数学算法流程图.jpg",
+          "path": "/yihua/图/数学算法流程图.jpg",
+          "relativePath": "数学算法流程图.jpg",
+          "kind": "image"
+        }
+      ]
+    },
+    {
+      "id": "literature",
+      "label": "文献收集",
+      "dir": "文献收集",
+      "items": [
+        {
+          "name": "包皓文 等 - 2024 - 基于门限自回归条件异方差区间模型的大宗商品价格预测.pdf",
+          "path": "/yihua/文献收集/新建文件夹/包皓文 等 - 2024 - 基于门限自回归条件异方差区间模型的大宗商品价格预测.pdf",
+          "relativePath": "新建文件夹/包皓文 等 - 2024 - 基于门限自回归条件异方差区间模型的大宗商品价格预测.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "陈孝文 等 - 2024 - 基于小波去噪和长短期记忆网络的聚丙烯价格预测.pdf",
+          "path": "/yihua/文献收集/新建文件夹/陈孝文 等 - 2024 - 基于小波去噪和长短期记忆网络的聚丙烯价格预测.pdf",
+          "relativePath": "新建文件夹/陈孝文 等 - 2024 - 基于小波去噪和长短期记忆网络的聚丙烯价格预测.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "付星星 等 - 2021 - 基于图深度学习的大宗商品价格预测研究.pdf",
+          "path": "/yihua/文献收集/新建文件夹/付星星 等 - 2021 - 基于图深度学习的大宗商品价格预测研究.pdf",
+          "relativePath": "新建文件夹/付星星 等 - 2021 - 基于图深度学习的大宗商品价格预测研究.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "郭瑞昌 - 2021 - 氟化工产品价格预测方法研究及应用.pdf",
+          "path": "/yihua/文献收集/新建文件夹/郭瑞昌 - 2021 - 氟化工产品价格预测方法研究及应用.pdf",
+          "relativePath": "新建文件夹/郭瑞昌 - 2021 - 氟化工产品价格预测方法研究及应用.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "何文定 等 - 2025 - 基于TPE-informer-LSTM融合框架的股票价格预测研究.pdf",
+          "path": "/yihua/文献收集/新建文件夹/何文定 等 - 2025 - 基于TPE-informer-LSTM融合框架的股票价格预测研究.pdf",
+          "relativePath": "新建文件夹/何文定 等 - 2025 - 基于TPE-informer-LSTM融合框架的股票价格预测研究.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "黄燕燕 - 2020 - 基于区间时间序列多尺度分解的原油价格预测与风险预警管理研究.pdf",
+          "path": "/yihua/文献收集/新建文件夹/黄燕燕 - 2020 - 基于区间时间序列多尺度分解的原油价格预测与风险预警管理研究.pdf",
+          "relativePath": "新建文件夹/黄燕燕 - 2020 - 基于区间时间序列多尺度分解的原油价格预测与风险预警管理研究.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "黄兆荣 等 - 2025 - 黄金价格的混合多元回归预测研究 基于分解-重构-集成方法论.pdf",
+          "path": "/yihua/文献收集/新建文件夹/黄兆荣 等 - 2025 - 黄金价格的混合多元回归预测研究 基于分解-重构-集成方法论.pdf",
+          "relativePath": "新建文件夹/黄兆荣 等 - 2025 - 黄金价格的混合多元回归预测研究 基于分解-重构-集成方法论.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "江雨燕 等 - 2025 - 基于KANsLTformer的黄金期货价格预测研究.pdf",
+          "path": "/yihua/文献收集/新建文件夹/江雨燕 等 - 2025 - 基于KANsLTformer的黄金期货价格预测研究.pdf",
+          "relativePath": "新建文件夹/江雨燕 等 - 2025 - 基于KANsLTformer的黄金期货价格预测研究.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "兰尧 - 2022 - 石油化工产品价格波动规律及预测研究            ——以纯苯为例.pdf",
+          "path": "/yihua/文献收集/新建文件夹/兰尧 - 2022 - 石油化工产品价格波动规律及预测研究            ——以纯苯为例.pdf",
+          "relativePath": "新建文件夹/兰尧 - 2022 - 石油化工产品价格波动规律及预测研究            ——以纯苯为例.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "李耘 - 2010 - 化工产品量价决策方法研究与决策支持系统实现.pdf",
+          "path": "/yihua/文献收集/新建文件夹/李耘 - 2010 - 化工产品量价决策方法研究与决策支持系统实现.pdf",
+          "relativePath": "新建文件夹/李耘 - 2010 - 化工产品量价决策方法研究与决策支持系统实现.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "刘德顺 - 2010 - 化工产品价格预测和管理系统的开发.pdf",
+          "path": "/yihua/文献收集/新建文件夹/刘德顺 - 2010 - 化工产品价格预测和管理系统的开发.pdf",
+          "relativePath": "新建文件夹/刘德顺 - 2010 - 化工产品价格预测和管理系统的开发.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "庞楦弋 - 基于多模态数据与lstm模型的大豆期货价格预测.pdf",
+          "path": "/yihua/文献收集/新建文件夹/庞楦弋 - 基于多模态数据与lstm模型的大豆期货价格预测.pdf",
+          "relativePath": "新建文件夹/庞楦弋 - 基于多模态数据与lstm模型的大豆期货价格预测.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "田秋红 等 - 2021 - 基于XGBoost的大宗商品价格预测.pdf",
+          "path": "/yihua/文献收集/新建文件夹/田秋红 等 - 2021 - 基于XGBoost的大宗商品价格预测.pdf",
+          "relativePath": "新建文件夹/田秋红 等 - 2021 - 基于XGBoost的大宗商品价格预测.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "王文洋 等 - 2024 - 基于智能化工大模型的中国甲醇价格分析与预测.pdf",
+          "path": "/yihua/文献收集/新建文件夹/王文洋 等 - 2024 - 基于智能化工大模型的中国甲醇价格分析与预测.pdf",
+          "relativePath": "新建文件夹/王文洋 等 - 2024 - 基于智能化工大模型的中国甲醇价格分析与预测.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "王月月 - 2021 - 聚烯烃市场需求和价格预测模型开发.pdf",
+          "path": "/yihua/文献收集/新建文件夹/王月月 - 2021 - 聚烯烃市场需求和价格预测模型开发.pdf",
+          "relativePath": "新建文件夹/王月月 - 2021 - 聚烯烃市场需求和价格预测模型开发.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "肖月淑 - 2020 - 基于价格影响因素视角的稀土产品价格预测问题研究.pdf",
+          "path": "/yihua/文献收集/新建文件夹/肖月淑 - 2020 - 基于价格影响因素视角的稀土产品价格预测问题研究.pdf",
+          "relativePath": "新建文件夹/肖月淑 - 2020 - 基于价格影响因素视角的稀土产品价格预测问题研究.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "徐娜 - 2014 - 2013年中国硫磺市场的统计与分析.pdf",
+          "path": "/yihua/文献收集/新建文件夹/徐娜 - 2014 - 2013年中国硫磺市场的统计与分析.pdf",
+          "relativePath": "新建文件夹/徐娜 - 2014 - 2013年中国硫磺市场的统计与分析.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "袁超 - 2023 - 基于组合模型的化工大宗商品价格预测.pdf",
+          "path": "/yihua/文献收集/新建文件夹/袁超 - 2023 - 基于组合模型的化工大宗商品价格预测.pdf",
+          "relativePath": "新建文件夹/袁超 - 2023 - 基于组合模型的化工大宗商品价格预测.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "袁世一 - 2025 - 基于混合XGBoost模型的农产品价格指数预测方法研究.pdf",
+          "path": "/yihua/文献收集/新建文件夹/袁世一 - 2025 - 基于混合XGBoost模型的农产品价格指数预测方法研究.pdf",
+          "relativePath": "新建文件夹/袁世一 - 2025 - 基于混合XGBoost模型的农产品价格指数预测方法研究.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "张克非 - 2021 - 基于深度学习动力煤价格预测的选煤产品结构优化研究.pdf",
+          "path": "/yihua/文献收集/新建文件夹/张克非 - 2021 - 基于深度学习动力煤价格预测的选煤产品结构优化研究.pdf",
+          "relativePath": "新建文件夹/张克非 - 2021 - 基于深度学习动力煤价格预测的选煤产品结构优化研究.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "张陶新 等 - 2025 - 基于多源数据与深度学习的中国碳市场价格行为研究.pdf",
+          "path": "/yihua/文献收集/新建文件夹/张陶新 等 - 2025 - 基于多源数据与深度学习的中国碳市场价格行为研究.pdf",
+          "relativePath": "新建文件夹/张陶新 等 - 2025 - 基于多源数据与深度学习的中国碳市场价格行为研究.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "张燕萍 - 2008 - 神经网络技术在煤化工行业产品价格预测中的应用.pdf",
+          "path": "/yihua/文献收集/新建文件夹/张燕萍 - 2008 - 神经网络技术在煤化工行业产品价格预测中的应用.pdf",
+          "relativePath": "新建文件夹/张燕萍 - 2008 - 神经网络技术在煤化工行业产品价格预测中的应用.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "张颖 等 - 2025 - 基于Transformer的电力现货市场多步时序价格预测方法.pdf",
+          "path": "/yihua/文献收集/新建文件夹/张颖 等 - 2025 - 基于Transformer的电力现货市场多步时序价格预测方法.pdf",
+          "relativePath": "新建文件夹/张颖 等 - 2025 - 基于Transformer的电力现货市场多步时序价格预测方法.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Abdul Lateh 等 - 2017 - Handling a small dataset problem in prediction model by employ artificial data generation approach.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Abdul Lateh 等 - 2017 - Handling a small dataset problem in prediction model by employ artificial data generation approach.pdf",
+          "relativePath": "新建文件夹/Abdul Lateh 等 - 2017 - Handling a small dataset problem in prediction model by employ artificial data generation approach.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Bandari 等 - A hybrid framework for short-term wind speed forecasting based on EEMD and LSTM network.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Bandari 等 - A hybrid framework for short-term wind speed forecasting based on EEMD and LSTM network.pdf",
+          "relativePath": "新建文件夹/Bandari 等 - A hybrid framework for short-term wind speed forecasting based on EEMD and LSTM network.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Choi - 2018 - Stock price correlation coefficient prediction with ARIMA-LSTM hybrid model.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Choi - 2018 - Stock price correlation coefficient prediction with ARIMA-LSTM hybrid model.pdf",
+          "relativePath": "新建文件夹/Choi - 2018 - Stock price correlation coefficient prediction with ARIMA-LSTM hybrid model.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Demir-Kavuk 等 - 2011 - Prediction using step-wise L1, L2 regularization and feature selection for small data sets with larg.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Demir-Kavuk 等 - 2011 - Prediction using step-wise L1, L2 regularization and feature selection for small data sets with larg.pdf",
+          "relativePath": "新建文件夹/Demir-Kavuk 等 - 2011 - Prediction using step-wise L1, L2 regularization and feature selection for small data sets with larg.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Gerhardus - 2024 - Forecasting demand within the chemical industry  A comparison of machine learning and traditional f.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Gerhardus - 2024 - Forecasting demand within the chemical industry  A comparison of machine learning and traditional f.pdf",
+          "relativePath": "新建文件夹/Gerhardus - 2024 - Forecasting demand within the chemical industry  A comparison of machine learning and traditional f.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Ghosh 等 - 2021 - Forecasting directional movements of stock prices for intraday trading using LSTM and random forests.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Ghosh 等 - 2021 - Forecasting directional movements of stock prices for intraday trading using LSTM and random forests.pdf",
+          "relativePath": "新建文件夹/Ghosh 等 - 2021 - Forecasting directional movements of stock prices for intraday trading using LSTM and random forests.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Hegde 等 - 2020 - A study on agriculture commodities price prediction and forecasting.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Hegde 等 - 2020 - A study on agriculture commodities price prediction and forecasting.pdf",
+          "relativePath": "新建文件夹/Hegde 等 - 2020 - A study on agriculture commodities price prediction and forecasting.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Hybrid ARIMA-LSTM with attention mechanism for time series forecasting Report.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Hybrid ARIMA-LSTM with attention mechanism for time series forecasting Report.pdf",
+          "relativePath": "新建文件夹/Hybrid ARIMA-LSTM with attention mechanism for time series forecasting Report.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Iftikhar 等 - 2023 - Forecasting day-ahead brent crude oil prices using hybrid combinations of time series models.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Iftikhar 等 - 2023 - Forecasting day-ahead brent crude oil prices using hybrid combinations of time series models.pdf",
+          "relativePath": "新建文件夹/Iftikhar 等 - 2023 - Forecasting day-ahead brent crude oil prices using hybrid combinations of time series models.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Lee 等 - 2022 - Data science and reinforcement learning for price forecasting and raw material procurement in petroc.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Lee 等 - 2022 - Data science and reinforcement learning for price forecasting and raw material procurement in petroc.pdf",
+          "relativePath": "新建文件夹/Lee 等 - 2022 - Data science and reinforcement learning for price forecasting and raw material procurement in petroc.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Li 等 - 2023 - MASTER Market-guided stock transformer for stock price forecasting.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Li 等 - 2023 - MASTER Market-guided stock transformer for stock price forecasting.pdf",
+          "relativePath": "新建文件夹/Li 等 - 2023 - MASTER Market-guided stock transformer for stock price forecasting.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Liu 等 - 2020 - Non-ferrous metals price forecasting based on variational mode decomposition and LSTM network.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Liu 等 - 2020 - Non-ferrous metals price forecasting based on variational mode decomposition and LSTM network.pdf",
+          "relativePath": "新建文件夹/Liu 等 - 2020 - Non-ferrous metals price forecasting based on variational mode decomposition and LSTM network.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Liu 等 - 2023 - Soybean futures price prediction model based on EEMD-NAGU.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Liu 等 - 2023 - Soybean futures price prediction model based on EEMD-NAGU.pdf",
+          "relativePath": "新建文件夹/Liu 等 - 2023 - Soybean futures price prediction model based on EEMD-NAGU.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Lu 等 - 2023 - Prediction model for the chemical futures price using improved genetic algorithm based long short-te.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Lu 等 - 2023 - Prediction model for the chemical futures price using improved genetic algorithm based long short-te.pdf",
+          "relativePath": "新建文件夹/Lu 等 - 2023 - Prediction model for the chemical futures price using improved genetic algorithm based long short-te.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Manogna 等 - 2025 - Enhancing agricultural commodity price forecasting with deep learning.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Manogna 等 - 2025 - Enhancing agricultural commodity price forecasting with deep learning.pdf",
+          "relativePath": "新建文件夹/Manogna 等 - 2025 - Enhancing agricultural commodity price forecasting with deep learning.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Mudassir 等 - 2020 - Time-series forecasting of bitcoin prices using high-dimensional features A machine learning approa.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Mudassir 等 - 2020 - Time-series forecasting of bitcoin prices using high-dimensional features A machine learning approa.pdf",
+          "relativePath": "新建文件夹/Mudassir 等 - 2020 - Time-series forecasting of bitcoin prices using high-dimensional features A machine learning approa.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Nayak 等 - 2025 - Meta-transformer Leveraging metaheuristic algorithms for agricultural commodity price forecasting.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Nayak 等 - 2025 - Meta-transformer Leveraging metaheuristic algorithms for agricultural commodity price forecasting.pdf",
+          "relativePath": "新建文件夹/Nayak 等 - 2025 - Meta-transformer Leveraging metaheuristic algorithms for agricultural commodity price forecasting.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Olivares 等 - 2023 - Neural basis expansion analysis with exogenous variables Forecasting electricity prices with NBEATS.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Olivares 等 - 2023 - Neural basis expansion analysis with exogenous variables Forecasting electricity prices with NBEATS.pdf",
+          "relativePath": "新建文件夹/Olivares 等 - 2023 - Neural basis expansion analysis with exogenous variables Forecasting electricity prices with NBEATS.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Ouyang 等 - 2019 - Agricultural commodity futures prices prediction via long- and short-term time series network.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Ouyang 等 - 2019 - Agricultural commodity futures prices prediction via long- and short-term time series network.pdf",
+          "relativePath": "新建文件夹/Ouyang 等 - 2019 - Agricultural commodity futures prices prediction via long- and short-term time series network.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Qi 等 - 2021 - Event-driven LSTM for forex price prediction.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Qi 等 - 2021 - Event-driven LSTM for forex price prediction.pdf",
+          "relativePath": "新建文件夹/Qi 等 - 2021 - Event-driven LSTM for forex price prediction.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Shih 等 - 2019 - Temporal pattern attention for multivariate time series forecasting.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Shih 等 - 2019 - Temporal pattern attention for multivariate time series forecasting.pdf",
+          "relativePath": "新建文件夹/Shih 等 - 2019 - Temporal pattern attention for multivariate time series forecasting.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Song 等 - 2024 - Multi-decomposition in deep learning models for futures price prediction.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Song 等 - 2024 - Multi-decomposition in deep learning models for futures price prediction.pdf",
+          "relativePath": "新建文件夹/Song 等 - 2024 - Multi-decomposition in deep learning models for futures price prediction.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Wu 等 - 2020 - Connecting the dots Multivariate time series forecasting with graph neural networks.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Wu 等 - 2020 - Connecting the dots Multivariate time series forecasting with graph neural networks.pdf",
+          "relativePath": "新建文件夹/Wu 等 - 2020 - Connecting the dots Multivariate time series forecasting with graph neural networks.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Wu 等 - 2024 - Review of deep learning models for crypto price prediction Implementation and evaluation.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Wu 等 - 2024 - Review of deep learning models for crypto price prediction Implementation and evaluation.pdf",
+          "relativePath": "新建文件夹/Wu 等 - 2024 - Review of deep learning models for crypto price prediction Implementation and evaluation.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Xu和Cohen - 2018 - Stock movement prediction from tweets and historical prices.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Xu和Cohen - 2018 - Stock movement prediction from tweets and historical prices.pdf",
+          "relativePath": "新建文件夹/Xu和Cohen - 2018 - Stock movement prediction from tweets and historical prices.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Yunnan Yuntianhua United Commerce Co. - 2008 - 大集团企业的硫磺采购与贸易.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Yunnan Yuntianhua United Commerce Co. - 2008 - 大集团企业的硫磺采购与贸易.pdf",
+          "relativePath": "新建文件夹/Yunnan Yuntianhua United Commerce Co. - 2008 - 大集团企业的硫磺采购与贸易.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Zeng和Khushi - 2020 - Wavelet denoising and attention-based RNN- ARIMA model to predict forex price.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Zeng和Khushi - 2020 - Wavelet denoising and attention-based RNN- ARIMA model to predict forex price.pdf",
+          "relativePath": "新建文件夹/Zeng和Khushi - 2020 - Wavelet denoising and attention-based RNN- ARIMA model to predict forex price.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Zhang 等 - 2015 - Forecast the price of chemical products with multivariate data.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Zhang 等 - 2015 - Forecast the price of chemical products with multivariate data.pdf",
+          "relativePath": "新建文件夹/Zhang 等 - 2015 - Forecast the price of chemical products with multivariate data.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Zhang和Ling - 2018 - A strategy to apply machine learning to small datasets in materials science.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Zhang和Ling - 2018 - A strategy to apply machine learning to small datasets in materials science.pdf",
+          "relativePath": "新建文件夹/Zhang和Ling - 2018 - A strategy to apply machine learning to small datasets in materials science.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Zhao - 2021 - Futures price prediction of agricultural products based on machine learning.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Zhao - 2021 - Futures price prediction of agricultural products based on machine learning.pdf",
+          "relativePath": "新建文件夹/Zhao - 2021 - Futures price prediction of agricultural products based on machine learning.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Zhao 等 - 2023 - Chemical commodity price forecast based on multi-factor combination model.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Zhao 等 - 2023 - Chemical commodity price forecast based on multi-factor combination model.pdf",
+          "relativePath": "新建文件夹/Zhao 等 - 2023 - Chemical commodity price forecast based on multi-factor combination model.pdf",
+          "kind": "pdf"
+        },
+        {
+          "name": "Zhou 等 - 2012 - A knowledge-based decision support system for sulfur pricing.pdf",
+          "path": "/yihua/文献收集/新建文件夹/Zhou 等 - 2012 - A knowledge-based decision support system for sulfur pricing.pdf",
+          "relativePath": "新建文件夹/Zhou 等 - 2012 - A knowledge-based decision support system for sulfur pricing.pdf",
+          "kind": "pdf"
+        }
+      ]
+    }
+  ]
+}

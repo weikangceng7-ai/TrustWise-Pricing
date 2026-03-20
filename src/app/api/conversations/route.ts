@@ -14,6 +14,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "未授权" }, { status: 401 })
     }
 
+    if (!db) {
+      return NextResponse.json({ error: "数据库未配置" }, { status: 503 })
+    }
+
     const conversations = await db
       .select()
       .from(chatConversations)
@@ -34,6 +38,10 @@ export async function POST(req: NextRequest) {
 
     if (!session?.user) {
       return NextResponse.json({ error: "未授权" }, { status: 401 })
+    }
+
+    if (!db) {
+      return NextResponse.json({ error: "数据库未配置" }, { status: 503 })
     }
 
     const body = await req.json()

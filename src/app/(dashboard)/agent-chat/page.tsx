@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 import { useChatWithHistory, type ChatMessage, type Conversation } from "@/hooks/use-chat-with-history"
 import { generateChatReport } from "@/lib/report-generator"
+import { AuthDialog } from "@/components/auth-dialog"
 
 const suggestedQuestions = [
   "当前硫磺市场趋势如何？",
@@ -166,6 +167,7 @@ function ConversationItem({
 export default function AgentChatPage() {
   const [userId, setUserId] = useState<string | undefined>()
   const [copiedId, setCopiedId] = useState<string | undefined>()
+  const [showAuthDialog, setShowAuthDialog] = useState(false)
 
   const {
     messages,
@@ -279,9 +281,7 @@ export default function AgentChatPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                window.location.href = "/login?callbackUrl=/agent-chat"
-              }}
+              onClick={() => setShowAuthDialog(true)}
             >
               登录保存记录
             </Button>
@@ -431,6 +431,9 @@ export default function AgentChatPage() {
           </Card>
         </div>
       </div>
+
+      {/* 登录弹窗 */}
+      <AuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} />
     </div>
   )
 }

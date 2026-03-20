@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, date, decimal, timestamp, text, boolean } from "drizzle-orm/pg-core"
+import { pgTable, serial, varchar, date, decimal, timestamp, text, boolean, jsonb, uniqueIndex } from "drizzle-orm/pg-core"
 
 // Better Auth 用户表 - 必须导出为 user
 export const user = pgTable("user", {
@@ -82,6 +82,43 @@ export const portInventory = pgTable("port_inventory", {
   createdAt: timestamp("created_at").defaultNow(),
 })
 
+// 宜化知识库条目（资料 / 图 / 文献 预处理后的元数据）
+export const yihuaKnowledgeItems = pgTable(
+  "yihua_knowledge_items",
+  {
+    id: serial("id").primaryKey(),
+    sectionId: varchar("section_id", { length: 32 }).notNull(),
+    name: text("name").notNull(),
+    publicPath: text("public_path").notNull(),
+    kind: varchar("kind", { length: 32 }).notNull(),
+    meta: jsonb("meta")
+      .$type<{ year?: number; lang?: "zh" | "en" }>()
+      .notNull()
+      .default({}),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [uniqueIndex("yihua_knowledge_items_path_uidx").on(t.publicPath)],
+)
+
+// 宜化代码库条目（代码/笔记本的元数据，用于知识图谱展示）
+export const yihuaCodeItems = pgTable(
+  "yihua_code_items",
+  {
+    id: serial("id").primaryKey(),
+    relativePath: varchar("relative_path", { length: 500 }).notNull(),
+    fileName: text("file_name").notNull(),
+    ext: varchar("ext", { length: 16 }).notNull(),
+    kind: varchar("kind", { length: 32 }).notNull(), // python | notebook | matlab | markdown
+    topFolder: varchar("top_folder", { length: 256 }).notNull(),
+    meta: jsonb("meta")
+      .$type<{ year?: number; lang?: "zh" | "en" }>()
+      .notNull()
+      .default({}),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [uniqueIndex("yihua_code_items_relpath_uidx").on(t.relativePath)],
+)
+
 // 采购报告表
 export const purchaseReports = pgTable("purchase_reports", {
   id: serial("id").primaryKey(),
@@ -123,6 +160,10 @@ export type PortInventory = typeof portInventory.$inferSelect
 export type NewPortInventory = typeof portInventory.$inferInsert
 export type PurchaseReport = typeof purchaseReports.$inferSelect
 export type NewPurchaseReport = typeof purchaseReports.$inferInsert
+export type YihuaKnowledgeItem = typeof yihuaKnowledgeItems.$inferSelect
+export type NewYihuaKnowledgeItem = typeof yihuaKnowledgeItems.$inferInsert
+export type YihuaCodeItem = typeof yihuaCodeItems.$inferSelect
+export type NewYihuaCodeItem = typeof yihuaCodeItems.$inferInsert
 export type ChatConversation = typeof chatConversations.$inferSelect
 export type NewChatConversation = typeof chatConversations.$inferInsert
 export type ChatMessage = typeof chatMessages.$inferSelect

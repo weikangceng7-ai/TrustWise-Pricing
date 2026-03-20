@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   MessageSquareText,
   FileText,
+  Network,
 } from "lucide-react"
 
 import {
@@ -28,6 +29,12 @@ const navItems = [
     url: "/dashboard",
     icon: LayoutDashboard,
     description: "数据概览与价格趋势",
+  },
+  {
+    title: "代码知识图谱",
+    url: "/yihua-code-graph",
+    icon: Network,
+    description: "基于代码文件元数据的动态关系图谱",
   },
   {
     title: "Agent 决策助手",

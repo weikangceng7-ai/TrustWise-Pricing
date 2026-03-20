@@ -17,6 +17,10 @@ export async function GET(
       return NextResponse.json({ error: "未授权" }, { status: 401 })
     }
 
+    if (!db) {
+      return NextResponse.json({ error: "数据库未配置" }, { status: 503 })
+    }
+
     const { id } = await params
 
     // 验证对话属于当前用户
@@ -59,6 +63,10 @@ export async function POST(
 
     if (!session?.user) {
       return NextResponse.json({ error: "未授权" }, { status: 401 })
+    }
+
+    if (!db) {
+      return NextResponse.json({ error: "数据库未配置" }, { status: 503 })
     }
 
     const { id } = await params
@@ -127,6 +135,10 @@ export async function DELETE(
       return NextResponse.json({ error: "未授权" }, { status: 401 })
     }
 
+    if (!db) {
+      return NextResponse.json({ error: "数据库未配置" }, { status: 503 })
+    }
+
     const { id } = await params
 
     // 验证对话属于当前用户
@@ -173,6 +185,10 @@ export async function PATCH(
 
     if (!title) {
       return NextResponse.json({ error: "缺少标题" }, { status: 400 })
+    }
+
+    if (!db) {
+      return NextResponse.json({ error: "数据库未配置" }, { status: 503 })
     }
 
     // 验证对话属于当前用户
