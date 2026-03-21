@@ -3,6 +3,7 @@ import { TrendingUp, Package, DollarSign } from "lucide-react"
 import { SummaryCards } from "@/components/summary-cards"
 import { YihuaKnowledgePanel } from "@/components/yihua-knowledge-panel"
 import { PriceChart } from "@/components/price-chart"
+import { ExternalDataPanel } from "@/components/external-data-panel"
 
 export default function DashboardPage() {
   return (
@@ -35,6 +36,9 @@ export default function DashboardPage() {
           <PriceChart />
         </CardContent>
       </Card>
+
+      {/* 外部数据面板：AKShare、FRED、GDELT */}
+      <ExternalDataPanel />
 
       {/* 底部信息区 */}
       <div className="grid gap-4 md:grid-cols-2">

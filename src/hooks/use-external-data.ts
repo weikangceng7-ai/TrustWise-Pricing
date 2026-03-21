@@ -159,20 +159,18 @@ export type FREDIndicator =
 
 // FRED 请求函数
 async function fetchFREDData(indicator: FREDIndicator): Promise<FREDResponse> {
-  const res = await fetch(`/api/external-data/fred?indicator=${indicator}`)
+  const res = await fetch(`/api/external-data/fred?series_id=${indicator}`)
   if (!res.ok) throw new Error("获取 FRED 数据失败")
   return res.json()
 }
 
 // FRED 的 React Query Hook：
 // - 宏观数据变化较慢，缓存 1 小时
-// - 只有配置了 NEXT_PUBLIC_FRED_API_KEY 才会发请求
 export function useFREDData(indicator: FREDIndicator) {
   return useQuery({
     queryKey: ["fred", indicator],
     queryFn: () => fetchFREDData(indicator),
     staleTime: 60 * 60 * 1000, // 1小时缓存
-    enabled: !!process.env.NEXT_PUBLIC_FRED_API_KEY, // 只有配置了 API Key 才启用
   })
 }
 
