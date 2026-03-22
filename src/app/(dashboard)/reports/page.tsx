@@ -348,7 +348,7 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">采购报告</h2>
+          <h2 className="text-2xl font-bold tracking-tight">采购报告单</h2>
           <p className="text-muted-foreground">
             历史报告与数据分析
           </p>

@@ -179,6 +179,9 @@ export default function DashboardPage() {
               <div className="p-2 rounded-xl bg-cyan-500/20 group-hover:bg-cyan-500/30 transition-colors">
                 <BarChart3 className="h-5 w-5 text-cyan-400" />
               </div>
+              <div>
+                <p className="text-sm font-medium">周度采购报告单已生成</p>
+                <p className="text-xs text-muted-foreground">1天前</p>
               <span className="text-xs text-cyan-400">首页</span>
             </Link>
             <Link href="/agent-chat" className="flex flex-col items-center gap-1 group">

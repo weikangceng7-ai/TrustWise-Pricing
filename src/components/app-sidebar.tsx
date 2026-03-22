@@ -48,7 +48,7 @@ const navItems = [
     color: "amber",
   },
   {
-    title: "采购报告",
+    title: "采购报告单",
     url: "/reports",
     icon: FileText,
     description: "历史报告与数据分析",
