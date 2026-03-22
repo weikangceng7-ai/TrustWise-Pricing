@@ -191,22 +191,24 @@ export function NotificationPanel() {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 relative"
-          title={unreadCount > 0 ? `${unreadCount} 条未读通知` : "通知"}
-        >
-          <Bell className="h-4 w-4" />
-          {unreadCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground px-1">
-              {unreadCount > 99 ? "99+" : unreadCount}
-            </span>
-          )}
-          <span className="sr-only">通知</span>
-        </Button>
-      </SheetTrigger>
+      <SheetTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 relative"
+            title={unreadCount > 0 ? `${unreadCount} 条未读通知` : "通知"}
+          >
+            <Bell className="h-4 w-4" />
+            {unreadCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground px-1">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+            <span className="sr-only">通知</span>
+          </Button>
+        }
+      />
       <SheetContent className="w-[400px] sm:max-w-[400px] p-0 flex flex-col">
         <SheetHeader className="p-4 border-b">
           <div className="flex items-center justify-between">

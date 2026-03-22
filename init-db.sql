@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS sulfur_prices (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 采购报告表
+-- 采购报告单表
 CREATE TABLE IF NOT EXISTS purchase_reports (
     id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,

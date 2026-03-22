@@ -122,7 +122,7 @@ app.get("/inventory/summary", async (c) => {
 
 /**
  * GET /api/reports
- * 获取所有采购报告
+ * 获取所有采购报告单
  */
 app.get("/reports", async (c) => {
   try {

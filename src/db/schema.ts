@@ -119,7 +119,7 @@ export const yihuaCodeItems = pgTable(
   (t) => [uniqueIndex("yihua_code_items_relpath_uidx").on(t.relativePath)],
 )
 
-// 采购报告表
+// 采购报告单表
 export const purchaseReports = pgTable("purchase_reports", {
   id: serial("id").primaryKey(),
   title: varchar("title", { length: 200 }).notNull(),

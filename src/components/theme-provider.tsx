@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useState, useCallback } from "react"
 
 type Theme = "dark" | "light" | "system"
 
@@ -15,12 +15,14 @@ type ThemeProviderState = {
   theme: Theme
   setTheme: (theme: Theme) => void
   resolvedTheme: "dark" | "light"
+  mounted: boolean
 }
 
 const initialState: ThemeProviderState = {
   theme: "system",
   setTheme: () => null,
   resolvedTheme: "light",
+  mounted: false,
 }
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
@@ -31,42 +33,44 @@ export function ThemeProvider({
   storageKey = "sulfur-ui-theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(defaultTheme)
+  const [mounted, setMounted] = useState(false)
+  const [theme, setThemeState] = useState<Theme>(defaultTheme)
   const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("light")
 
+  // Read from localStorage after mount to avoid hydration mismatch
   useEffect(() => {
     const stored = localStorage.getItem(storageKey) as Theme | null
     if (stored) {
-      setTheme(stored)
+      setThemeState(stored)
     }
+    setMounted(true)
   }, [storageKey])
 
+  // Apply theme to document
   useEffect(() => {
-    const root = window.document.documentElement
+    if (!mounted) return
 
+    const root = window.document.documentElement
     root.classList.remove("light", "dark")
 
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light"
-      root.classList.add(systemTheme)
-      setResolvedTheme(systemTheme)
-      return
-    }
+    const applyTheme = theme === "system"
+      ? window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+      : theme
 
-    root.classList.add(theme)
-    setResolvedTheme(theme)
-  }, [theme])
+    root.classList.add(applyTheme)
+    setResolvedTheme(applyTheme)
+  }, [theme, mounted])
+
+  const setTheme = useCallback((newTheme: Theme) => {
+    localStorage.setItem(storageKey, newTheme)
+    setThemeState(newTheme)
+  }, [storageKey])
 
   const value = {
     theme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme)
-      setTheme(theme)
-    },
+    setTheme,
     resolvedTheme,
+    mounted,
   }
 
   return (
