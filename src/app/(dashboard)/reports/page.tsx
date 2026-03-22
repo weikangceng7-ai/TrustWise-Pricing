@@ -158,7 +158,7 @@ function ReportDetailDialog({
               </Badge>
             )}
             {report.riskLevel && (
-              <Badge variant="outline" className={riskConfig[report.riskLevel].bg}>
+              <Badge variant="outline" className={riskConfig[report.riskLevel]?.bg || ""}>
                 风险: {report.riskLevel}
               </Badge>
             )}
@@ -169,7 +169,7 @@ function ReportDetailDialog({
           <div className="space-y-4">
             <div>
               <h4 className="text-sm font-medium mb-2 text-muted-foreground">报告摘要</h4>
-              <p className="text-sm leading-relaxed">{report.summary}</p>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">{report.summary}</p>
             </div>
 
             {report.recommendation && (
@@ -179,8 +179,8 @@ function ReportDetailDialog({
                   {recommendationConfig[report.recommendation] && (
                     <>
                       {(() => {
-                        const RecIcon = recommendationConfig[report.recommendation].icon
-                        return <RecIcon className={`h-4 w-4 ${recommendationConfig[report.recommendation].color}`} />
+                        const RecIcon = recommendationConfig[report.recommendation]?.icon || Clock
+                        return <RecIcon className={`h-4 w-4 ${recommendationConfig[report.recommendation]?.color || ""}`} />
                       })()}
                     </>
                   )}
@@ -287,8 +287,8 @@ function ReportCard({
                 {recommendationConfig[report.recommendation] && (
                   <>
                     {(() => {
-                      const RecIcon = recommendationConfig[report.recommendation].icon
-                      return <RecIcon className={`h-3 w-3 ${recommendationConfig[report.recommendation].color}`} />
+                      const RecIcon = recommendationConfig[report.recommendation]?.icon || Clock
+                      return <RecIcon className={`h-3 w-3 ${recommendationConfig[report.recommendation]?.color || ""}`} />
                     })()}
                   </>
                 )}
@@ -426,7 +426,7 @@ export default function ReportsPage() {
                 <label className="text-sm font-medium mb-1.5 block">价格趋势</label>
                 <Select
                   value={filters.trend || ""}
-                  onValueChange={(v) => updateFilters({ trend: v as any || undefined })}
+                  onValueChange={(v: string) => updateFilters({ trend: v as "上涨" | "下跌" | "稳定" | "震荡" | "小幅上涨" | "小幅下跌" | undefined || undefined })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="全部" />
@@ -446,7 +446,7 @@ export default function ReportsPage() {
                 <label className="text-sm font-medium mb-1.5 block">风险等级</label>
                 <Select
                   value={filters.risk || ""}
-                  onValueChange={(v) => updateFilters({ risk: v as any || undefined })}
+                  onValueChange={(v: string) => updateFilters({ risk: v as "高" | "中等" | "低" | undefined || undefined })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="全部" />
