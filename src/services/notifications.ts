@@ -30,6 +30,10 @@ export async function getNotifications(
     unreadOnly?: boolean
   }
 ): Promise<Notification[]> {
+  if (!db) {
+    return []
+  }
+
   const { limit = 20, unreadOnly = false } = options || {}
 
   const conditions = [eq(notifications.userId, userId)]
@@ -46,6 +50,10 @@ export async function getNotifications(
 }
 
 export async function getUnreadCount(userId: string): Promise<number> {
+  if (!db) {
+    return 0
+  }
+
   const result = await db
     .select({ count: sql<number>`count(*)` })
     .from(notifications)
@@ -56,7 +64,11 @@ export async function getUnreadCount(userId: string): Promise<number> {
 
 export async function createNotification(
   input: CreateNotificationInput
-): Promise<Notification> {
+): Promise<Notification | null> {
+  if (!db) {
+    return null
+  }
+
   const [notification] = await db
     .insert(notifications)
     .values({
@@ -77,6 +89,10 @@ export async function markAsRead(
   notificationId: number,
   userId: string
 ): Promise<Notification | null> {
+  if (!db) {
+    return null
+  }
+
   const [notification] = await db
     .update(notifications)
     .set({
@@ -90,6 +106,10 @@ export async function markAsRead(
 }
 
 export async function markAllAsRead(userId: string): Promise<number> {
+  if (!db) {
+    return 0
+  }
+
   const result = await db
     .update(notifications)
     .set({
@@ -106,6 +126,10 @@ export async function deleteNotification(
   notificationId: number,
   userId: string
 ): Promise<boolean> {
+  if (!db) {
+    return false
+  }
+
   const result = await db
     .delete(notifications)
     .where(and(eq(notifications.id, notificationId), eq(notifications.userId, userId)))
@@ -115,6 +139,10 @@ export async function deleteNotification(
 }
 
 export async function createDemoNotifications(userId: string): Promise<void> {
+  if (!db) {
+    return
+  }
+
   const demoNotifications: CreateNotificationInput[] = [
     {
       userId,

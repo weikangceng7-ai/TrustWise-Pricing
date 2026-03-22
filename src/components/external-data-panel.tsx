@@ -96,7 +96,7 @@ export function ExternalDataPanel() {
                 />
                 <YAxis domain={['auto', 'auto']} />
                 <Tooltip
-                  formatter={(value: number) => [`${value.toFixed(2)}`, '价格']}
+                  formatter={(value) => [`${Number(value).toFixed(2)}`, '价格']}
                   labelFormatter={(label) => `日期: ${label}`}
                 />
                 <Line

@@ -191,7 +191,7 @@ export function NotificationPanel() {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
+      <SheetTrigger>
         <Button
           variant="ghost"
           size="icon"
