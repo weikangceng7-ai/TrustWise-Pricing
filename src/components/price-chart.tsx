@@ -13,6 +13,9 @@ import {
 } from "recharts"
 import { useTheme } from "@/components/theme-provider"
 
+// 时间范围类型
+export type TimeRange = "day" | "week" | "month"
+
 // 外部数据类型
 interface ExternalDataPoint {
   date: string
@@ -90,7 +93,11 @@ function generatePredictions(historicalData: Array<{ date: string; actualPrice: 
   return predictions
 }
 
-export function PriceChart() {
+interface PriceChartProps {
+  timeRange?: TimeRange
+}
+
+export function PriceChart({ timeRange = "month" }: PriceChartProps) {
   const { resolvedTheme, mounted } = useTheme()
   const [externalData, setExternalData] = useState<ExternalDataResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -116,16 +123,42 @@ export function PriceChart() {
     }
   }, [mounted])
 
+  // 根据时间范围过滤数据
+  const filterDataByTimeRange = (data: ExternalDataPoint[]) => {
+    if (!data || data.length === 0) return data
+
+    const now = new Date()
+    let cutoffDate: Date
+
+    switch (timeRange) {
+      case "day":
+        cutoffDate = new Date(now)
+        cutoffDate.setDate(now.getDate() - 1)
+        break
+      case "week":
+        cutoffDate = new Date(now)
+        cutoffDate.setDate(now.getDate() - 7)
+        break
+      case "month":
+      default:
+        cutoffDate = new Date(now)
+        cutoffDate.setMonth(now.getMonth() - 1)
+        break
+    }
+
+    return data.filter(item => new Date(item.date) >= cutoffDate)
+  }
+
   // 处理图表数据
   const chartData = useMemo(() => {
     if (!externalData?.data?.history) return []
 
-    const history = externalData.data.history
+    const history = filterDataByTimeRange(externalData.data.history)
     const sulfurData = generateSulfurPriceData(history)
     const predictions = generatePredictions(sulfurData)
 
     return [...sulfurData, ...predictions]
-  }, [externalData])
+  }, [externalData, timeRange])
 
   if (isLoading || !mounted) {
     return (

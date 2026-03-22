@@ -1,9 +1,13 @@
+"use client"
+
+import { useState } from "react"
 import { TrendingUp, Package, DollarSign, BarChart3, Sparkles, AlertTriangle, ChevronRight, MessageCircle, FileText, Settings } from "lucide-react"
-import { PriceChart } from "@/components/price-chart"
+import { PriceChart, TimeRange } from "@/components/price-chart"
 import Link from "next/link"
 import { getBackgroundImage } from "@/config/images"
 
 export default function DashboardPage() {
+  const [timeRange, setTimeRange] = useState<TimeRange>("month")
   const bgImage = getBackgroundImage("dashboardBackground")
 
   return (
@@ -109,13 +113,40 @@ export default function DashboardPage() {
               <span className="text-sm font-medium text-white">价格趋势</span>
             </div>
             <div className="flex gap-1">
-              <button className="px-2.5 py-1 text-xs rounded-lg bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white transition-colors">日</button>
-              <button className="px-2.5 py-1 text-xs rounded-lg bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white transition-colors">周</button>
-              <button className="px-2.5 py-1 text-xs rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">月</button>
+              <button
+                onClick={() => setTimeRange("day")}
+                className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${
+                  timeRange === "day"
+                    ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                    : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                日
+              </button>
+              <button
+                onClick={() => setTimeRange("week")}
+                className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${
+                  timeRange === "week"
+                    ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                    : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                周
+              </button>
+              <button
+                onClick={() => setTimeRange("month")}
+                className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${
+                  timeRange === "month"
+                    ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                    : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                月
+              </button>
             </div>
           </div>
           <div className="rounded-xl">
-            <PriceChart />
+            <PriceChart timeRange={timeRange} />
           </div>
         </div>
 
