@@ -72,7 +72,7 @@ export default function DashboardPage() {
                 <DollarSign className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
               </div>
               <div>
-                <p className="text-sm font-medium">周度采购报告已生成</p>
+                <p className="text-sm font-medium">周度采购报告单已生成</p>
                 <p className="text-xs text-muted-foreground">1天前</p>
               </div>
             </div>
@@ -102,7 +102,7 @@ export default function DashboardPage() {
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                 <Package className="h-5 w-5 text-primary" />
               </div>
-              <span className="text-sm font-medium">采购报告</span>
+              <span className="text-sm font-medium">采购报告单</span>
             </a>
           </CardContent>
         </Card>
