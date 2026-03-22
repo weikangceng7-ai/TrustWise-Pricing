@@ -8,7 +8,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Send,
-  Bot,
   User,
   Sparkles,
   Loader2,
@@ -50,8 +49,37 @@ function MessageBubble({
   return (
     <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
       <Avatar className="h-8 w-8 shrink-0">
-        <AvatarFallback className={isUser ? "bg-secondary" : "bg-primary text-primary-foreground"}>
-          {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+        <AvatarFallback className={isUser ? "bg-secondary" : "bg-gradient-to-br from-[#0a0a1a] to-[#1b263b] p-0.5"}>
+          {isUser ? <User className="h-4 w-4" /> : (
+            <svg viewBox="0 0 32 32" className="h-full w-full">
+              <defs>
+                <linearGradient id={`msgCenter-${message.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#fbbf24"/>
+                  <stop offset="100%" stopColor="#f59e0b"/>
+                </linearGradient>
+                <linearGradient id={`msgLine-${message.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#00d4ff"/>
+                  <stop offset="100%" stopColor="#a855f7"/>
+                </linearGradient>
+              </defs>
+              <g stroke={`url(#msgLine-${message.id})`} strokeWidth="2" strokeLinecap="round">
+                <line x1="16" y1="16" x2="16" y2="5"/>
+                <line x1="16" y1="16" x2="26" y2="10"/>
+                <line x1="16" y1="16" x2="26" y2="22"/>
+                <line x1="16" y1="16" x2="16" y2="27"/>
+                <line x1="16" y1="16" x2="6" y2="22"/>
+                <line x1="16" y1="16" x2="6" y2="10"/>
+              </g>
+              <circle cx="16" cy="5" r="2.5" fill="#00d4ff"/>
+              <circle cx="26" cy="10" r="2" fill="#a855f7"/>
+              <circle cx="26" cy="22" r="2" fill="#22d3ee"/>
+              <circle cx="16" cy="27" r="2.5" fill="#00d4ff"/>
+              <circle cx="6" cy="22" r="2" fill="#a855f7"/>
+              <circle cx="6" cy="10" r="2" fill="#22d3ee"/>
+              <circle cx="16" cy="16" r="6" fill={`url(#msgCenter-${message.id})`}/>
+              <text x="16" y="19.5" fontFamily="Arial" fontSize="8" fontWeight="bold" fill="#0a0a1a" textAnchor="middle">S</text>
+            </svg>
+          )}
         </AvatarFallback>
       </Avatar>
       <div className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}>
@@ -112,8 +140,35 @@ function LoadingIndicator() {
   return (
     <div className="flex gap-3">
       <Avatar className="h-8 w-8 shrink-0">
-        <AvatarFallback className="bg-primary text-primary-foreground">
-          <Bot className="h-4 w-4" />
+        <AvatarFallback className="bg-gradient-to-br from-[#0a0a1a] to-[#1b263b] p-0.5">
+          <svg viewBox="0 0 32 32" className="h-full w-full">
+            <defs>
+              <linearGradient id="loadingCenter" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#fbbf24"/>
+                <stop offset="100%" stopColor="#f59e0b"/>
+              </linearGradient>
+              <linearGradient id="loadingLine" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#00d4ff"/>
+                <stop offset="100%" stopColor="#a855f7"/>
+              </linearGradient>
+            </defs>
+            <g stroke="url(#loadingLine)" strokeWidth="2" strokeLinecap="round">
+              <line x1="16" y1="16" x2="16" y2="5"/>
+              <line x1="16" y1="16" x2="26" y2="10"/>
+              <line x1="16" y1="16" x2="26" y2="22"/>
+              <line x1="16" y1="16" x2="16" y2="27"/>
+              <line x1="16" y1="16" x2="6" y2="22"/>
+              <line x1="16" y1="16" x2="6" y2="10"/>
+            </g>
+            <circle cx="16" cy="5" r="2.5" fill="#00d4ff"/>
+            <circle cx="26" cy="10" r="2" fill="#a855f7"/>
+            <circle cx="26" cy="22" r="2" fill="#22d3ee"/>
+            <circle cx="16" cy="27" r="2.5" fill="#00d4ff"/>
+            <circle cx="6" cy="22" r="2" fill="#a855f7"/>
+            <circle cx="6" cy="10" r="2" fill="#22d3ee"/>
+            <circle cx="16" cy="16" r="6" fill="url(#loadingCenter)"/>
+            <text x="16" y="19.5" fontFamily="Arial" fontSize="8" fontWeight="bold" fill="#0a0a1a" textAnchor="middle">S</text>
+          </svg>
         </AvatarFallback>
       </Avatar>
       <div className="rounded-lg bg-muted px-4 py-3">
@@ -333,8 +388,35 @@ export default function AgentChatPage() {
           <CardHeader className="border-b px-4 py-3">
             <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  <Bot className="h-4 w-4" />
+                <AvatarFallback className="bg-gradient-to-br from-[#0a0a1a] to-[#1b263b] p-0.5">
+                  <svg viewBox="0 0 32 32" className="h-full w-full">
+                    <defs>
+                      <linearGradient id="headerCenter" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#fbbf24"/>
+                        <stop offset="100%" stopColor="#f59e0b"/>
+                      </linearGradient>
+                      <linearGradient id="headerLine" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#00d4ff"/>
+                        <stop offset="100%" stopColor="#a855f7"/>
+                      </linearGradient>
+                    </defs>
+                    <g stroke="url(#headerLine)" strokeWidth="2" strokeLinecap="round">
+                      <line x1="16" y1="16" x2="16" y2="5"/>
+                      <line x1="16" y1="16" x2="26" y2="10"/>
+                      <line x1="16" y1="16" x2="26" y2="22"/>
+                      <line x1="16" y1="16" x2="16" y2="27"/>
+                      <line x1="16" y1="16" x2="6" y2="22"/>
+                      <line x1="16" y1="16" x2="6" y2="10"/>
+                    </g>
+                    <circle cx="16" cy="5" r="2.5" fill="#00d4ff"/>
+                    <circle cx="26" cy="10" r="2" fill="#a855f7"/>
+                    <circle cx="26" cy="22" r="2" fill="#22d3ee"/>
+                    <circle cx="16" cy="27" r="2.5" fill="#00d4ff"/>
+                    <circle cx="6" cy="22" r="2" fill="#a855f7"/>
+                    <circle cx="6" cy="10" r="2" fill="#22d3ee"/>
+                    <circle cx="16" cy="16" r="6" fill="url(#headerCenter)"/>
+                    <text x="16" y="19.5" fontFamily="Arial" fontSize="8" fontWeight="bold" fill="#0a0a1a" textAnchor="middle">S</text>
+                  </svg>
                 </AvatarFallback>
               </Avatar>
               <div>
