@@ -153,6 +153,23 @@ export const chatMessages = pgTable("chat_messages", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 })
 
+// 通知表
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  type: varchar("type", { length: 50 }).notNull(), // 'price_alert' | 'inventory_alert' | 'purchase_timing' | 'market_news' | 'system' | 'report_ready'
+  title: varchar("title", { length: 200 }).notNull(),
+  content: text("content").notNull(),
+  priority: varchar("priority", { length: 20 }).notNull().default("normal"), // 'high' | 'normal' | 'low'
+  isRead: boolean("is_read").notNull().default(false),
+  link: text("link"), // 点击通知后跳转的链接
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}), // 额外数据
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  readAt: timestamp("read_at"),
+})
+
 // 类型导出
 export type SulfurPrice = typeof sulfurPrices.$inferSelect
 export type NewSulfurPrice = typeof sulfurPrices.$inferInsert
@@ -168,3 +185,5 @@ export type ChatConversation = typeof chatConversations.$inferSelect
 export type NewChatConversation = typeof chatConversations.$inferInsert
 export type ChatMessage = typeof chatMessages.$inferSelect
 export type NewChatMessage = typeof chatMessages.$inferInsert
+export type Notification = typeof notifications.$inferSelect
+export type NewNotification = typeof notifications.$inferInsert
