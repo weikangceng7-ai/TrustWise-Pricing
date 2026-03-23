@@ -201,11 +201,10 @@ export function YihuaCodeKnowledgeGraph() {
 
   // 获取外部数据
   const marketData = useMarketDataOverview()
-  const [dataVersion, setDataVersion] = useState(0)
 
   // 手动刷新数据
   const handleRefresh = () => {
-    setDataVersion(v => v + 1)
+    marketData.refetchAll()
   }
 
   // 更新因子权重数据（基于实时数据）

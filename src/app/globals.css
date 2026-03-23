@@ -122,8 +122,33 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-image: url('/background.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
   }
   html {
     @apply font-sans;
   }
+}
+
+/* 背景遮罩层 - 轻微虚化效果 */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(1px);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* 深色模式背景遮罩 */
+.dark body::before,
+.dark::before {
+  background: rgba(20, 20, 20, 0.88);
 }

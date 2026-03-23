@@ -461,50 +461,51 @@ export default function AgentChatPage() {
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-violet-500/10 via-transparent to-transparent -z-10" />
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-cyan-500/10 via-transparent to-transparent -z-10" />
 
-      <div className="relative h-[calc(100vh-4.5rem)] flex flex-col p-6">
+      <div className="relative h-screen flex flex-col min-h-0">
         {/* 顶部标题区 */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="space-y-1">
-            <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-cyan-400 via-blue-400 to-violet-400 bg-clip-text text-transparent">
+        <div className="shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex items-center justify-between border-b border-slate-700/30">
+          <div className="space-y-0.5 sm:space-y-1">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-cyan-400 via-blue-400 to-violet-400 bg-clip-text text-transparent">
               Agent 决策助手
             </h2>
             <div className="flex items-center gap-2">
-              <div className="h-px w-12 bg-gradient-to-r from-cyan-500 to-transparent" />
-              <p className="text-slate-400 text-sm">
+              <div className="h-px w-8 sm:w-12 bg-gradient-to-r from-cyan-500 to-transparent" />
+              <p className="text-slate-400 text-xs sm:text-sm">
                 基于 AI 的智能采购决策支持
                 {userId ? " · 历史记录已同步" : " · 登录后可保存对话"}
               </p>
             </div>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3">
             <Button
               variant="outline"
               size="sm"
-              className="border-slate-600/50 text-slate-300 hover:bg-cyan-500/10 hover:border-cyan-500/40 hover:text-cyan-300 transition-all"
+              className="border-slate-600/50 text-slate-300 hover:bg-cyan-500/10 hover:border-cyan-500/40 hover:text-cyan-300 transition-all text-xs sm:text-sm"
               onClick={handleNewChat}
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
               新对话
             </Button>
             {!userId && (
               <Button
                 variant="outline"
                 size="sm"
-                className="border-slate-600/50 text-slate-300 hover:bg-cyan-500/10 hover:border-cyan-500/40 hover:text-cyan-300 transition-all"
+                className="border-slate-600/50 text-slate-300 hover:bg-cyan-500/10 hover:border-cyan-500/40 hover:text-cyan-300 transition-all text-xs sm:text-sm"
                 onClick={() => setShowAuthDialog(true)}
               >
-                登录保存记录
+                登录
               </Button>
             )}
           </div>
         </div>
 
         {/* 主内容区 */}
-        <div className="flex-1 grid gap-5 lg:grid-cols-5">
+        <div className="flex-1 overflow-hidden px-4 sm:px-6 py-4">
+          <div className="h-full grid gap-4 sm:gap-5 lg:grid-cols-5">
           {/* 对话历史侧边栏 - 仅登录用户显示 */}
           {userId && showHistory && (
-            <Card className="lg:col-span-1 flex flex-col bg-slate-800/40 border-slate-700/50 backdrop-blur-md">
-              <CardHeader className="border-b border-slate-700/50 px-4 py-4">
+            <Card className="lg:col-span-1 hidden lg:flex flex-col bg-slate-800/40 border-slate-700/50 backdrop-blur-md overflow-hidden max-h-full">
+              <CardHeader className="border-b border-slate-700/50 px-4 py-4 shrink-0">
                 <CardTitle className="text-base flex items-center justify-between">
                   <span className="text-white">对话历史</span>
                   <Button
@@ -540,8 +541,8 @@ export default function AgentChatPage() {
           )}
 
           {/* 聊天区域 */}
-          <Card className={`${userId ? "lg:col-span-3" : "lg:col-span-4"} flex flex-col bg-slate-800/40 border-slate-700/50 backdrop-blur-md`}>
-            <CardHeader className="border-b border-slate-700/50 px-5 py-4">
+          <Card className={`${userId ? "lg:col-span-3" : "lg:col-span-4"} ${userId && showHistory ? "col-span-1 lg:col-span-3" : "col-span-1 lg:col-span-4"} flex flex-col bg-slate-800/40 border-slate-700/50 backdrop-blur-md max-h-full`}>
+            <CardHeader className="border-b border-slate-700/50 px-4 sm:px-5 py-3 sm:py-4 shrink-0">
               <div className="flex items-center gap-3">
                 <Avatar className="h-9 w-9 relative">
                   <AvatarFallback className="relative bg-linear-to-br from-[#0a0a1a] to-[#1b263b] p-0.5 border border-cyan-500/30">
@@ -594,7 +595,7 @@ export default function AgentChatPage() {
             </CardHeader>
 
             {/* 消息滚动区域 */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-5">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-5 min-h-0">
               <div className="space-y-6">
                 {messages.map((message) => (
                   <MessageBubble
@@ -612,7 +613,7 @@ export default function AgentChatPage() {
             </div>
 
             {/* 输入区域 */}
-            <div className="border-t border-slate-700/50 p-5">
+            <div className="border-t border-slate-700/50 p-4 sm:p-5 shrink-0">
               <div className="flex gap-3">
                 <Input
                   value={inputValue}
@@ -625,7 +626,7 @@ export default function AgentChatPage() {
                 <Button
                   onClick={handleSend}
                   disabled={!inputValue.trim() || isLoading}
-                  className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/30 border border-cyan-400/20"
+                  className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/30 border border-cyan-400/20 shrink-0"
                 >
                   {isLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -638,7 +639,7 @@ export default function AgentChatPage() {
           </Card>
 
           {/* 快捷提问侧边栏 */}
-          <div className="space-y-5">
+          <div className="hidden lg:block space-y-5 overflow-y-auto max-h-full">
             <Card className="bg-slate-800/40 border-slate-700/50 backdrop-blur-md hover:border-cyan-500/30 transition-all duration-300">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-base text-white">
@@ -724,6 +725,7 @@ export default function AgentChatPage() {
                 </div>
               </CardContent>
             </Card>
+          </div>
           </div>
         </div>
       </div>
