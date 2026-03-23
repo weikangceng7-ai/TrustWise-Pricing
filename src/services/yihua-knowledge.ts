@@ -13,24 +13,7 @@ export async function getYihuaAnalytics(): Promise<YihuaAnalytics> {
   const json = rawJson as RawKnowledgeJson
   const fromFile = normalizeKnowledgeItems(json)
 
-  if (db) {
-    const rows = await db.select().from(yihuaKnowledgeItems)
-    if (rows.length > 0) {
-      const items: NormalizedYihuaItem[] = rows.map((r) => ({
-        sectionId: r.sectionId as NormalizedYihuaItem["sectionId"],
-        sectionLabel: sectionLabelFor(r.sectionId),
-        name: r.name,
-        publicPath: r.publicPath,
-        kind: r.kind,
-        meta: {
-          lang: r.meta.lang ?? "zh",
-          ...(r.meta.year != null ? { year: r.meta.year } : {}),
-        },
-      }))
-      return buildAnalytics(items, "database", json.generatedAt ?? null)
-    }
-  }
-
+  // 直接使用本地JSON文件，避免数据库连接问题
   return buildAnalytics(fromFile, "json", json.generatedAt ?? null)
 }
 

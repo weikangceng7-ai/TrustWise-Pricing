@@ -37,7 +37,7 @@ export async function POST(req: Request) {
 
     // 使用 OpenAI API 调用模型
     const stream = await openai.chat.completions.create({
-      model: "deepseek-v3-0324",
+      model: "z-ai/glm-5",
       messages: messagesWithSystem,
       stream: true,
     })
