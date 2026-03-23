@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Database, Filter, Brain, BarChart3, Building, Scale, ChevronRight } from "lucide-react"
+import { Database, Filter, Brain, BarChart3, Building, Scale, ChevronRight, RefreshCw } from "lucide-react"
 import {
   BarChart,
   Bar,
@@ -15,6 +15,7 @@ import {
   Cell,
   Legend,
 } from "recharts"
+import { useDataProcessingStats } from "@/hooks/use-data-processing"
 
 // ============================================================
 // 颜色定义说明
@@ -63,26 +64,20 @@ const rulesData = [
   { name: "风险管理", count: 35 },   // rose-400 玫瑰红
 ]
 
-// ============================================================
-// 第二阶段：数据处理 - 数据处理统计
-// 颜色说明：灰色(原始数据)、青色(已清洗)、紫罗兰(已标注)、翡翠绿(模型训练)
-// ============================================================
-const dataProcessingStats = [
-  { name: "原始数据", value: 4208, fill: "#64748b" },  // slate-400 灰色
-  { name: "已清洗", value: 3856, fill: "#06b6d4" },    // cyan-400 青色
-  { name: "已标注", value: 2150, fill: "#8b5cf6" },    // violet-400 紫罗兰
-  { name: "模型训练", value: 1680, fill: "#10b981" },  // emerald-400 翡翠绿
+// 默认数据处理统计（API 加载前显示）
+const defaultProcessingStats = [
+  { name: "原始数据", value: 0, fill: "#64748b" },
+  { name: "已清洗", value: 0, fill: "#06b6d4" },
+  { name: "已标注", value: 0, fill: "#8b5cf6" },
+  { name: "模型训练", value: 0, fill: "#10b981" },
 ]
 
-// ============================================================
-// 第二阶段：数据处理 - 处理效率数据
-// 条形图颜色：灰色(处理前)、蓝色(处理后)
-// ============================================================
-const processingEfficiency = [
-  { stage: "去重", before: 4208, after: 4012 },
-  { stage: "格式化", before: 4012, after: 3856 },
-  { stage: "标注", before: 3856, after: 2150 },
-  { stage: "训练集", before: 2150, after: 1680 },
+// 默认处理效率数据
+const defaultEfficiency = [
+  { stage: "去重", before: 0, after: 0 },
+  { stage: "格式化", before: 0, after: 0 },
+  { stage: "标注", before: 0, after: 0 },
+  { stage: "训练集", before: 0, after: 0 },
 ]
 
 // 通用颜色数组，用于制度规则库等需要循环配色的图表
@@ -93,6 +88,15 @@ interface ThreePhaseArchitectureProps {
 }
 
 export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProps) {
+  // 获取数据处理统计数据
+  const { data: statsResponse, isLoading, refetch, isFetching } = useDataProcessingStats()
+
+  // 从 API 响应中提取数据，使用默认值作为后备
+  const dataProcessingStats = statsResponse?.data?.processingStats || defaultProcessingStats
+  const processingEfficiency = statsResponse?.data?.efficiency || defaultEfficiency
+  const metrics = statsResponse?.data?.metrics
+  const sources = statsResponse?.data?.sources
+
   return (
     <div className={`bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 ${className}`}>
       <div className="flex items-center gap-2 mb-6">
@@ -253,6 +257,15 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
                 <span className="text-xs font-bold text-violet-400">2</span>
               </div>
               <h4 className="text-sm font-medium text-violet-400">第二阶段：数据处理</h4>
+              {/* 刷新按钮 */}
+              <button
+                onClick={() => refetch()}
+                disabled={isFetching}
+                className="ml-auto p-1 rounded hover:bg-white/10 transition-colors disabled:opacity-50"
+                title="刷新数据"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 text-slate-400 ${isFetching ? 'animate-spin' : ''}`} />
+              </button>
             </div>
 
             {/* 数据处理统计卡片 */}
@@ -262,6 +275,7 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
                 <div className="flex items-center gap-2 mb-3">
                   <Filter className="h-4 w-4 text-violet-400" />
                   <span className="text-sm font-medium text-white">数据清洗进度</span>
+                  {isLoading && <span className="text-xs text-slate-400">(加载中...)</span>}
                 </div>
                 <div className="h-32">
                   <ResponsiveContainer width="100%" height="100%">
@@ -295,6 +309,15 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
                     </RechartsPie>
                   </ResponsiveContainer>
                 </div>
+                {/* 数据源信息 */}
+                {sources && (
+                  <div className="mt-2 pt-2 border-t border-white/5">
+                    <div className="flex justify-between text-xs text-slate-500">
+                      <span>价格数据: {sources.prices.total} 条</span>
+                      <span>库存数据: {sources.inventory.total} 条</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* 处理效率对比图 - 颜色：灰色#64748b(处理前)、蓝色#3b82f6(处理后) */}
@@ -302,6 +325,7 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
                 <div className="flex items-center gap-2 mb-3">
                   <BarChart3 className="h-4 w-4 text-blue-400" />
                   <span className="text-sm font-medium text-white">处理效率分析</span>
+                  {isLoading && <span className="text-xs text-slate-400">(加载中...)</span>}
                 </div>
                 <div className="h-32">
                   <ResponsiveContainer width="100%" height="100%">
@@ -335,15 +359,21 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
             {/* 处理能力指标 - 颜色：青色#06b6d4(数据利用率)、紫罗兰#8b5cf6(标注完成率)、翡翠绿#10b981(模型准确率) */}
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-white/5 rounded-lg p-3 border border-white/10 text-center">
-                <div className="text-lg font-bold text-cyan-400">91.6%</div>
+                <div className="text-lg font-bold text-cyan-400">
+                  {metrics?.utilizationRate ?? '...'}{metrics ? '%' : ''}
+                </div>
                 <div className="text-xs text-slate-400">数据利用率</div>
               </div>
               <div className="bg-white/5 rounded-lg p-3 border border-white/10 text-center">
-                <div className="text-lg font-bold text-violet-400">55.8%</div>
+                <div className="text-lg font-bold text-violet-400">
+                  {metrics?.labelingRate ?? '...'}{metrics ? '%' : ''}
+                </div>
                 <div className="text-xs text-slate-400">标注完成率</div>
               </div>
               <div className="bg-white/5 rounded-lg p-3 border border-white/10 text-center">
-                <div className="text-lg font-bold text-emerald-400">78.1%</div>
+                <div className="text-lg font-bold text-emerald-400">
+                  {metrics?.modelAccuracy ?? '...'}{metrics ? '%' : ''}
+                </div>
                 <div className="text-xs text-slate-400">模型准确率</div>
               </div>
             </div>

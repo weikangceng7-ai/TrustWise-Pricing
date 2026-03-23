@@ -6,6 +6,43 @@ import { useMarketDataOverview } from "@/hooks/use-external-data"
 import { TrendingUp, TrendingDown, Minus, RefreshCw, Globe, Newspaper, BarChart3 } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
+// Type definitions
+interface MarketDataLatest {
+  value: number
+  change: number
+  changePercent: number
+}
+
+interface MarketDataHistory {
+  date: string
+  value: number
+}
+
+interface MarketDataInfo {
+  name: string
+  unit: string
+  latest?: MarketDataLatest
+  history?: MarketDataHistory[]
+}
+
+interface NewsArticle {
+  title: string
+  url: string
+  source: string
+  date: string
+}
+
+interface NewsTopic {
+  keyword: string
+  count: number
+  articles: NewsArticle[]
+}
+
+interface NewsData {
+  topics: NewsTopic[]
+  totalArticles: number
+}
+
 /**
  * 外部数据面板组件
  * 展示 AKShare 行情数据、FRED 经济数据、GDELT 新闻数据
@@ -138,7 +175,7 @@ function MarketDataCard({
   icon
 }: {
   title: string
-  data?: { name: string; unit: string; latest?: { value: number; change: number; changePercent: number }; history?: any[] }
+  data?: MarketDataInfo
   icon: React.ReactNode
 }) {
   if (!data?.latest) {
@@ -180,12 +217,14 @@ function MarketDataCard({
 }
 
 // 新闻区块组件
-function NewsSection({ news }: { news: any }) {
-  if (!news?.data?.topics) {
+function NewsSection({ news }: { news: unknown }) {
+  // Type guard to check if data has the expected structure
+  const newsData = news as { data?: { topics?: NewsTopic[]; totalArticles?: number } } | null
+  if (!newsData?.data?.topics) {
     return <div className="text-muted-foreground">暂无新闻数据</div>
   }
 
-  const { topics, totalArticles } = news.data
+  const { topics, totalArticles } = newsData.data
 
   return (
     <div className="space-y-4">
@@ -193,14 +232,14 @@ function NewsSection({ news }: { news: any }) {
         共找到 <Badge variant="outline">{totalArticles}</Badge> 篇相关文章
       </div>
       <div className="grid gap-4 md:grid-cols-3">
-        {topics.map((topic: any, index: number) => (
+        {topics.map((topic, index) => (
           <div key={index} className="rounded-lg border p-3">
             <div className="flex items-center justify-between mb-2">
               <span className="font-medium">{topic.keyword}</span>
               <Badge variant="secondary">{topic.count} 篇</Badge>
             </div>
             <div className="space-y-2">
-              {topic.articles.slice(0, 2).map((article: any, i: number) => (
+              {topic.articles.slice(0, 2).map((article, i) => (
                 <a
                   key={i}
                   href={article.url}

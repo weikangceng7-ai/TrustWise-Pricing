@@ -91,7 +91,12 @@ export async function GET(request: Request) {
   }
 }
 
-function parseObservations(observations: any[]) {
+interface FredObservation {
+  date: string
+  value: string
+}
+
+function parseObservations(observations: FredObservation[]) {
   if (!Array.isArray(observations)) return []
 
   return observations

@@ -4,8 +4,15 @@ import { useMemo, useState, useRef, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Network, TrendingUp, Database, Building2, FileText, Lightbulb, AlertTriangle, DollarSign, BarChart3, Newspaper, BookOpen, RefreshCw, ExternalLink, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react"
+import { Network, TrendingUp, Database, Building2, FileText, Lightbulb, DollarSign, BarChart3, Newspaper, RefreshCw, ArrowUpRight, ArrowDownRight, Minus, Clock } from "lucide-react"
 import { useMarketDataOverview } from "@/hooks/use-external-data"
+import { formatDistanceToNow } from "date-fns"
+import { zhCN } from "date-fns/locale"
+
+// 缓存过期时间：10分钟
+const CACHE_DURATION_MS = 10 * 60 * 1000
+// localStorage key
+const CACHE_KEY = "yihua-knowledge-graph-cache"
 
 // 硫磺价格预测知识图谱数据 - 第一阶段：市场资讯库、企业经验库、制度规则库
 const KNOWLEDGE_DATA = {
@@ -143,41 +150,128 @@ const KNOWLEDGE_DATA = {
     { factor: "市场资讯", weight: 0.4, trend: "down" },
   ],
 
-  // 数据源说明
+  // 数据源说明 - 与 API route 保持同步
   dataSourceInfo: [
     {
       name: "AkShare",
       url: "https://akshare.akfamily.xyz/",
       description: "开源财经数据接口库",
       apiKey: "无需API密钥，直接调用",
-      dataTypes: ["期货价格", "汇率", "大宗商品", "A股行情"]
+      dataTypes: ["WTI原油期货", "布伦特原油期货", "美元人民币汇率", "波罗的海干散货指数"],
+      endpoints: ["/api/external-data/akshare?type=oil|brent|usdcny|bdi"],
+      status: "模拟数据，实际部署需配置Python环境"
     },
     {
       name: "FRED",
-      url: "https://fred.stlouisfed.org/",
-      description: "美联储经济数据",
-      apiKey: "需要申请API Key",
-      dataTypes: ["经济指标", "利率", "通胀率", "GDP"]
+      url: "https://fred.stlouisfed.org/docs/api/fred/",
+      description: "美联储经济数据 (Federal Reserve Economic Data)",
+      apiKey: "需要申请API Key (FRED_API_KEY环境变量)",
+      dataTypes: [
+        "WTI原油价格 (DCOILWTICO)",
+        "天然气价格 (DHHNGSP)",
+        "联邦基金利率 (FEDFUNDS)",
+        "失业率 (UNRATE)",
+        "CPI (CPIAUCSL)",
+        "人民币汇率 (DEXCHUS)",
+        "欧元汇率 (DEXUSEU)",
+        "GDP"
+      ],
+      endpoints: ["/api/external-data/fred?series_id=DCOILWTICO"],
+      status: "未配置API Key时使用模拟数据"
     },
     {
       name: "GDELT",
       url: "https://www.gdeltproject.org/",
-      description: "全球事件数据库",
+      description: "全球事件、情感和位置数据库",
       apiKey: "无需API密钥",
-      dataTypes: ["全球新闻", "事件情感", "地理数据"]
+      dataTypes: [
+        "硫磺新闻 (sulfur/sulphur)",
+        "磷肥资讯 (fertilizer/phosphate)",
+        "化工新闻",
+        "事件时间线",
+        "情感分析"
+      ],
+      endpoints: [
+        "/api/external-data/gdelt?q=sulfur&mode=timeline",
+        "/api/external-data/gdelt?q=sulfur&mode=search",
+        "/api/external-data/gdelt?q=sulfur&mode=summary"
+      ],
+      status: "实时监测全球新闻事件"
     },
     {
       name: "隆众资讯",
       url: "https://www.oilchem.net/",
-      description: "硫磺行业专业数据",
+      description: "硫磺行业专业数据源",
       apiKey: "需要企业账号",
-      dataTypes: ["硫磺价格", "港口库存", "供需数据"]
+      dataTypes: ["硫磺价格", "港口库存", "供需数据", "行业报告"],
+      endpoints: ["待接入"],
+      status: "需要企业授权"
     }
   ]
 }
 
 type NodeType = "core" | "dataSource" | "market" | "enterprise" | "rule" | "application"
 type RelationType = "影响" | "关联" | "参考" | "研判" | "支撑" | "约束" | "规范" | "预测" | "监测" | "提供"
+
+// 节点实时数据映射配置 - 包含所有节点类型
+const NODE_REALTIME_DATA_CONFIG: Record<string, {
+  dataType: 'price' | 'news' | 'weight' | 'source' | 'static'
+  marketKey?: 'oil' | 'brent' | 'usdcny' | 'bdi' | 'news'
+  title: string
+}> = {
+  // 上游原料
+  'crude-oil': { dataType: 'price', marketKey: 'oil', title: 'WTI原油' },
+  'natural-gas': { dataType: 'price', marketKey: 'brent', title: '布伦特原油(参考)' },
+  'cost-factor': { dataType: 'price', marketKey: 'oil', title: '原油价格(成本基准)' },
+
+  // 宏观因素
+  'usd-cny': { dataType: 'price', marketKey: 'usdcny', title: '美元/人民币' },
+  'macro-factor': { dataType: 'price', marketKey: 'usdcny', title: '汇率参考' },
+
+  // 物流
+  'freight': { dataType: 'price', marketKey: 'bdi', title: 'BDI指数' },
+  'international': { dataType: 'price', marketKey: 'bdi', title: '海运运费参考' },
+
+  // 新闻
+  'news-event': { dataType: 'news', marketKey: 'news', title: '行业新闻' },
+
+  // 数据源
+  'akshare': { dataType: 'source', title: 'AkShare' },
+  'fred': { dataType: 'source', title: 'FRED' },
+  'gdelt': { dataType: 'source', title: 'GDELT' },
+  'longzhong': { dataType: 'source', title: '隆众资讯' },
+
+  // 核心节点
+  'sulfur-price': { dataType: 'weight', title: '价格影响因子' },
+
+  // 市场因素 - 显示静态信息
+  'supply-factor': { dataType: 'static', title: '供应端分析' },
+  'demand-factor': { dataType: 'static', title: '需求端分析' },
+  'inventory': { dataType: 'static', title: '库存分析' },
+  'seasonal': { dataType: 'static', title: '季节性规律' },
+  'fertilizer': { dataType: 'static', title: '磷肥市场' },
+  'sulfuric-acid': { dataType: 'static', title: '硫酸市场' },
+
+  // 企业经验 - 显示静态信息
+  'purchase-record': { dataType: 'static', title: '采购历史记录' },
+  'price-judgment': { dataType: 'static', title: '价格研判经验' },
+  'inventory-strategy': { dataType: 'static', title: '库存策略' },
+  'supplier-relation': { dataType: 'static', title: '供应商关系' },
+  'risk-case': { dataType: 'static', title: '风险案例' },
+
+  // 制度规则 - 显示静态信息
+  'procurement-rule': { dataType: 'static', title: '采购制度' },
+  'quality-standard': { dataType: 'static', title: '质量标准' },
+  'contract-rule': { dataType: 'static', title: '合同规则' },
+  'risk-policy': { dataType: 'static', title: '风控政策' },
+  'storage-rule': { dataType: 'static', title: '仓储规范' },
+
+  // 预测应用 - 显示静态信息
+  'short-forecast': { dataType: 'static', title: '短期预测' },
+  'medium-forecast': { dataType: 'static', title: '中期预测' },
+  'decision-support': { dataType: 'static', title: '采购决策' },
+  'risk-warning': { dataType: 'static', title: '风险预警' },
+}
 
 interface GraphNode {
   id: string
@@ -202,18 +296,79 @@ export function YihuaCodeKnowledgeGraph() {
   // 获取外部数据
   const marketData = useMarketDataOverview()
 
-  // 手动刷新数据
-  const handleRefresh = () => {
-    marketData.refetchAll()
+  // 缓存状态：记录上次缓存的时间和数据
+  const [cacheTime, setCacheTime] = useState<Date | null>(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  // 初始化时从 localStorage 读取缓存时间
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(CACHE_KEY)
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (parsed.cacheTime) {
+          setCacheTime(new Date(parsed.cacheTime))
+        }
+      }
+    } catch {
+      // 忽略解析错误
+    }
+  }, [])
+
+  // 检查缓存是否有效（10分钟内）
+  const isCacheValid = (cacheTime: Date | null): boolean => {
+    if (!cacheTime) return false
+    return Date.now() - cacheTime.getTime() < CACHE_DURATION_MS
   }
 
-  // 更新因子权重数据（基于实时数据）
-  const [liveWeights, setLiveWeights] = useState(KNOWLEDGE_DATA.factorWeights)
+  // 手动刷新数据
+  const handleRefresh = () => {
+    if (isRefreshing) return
 
-  useEffect(() => {
-    if (marketData.loading) return
+    // 如果缓存仍然有效，不刷新数据
+    if (isCacheValid(cacheTime)) {
+      return
+    }
 
-    const updated = [...KNOWLEDGE_DATA.factorWeights]
+    setIsRefreshing(true)
+
+    // 记录新的缓存时间
+    const newCacheTime = new Date()
+    setCacheTime(newCacheTime)
+
+    // 保存到 localStorage
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        cacheTime: newCacheTime.toISOString()
+      }))
+    } catch {
+      // 忽略存储错误
+    }
+
+    // 刷新数据
+    marketData.refetchAll()
+
+    setTimeout(() => {
+      setIsRefreshing(false)
+    }, 500)
+  }
+
+  // 计算显示的时间：如果缓存有效，显示"10分钟前"
+  const getDisplayTime = (): Date | null => {
+    if (isCacheValid(cacheTime)) {
+      // 返回一个模拟的"10分钟前"时间
+      return new Date(Date.now() - 10 * 60 * 1000)
+    }
+    return null
+  }
+
+  const displayTime = getDisplayTime()
+
+  // 计算因子权重数据（基于实时数据）- 使用 useMemo 替代 useEffect + setState
+  const liveWeights = useMemo(() => {
+    if (marketData.loading) return KNOWLEDGE_DATA.factorWeights
+
+    const updated = KNOWLEDGE_DATA.factorWeights.map(f => ({ ...f }))
 
     // 根据实时数据更新趋势
     if (marketData.oil?.data?.latest) {
@@ -240,7 +395,7 @@ export function YihuaCodeKnowledgeGraph() {
       }
     }
 
-    setLiveWeights(updated)
+    return updated
   }, [marketData.loading, marketData.oil, marketData.usdcny, marketData.bdi])
 
   // 构建节点列表
@@ -304,7 +459,7 @@ export function YihuaCodeKnowledgeGraph() {
     const appNodes = nodes.filter(n => n.type === "application")
 
     // 核心节点 - 中心
-    coreNodes.forEach((n, i) => {
+    coreNodes.forEach((n) => {
       pos.set(n.id, { x: cx, y: cy, r: 24, angle: 0 })
     })
 
@@ -459,10 +614,23 @@ export function YihuaCodeKnowledgeGraph() {
                 第一阶段：市场资讯库、企业经验库、制度规则库
               </CardDescription>
             </div>
-            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={marketData.loading}>
-              <RefreshCw className={`h-4 w-4 mr-1 ${marketData.loading ? "animate-spin" : ""}`} />
-              刷新数据
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing || marketData.loading || isCacheValid(cacheTime)}
+              >
+                <RefreshCw className={`h-4 w-4 mr-1 ${isRefreshing ? "animate-spin" : ""}`} />
+                刷新数据
+              </Button>
+              {displayTime && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  数据时间: {formatDistanceToNow(displayTime, { addSuffix: true, locale: zhCN })}
+                </span>
+              )}
+            </div>
           </div>
         </CardHeader>
 
@@ -531,7 +699,7 @@ export function YihuaCodeKnowledgeGraph() {
                 </span>
               </div>
               <div className="mt-1 text-xl font-semibold tabular-nums">
-                {marketData.loading ? "..." : (marketData.news?.data as any)?.totalArticles || "--"}
+                {marketData.loading ? "..." : ("totalArticles" in (marketData.news?.data || {}) ? (marketData.news?.data as { totalArticles: number }).totalArticles : "--")}
               </div>
               <div className="text-xs text-muted-foreground">GDELT数据源</div>
             </div>
@@ -901,7 +1069,7 @@ export function YihuaCodeKnowledgeGraph() {
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {selectedNode ? (
-              <div className="rounded-lg border bg-muted/10 p-3 space-y-2">
+              <div className="rounded-lg border bg-muted/10 p-3 space-y-3">
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">
                     {selectedNode.type === "core" ? "核心实体" :
@@ -917,8 +1085,16 @@ export function YihuaCodeKnowledgeGraph() {
                 <div className="font-semibold text-lg">{selectedNode.name}</div>
                 <p className="text-muted-foreground">{selectedNode.description}</p>
 
+                {/* 实时数据区域 */}
+                <NodeRealtimeDataSection
+                  nodeId={selectedNode.id}
+                  marketData={marketData}
+                  liveWeights={liveWeights}
+                  loading={marketData.loading}
+                />
+
                 {/* 显示相关关系 */}
-                <div className="mt-3 pt-3 border-t">
+                <div className="pt-3 border-t">
                   <div className="text-xs text-muted-foreground mb-2">相关关系</div>
                   <div className="space-y-1">
                     {links
@@ -951,8 +1127,8 @@ export function YihuaCodeKnowledgeGraph() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">价格影响因子权重</CardTitle>
-              <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={marketData.loading}>
-                <RefreshCw className={`h-4 w-4 ${marketData.loading ? "animate-spin" : ""}`} />
+              <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={isRefreshing || marketData.loading || isCacheValid(cacheTime)}>
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
               </Button>
             </div>
           </CardHeader>
@@ -996,4 +1172,364 @@ export function YihuaCodeKnowledgeGraph() {
 
           </div>
   )
+}
+
+// 节点实时数据展示组件
+function NodeRealtimeDataSection({
+  nodeId,
+  marketData,
+  liveWeights,
+  loading
+}: {
+  nodeId: string
+  marketData: ReturnType<typeof useMarketDataOverview>
+  liveWeights: typeof KNOWLEDGE_DATA.factorWeights
+  loading: boolean
+}) {
+  const config = NODE_REALTIME_DATA_CONFIG[nodeId]
+
+  if (!config) return null
+
+  // 价格类型数据
+  if (config.dataType === 'price' && config.marketKey) {
+    const data = marketData[config.marketKey]
+
+    if (loading) {
+      return (
+        <div className="pt-3 border-t">
+          <div className="text-xs text-muted-foreground mb-2">{config.title}</div>
+          <div className="text-sm text-muted-foreground">加载中...</div>
+        </div>
+      )
+    }
+
+    // 类型守卫：检查是否为 AkShare 类型数据
+    type AkShareData = { data: { latest: { value: number; change: number; changePercent: number }; unit: string } }
+    const isAkShareData = (d: unknown): d is AkShareData => {
+      if (typeof d !== 'object' || d === null) return false
+      const obj = d as Record<string, unknown>
+      if (!('data' in obj)) return false
+      const dataObj = obj.data as Record<string, unknown>
+      return 'latest' in dataObj && 'unit' in dataObj
+    }
+
+    if (!data || !isAkShareData(data)) return null
+
+    const latest = data.data.latest
+    const isUp = latest.changePercent > 0
+    const isDown = latest.changePercent < 0
+
+    return (
+      <div className="pt-3 border-t">
+        <div className="text-xs text-muted-foreground mb-2">{config.title}</div>
+        <div className="flex items-center gap-3">
+          <span className="text-xl font-semibold tabular-nums">
+            {latest.value.toFixed(config.marketKey === 'usdcny' ? 4 : 2)}
+          </span>
+          <span className="text-xs text-muted-foreground">{data.data.unit}</span>
+          <Badge
+            variant={isUp ? "default" : isDown ? "destructive" : "secondary"}
+            className="text-xs"
+          >
+            {isUp && <ArrowUpRight className="mr-1 h-3 w-3" />}
+            {isDown && <ArrowDownRight className="mr-1 h-3 w-3" />}
+            {!isUp && !isDown && <Minus className="mr-1 h-3 w-3" />}
+            {isUp ? "+" : ""}{latest.change.toFixed(2)} ({isUp ? "+" : ""}{latest.changePercent.toFixed(2)}%)
+          </Badge>
+        </div>
+      </div>
+    )
+  }
+
+  // 新闻类型数据
+  if (config.dataType === 'news' && config.marketKey === 'news') {
+    const newsData = marketData.news
+
+    if (loading) {
+      return (
+        <div className="pt-3 border-t">
+          <div className="text-xs text-muted-foreground mb-2">{config.title}</div>
+          <div className="text-sm text-muted-foreground">加载中...</div>
+        </div>
+      )
+    }
+
+    const newsContent = newsData?.data as { topics?: { keyword: string; count: number; articles: { title: string; url: string }[] }[]; totalArticles?: number } | undefined
+    if (!newsContent?.topics?.length) return null
+
+    return (
+      <div className="pt-3 border-t">
+        <div className="text-xs text-muted-foreground mb-2">
+          {config.title}
+          <Badge variant="outline" className="ml-2">{newsContent.totalArticles} 篇</Badge>
+        </div>
+        <div className="space-y-2">
+          {newsContent.topics.slice(0, 2).map((topic, i) => (
+            <div key={i} className="text-xs">
+              <div className="font-medium">{topic.keyword} <Badge variant="secondary" className="text-[10px]">{topic.count}</Badge></div>
+              {topic.articles[0] && (
+                <a
+                  href={topic.articles[0].url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary truncate block mt-1"
+                >
+                  • {topic.articles[0].title}
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // 权重类型数据
+  if (config.dataType === 'weight') {
+    return (
+      <div className="pt-3 border-t">
+        <div className="text-xs text-muted-foreground mb-2">{config.title}</div>
+        <div className="space-y-1">
+          {liveWeights
+            .sort((a, b) => b.weight - a.weight)
+            .slice(0, 5)
+            .map((f, i) => (
+              <div key={f.factor} className="flex items-center gap-2 text-xs">
+                <span className="w-4 text-muted-foreground">{i + 1}.</span>
+                <span className="flex-1">{f.factor}</span>
+                <span className="text-muted-foreground">{(f.weight * 100).toFixed(0)}%</span>
+                <span className={f.trend === "up" ? "text-red-500" : f.trend === "down" ? "text-green-500" : "text-muted-foreground"}>
+                  {f.trend === "up" ? "↑" : f.trend === "down" ? "↓" : "→"}
+                </span>
+              </div>
+            ))}
+        </div>
+      </div>
+    )
+  }
+
+  // 数据源类型
+  if (config.dataType === 'source') {
+    const sourceInfo = KNOWLEDGE_DATA.dataSourceInfo.find(s => s.name === config.title)
+
+    if (!sourceInfo) return null
+
+    return (
+      <div className="pt-3 border-t space-y-2">
+        <div className="text-xs text-muted-foreground">数据源信息</div>
+        <div className="text-xs space-y-1.5">
+          <div className="flex items-start gap-1">
+            <span className="text-muted-foreground shrink-0">描述：</span>
+            <span>{sourceInfo.description}</span>
+          </div>
+          <div className="flex items-start gap-1">
+            <span className="text-muted-foreground shrink-0">API：</span>
+            <span className={sourceInfo.apiKey.includes('无需') ? 'text-green-600' : 'text-amber-600'}>
+              {sourceInfo.apiKey}
+            </span>
+          </div>
+          <div className="flex items-start gap-1">
+            <span className="text-muted-foreground shrink-0">数据：</span>
+            <span className="flex flex-wrap gap-1">
+              {sourceInfo.dataTypes.slice(0, 4).map((t, i) => (
+                <Badge key={i} variant="outline" className="text-[10px] px-1 py-0">{t}</Badge>
+              ))}
+            </span>
+          </div>
+          {'endpoints' in sourceInfo && sourceInfo.endpoints && (
+            <div className="flex items-start gap-1">
+              <span className="text-muted-foreground shrink-0">接口：</span>
+              <code className="text-[10px] bg-muted px-1 rounded break-all">
+                {sourceInfo.endpoints[0]}
+              </code>
+            </div>
+          )}
+          {'status' in sourceInfo && sourceInfo.status && (
+            <div className="flex items-start gap-1">
+              <span className="text-muted-foreground shrink-0">状态：</span>
+              <span className="text-muted-foreground">{sourceInfo.status}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // 静态信息类型 - 显示节点相关的详细分析信息
+  if (config.dataType === 'static') {
+    const staticInfo = getStaticNodeInfo(nodeId, liveWeights, marketData)
+    return (
+      <div className="pt-3 border-t space-y-2">
+        <div className="text-xs text-muted-foreground">{config.title}</div>
+        <div className="text-xs space-y-1.5">
+          {staticInfo.map((item, i) => (
+            <div key={i} className="flex items-start gap-1">
+              <span className="text-muted-foreground shrink-0">{item.label}：</span>
+              <span className={item.highlight ? 'text-primary font-medium' : ''}>{item.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return null
+}
+
+// 获取静态节点的详细信息
+function getStaticNodeInfo(
+  nodeId: string,
+  weights: typeof KNOWLEDGE_DATA.factorWeights,
+  marketData: ReturnType<typeof useMarketDataOverview>
+): { label: string; value: string; highlight?: boolean }[] {
+  switch (nodeId) {
+    case 'supply-factor':
+      return [
+        { label: '国内产量', value: '月均约 80-100 万吨' },
+        { label: '进口量', value: '月均约 60-80 万吨' },
+        { label: '主要来源', value: '中东(沙特、阿联酋)、加拿大' },
+        { label: '供应趋势', value: '当前供应平稳，中东出货正常', highlight: true },
+      ]
+    case 'demand-factor':
+      return [
+        { label: '磷肥需求', value: '春耕备肥期需求旺盛' },
+        { label: '硫酸需求', value: '化工行业需求稳定' },
+        { label: '下游开工率', value: '约 75-80%' },
+        { label: '需求趋势', value: '短期需求偏强，关注春耕进度', highlight: true },
+      ]
+    case 'inventory':
+      return [
+        { label: '主要港口库存', value: '约 45-55 万吨' },
+        { label: '库存消费比', value: '约 3-4 周' },
+        { label: '库存预警线', value: '低于 40 万吨为紧张' },
+        { label: '库存状态', value: '当前库存处于合理区间', highlight: true },
+      ]
+    case 'seasonal':
+      return [
+        { label: '春耕备肥', value: '2-4月，需求高峰期' },
+        { label: '秋季备肥', value: '8-10月，次高峰期' },
+        { label: '淡季', value: '5-7月、11-1月' },
+        { label: '当前阶段', value: '春耕备肥期，价格易涨难跌', highlight: true },
+      ]
+    case 'fertilizer':
+      return [
+        { label: '磷酸一铵', value: '约 3200-3500 元/吨' },
+        { label: '磷酸二铵', value: '约 3600-4000 元/吨' },
+        { label: '开工率', value: '约 70-75%' },
+        { label: '市场状态', value: '价格稳中有升，企业利润改善', highlight: true },
+      ]
+    case 'sulfuric-acid':
+      return [
+        { label: '硫酸价格', value: '约 150-250 元/吨' },
+        { label: '主要用途', value: '磷肥生产(约 70%)' },
+        { label: '供应来源', value: '冶炼酸、硫磺制酸' },
+        { label: '市场状态', value: '供应充足，价格稳定', highlight: true },
+      ]
+    case 'purchase-record':
+      return [
+        { label: '最近采购', value: '2024年1月，均价 950 元/吨' },
+        { label: '采购量', value: '月均约 5000 吨' },
+        { label: '主要供应商', value: '沙特阿美、中化' },
+        { label: '采购策略', value: '分批采购，控制库存风险', highlight: true },
+      ]
+    case 'price-judgment':
+      return [
+        { label: '价格区间', value: '近期 900-1000 元/吨' },
+        { label: '趋势判断', value: '短期偏强震荡' },
+        { label: '关键点位', value: '支撑 900，压力 1050' },
+        { label: '专家观点', value: '建议逢低分批采购', highlight: true },
+      ]
+    case 'inventory-strategy':
+      return [
+        { label: '安全库存', value: '10-15 天用量' },
+        { label: '备货周期', value: '进口周期约 30-45 天' },
+        { label: '库存预警', value: '低于 7 天用量需紧急补库' },
+        { label: '策略建议', value: '春耕前适当增加库存', highlight: true },
+      ]
+    case 'supplier-relation':
+      return [
+        { label: '主要供应商', value: '沙特阿美、中化、中海油' },
+        { label: '合作年限', value: '5-10 年长期合作' },
+        { label: '付款条件', value: '信用证 30-60 天' },
+        { label: '合作状态', value: '关系稳定，优先供货保障', highlight: true },
+      ]
+    case 'risk-case':
+      return [
+        { label: '2023年案例', value: '价格从 800 涨至 1200 元/吨' },
+        { label: '原因分析', value: '国际原油上涨 + 春耕需求' },
+        { label: '应对措施', value: '提前锁定部分长单' },
+        { label: '经验教训', value: '关注原油走势，提前布局', highlight: true },
+      ]
+    case 'procurement-rule':
+      return [
+        { label: '审批流程', value: '采购申请 → 审批 → 合同签订' },
+        { label: '审批权限', value: '10万以下经理审批，以上需副总' },
+        { label: '采购周期', value: '月度计划，周度执行' },
+        { label: '合规要求', value: '需三家比价或长期协议', highlight: true },
+      ]
+    case 'quality-standard':
+      return [
+        { label: '纯度要求', value: '≥ 99.5%' },
+        { label: '水分', value: '≤ 0.5%' },
+        { label: '灰分', value: '≤ 0.1%' },
+        { label: '检验标准', value: 'GB/T 2449-2014', highlight: true },
+      ]
+    case 'contract-rule':
+      return [
+        { label: '定价机制', value: '公式定价(基准价+升贴水)' },
+        { label: '结算方式', value: '信用证结算' },
+        { label: '交货方式', value: 'CFR 中国港口' },
+        { label: '违约条款', value: '延迟交货每日罚 0.5%', highlight: true },
+      ]
+    case 'risk-policy':
+      return [
+        { label: '价格预警', value: '单周涨跌超 5% 触发预警' },
+        { label: '库存预警', value: '库存低于 7 天用量预警' },
+        { label: '应对预案', value: '启动备选供应商、调整采购计划' },
+        { label: '止损机制', value: '设置采购价格上限', highlight: true },
+      ]
+    case 'storage-rule':
+      return [
+        { label: '存储条件', value: '干燥通风，远离火源' },
+        { label: '堆放要求', value: '不超过 3 层，离地 10cm' },
+        { label: '损耗标准', value: '≤ 0.5%/月' },
+        { label: '安全要求', value: '配备消防设施，定期检查', highlight: true },
+      ]
+    case 'short-forecast':
+      const oilTrend = weights.find(w => w.factor === '原油价格')?.trend || 'stable'
+      const shortTermTrend = oilTrend === 'up' ? '偏强震荡' : oilTrend === 'down' ? '偏弱运行' : '平稳运行'
+      return [
+        { label: '预测周期', value: '1-4 周' },
+        { label: '价格区间', value: '920-980 元/吨' },
+        { label: '趋势判断', value: shortTermTrend, highlight: true },
+        { label: '置信度', value: '中等 (65%)' },
+      ]
+    case 'medium-forecast':
+      return [
+        { label: '预测周期', value: '1-3 个月' },
+        { label: '价格区间', value: '900-1050 元/吨' },
+        { label: '趋势判断', value: '震荡偏强，关注春耕需求', highlight: true },
+        { label: '关键变量', value: '原油价格、港口库存、下游开工' },
+      ]
+    case 'decision-support':
+      return [
+        { label: '采购建议', value: '分批采购，控制节奏' },
+        { label: '建议采购量', value: '满足 15-20 天用量' },
+        { label: '价格参考', value: '低于 950 可适当增加采购' },
+        { label: '执行建议', value: '关注原油走势，择机锁定长单', highlight: true },
+      ]
+    case 'risk-warning':
+      const riskLevel = weights.find(w => w.factor === '供应端因素')?.weight || 0.5
+      const riskStatus = riskLevel > 0.85 ? '偏高' : riskLevel > 0.7 ? '中等' : '较低'
+      return [
+        { label: '风险等级', value: riskStatus, highlight: true },
+        { label: '主要风险', value: '原油价格波动、汇率风险' },
+        { label: '监测指标', value: '原油、汇率、港口库存' },
+        { label: '建议措施', value: '保持安全库存，关注市场动态' },
+      ]
+    default:
+      return [
+        { label: '状态', value: '正常' },
+      ]
+  }
 }

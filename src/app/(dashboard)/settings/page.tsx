@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Upload, Image as ImageIcon, Trash2, Copy, Check, Loader2, ArrowLeft } from "lucide-react"
+import { Upload, Image as ImageIcon, Copy, Check, Loader2, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
 interface ImageInfo {
@@ -28,7 +28,7 @@ export default function SettingsPage() {
       } else {
         setError(data.error || "获取图片列表失败")
       }
-    } catch (err) {
+    } catch {
       setError("网络错误，请稍后重试")
     } finally {
       setIsLoading(false)
@@ -57,7 +57,7 @@ export default function SettingsPage() {
       } else {
         setError(data.error || "上传失败")
       }
-    } catch (err) {
+    } catch {
       setError("网络错误，请稍后重试")
     } finally {
       setIsUploading(false)

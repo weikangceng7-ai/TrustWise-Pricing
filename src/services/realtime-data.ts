@@ -1,6 +1,6 @@
 import { db } from "@/db"
 import { sulfurPrices, portInventory, purchaseReports } from "@/db/schema"
-import { desc, eq, and, gte, lte, sql } from "drizzle-orm"
+import { desc, sql } from "drizzle-orm"
 
 export interface RealtimePriceData {
   date: string
@@ -182,9 +182,20 @@ export async function generateReportFromRealData(
   return report
 }
 
+interface PriceRecord {
+  mainPrice: string | null
+  market?: string | null
+  minPrice?: string | null
+  maxPrice?: string | null
+}
+
+interface InventoryRecord {
+  inventory: string | null
+}
+
 function generateSummary(
-  prices: any[],
-  inventory: any[],
+  prices: PriceRecord[],
+  inventory: InventoryRecord[],
   trend: string,
   risk: string
 ): string {
@@ -195,10 +206,14 @@ function generateSummary(
     prices.reduce((sum, p) => sum + parseFloat(p.mainPrice || "0"), 0) /
     prices.length
 
+  const inventoryValue = latestInventory?.inventory
+    ? parseFloat(latestInventory.inventory)
+    : null
+
   return `【市场概况】本周硫磺市场${trend === "稳定" ? "整体稳定" : `呈现${trend}态势`}，国内硫磺均价报${avgPrice.toFixed(0)}元/吨。` +
     `【供需分析】供应端：主要进口来源国出货${prices.length > 5 ? "稳定" : "正常"}，港口到货量保持平稳。` +
     `需求端：下游磷肥企业开工率维持正常水平，采购需求${trend === "上涨" ? "旺盛" : "平稳"}。` +
     `【价格走势】${latestPrice?.market || "主要港口"}现货价格${latestPrice?.minPrice || "-"}-${latestPrice?.maxPrice || "-"}元/吨。` +
-    `【库存情况】主要港口库存约${latestInventory?.inventory || "-"}万吨，库存消费比处于${risk === "低" ? "健康" : risk === "中等" ? "合理" : "偏低"}水平。` +
+    `【库存情况】主要港口库存约${inventoryValue ?? "-"}万吨，库存消费比处于${risk === "低" ? "健康" : risk === "中等" ? "合理" : "偏低"}水平。` +
     `【后市研判】预计短期内价格将维持${trend === "稳定" ? "稳定" : trend + "趋势"}，建议关注市场动态。`
 }

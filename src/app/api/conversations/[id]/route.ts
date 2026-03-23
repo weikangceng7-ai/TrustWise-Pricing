@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/db"
 import { chatConversations, chatMessages } from "@/db/schema"
 import { auth } from "@/lib/auth"
-import { eq, and, desc } from "drizzle-orm"
+import { eq, and } from "drizzle-orm"
 import { nanoid } from "nanoid"
 
 // GET - 获取对话消息

@@ -195,6 +195,7 @@ app.post("/chat", async (c) => {
  * 受保护的聊天接口，需要认证
  * Body: { messages: UIMessage[], model?: string }
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 app.route("/chat/v2", chatRoutes as any)
 
 // ==================== 健康检查 ====================

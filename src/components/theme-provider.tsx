@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { createContext, useContext, useEffect, useState, useCallback } from "react"
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, useSyncExternalStore } from "react"
 
 type Theme = "dark" | "light" | "system"
 
@@ -27,24 +27,42 @@ const initialState: ThemeProviderState = {
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
 
+// Custom hook to detect client-side mounting without setState in useEffect
+function useIsMounted(): boolean {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  )
+}
+
 export function ThemeProvider({
   children,
   defaultTheme = "system",
   storageKey = "sulfur-ui-theme",
   ...props
 }: ThemeProviderProps) {
-  const [mounted, setMounted] = useState(false)
-  const [theme, setThemeState] = useState<Theme>(defaultTheme)
-  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("light")
+  const mounted = useIsMounted()
 
-  // Read from localStorage after mount to avoid hydration mismatch
-  useEffect(() => {
-    const stored = localStorage.getItem(storageKey) as Theme | null
-    if (stored) {
-      setThemeState(stored)
+  // Use lazy initializer to read from localStorage on first render (client-side only)
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === "undefined") return defaultTheme
+    try {
+      const stored = localStorage.getItem(storageKey)
+      return (stored as Theme) || defaultTheme
+    } catch {
+      return defaultTheme
     }
-    setMounted(true)
-  }, [storageKey])
+  })
+
+  // Compute resolved theme
+  const resolvedTheme = useMemo<"dark" | "light">(() => {
+    if (!mounted) return "light"
+    if (theme === "system") {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+    }
+    return theme
+  }, [theme, mounted])
 
   // Apply theme to document
   useEffect(() => {
@@ -52,14 +70,8 @@ export function ThemeProvider({
 
     const root = window.document.documentElement
     root.classList.remove("light", "dark")
-
-    const applyTheme = theme === "system"
-      ? window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
-      : theme
-
-    root.classList.add(applyTheme)
-    setResolvedTheme(applyTheme)
-  }, [theme, mounted])
+    root.classList.add(resolvedTheme)
+  }, [resolvedTheme, mounted])
 
   const setTheme = useCallback((newTheme: Theme) => {
     localStorage.setItem(storageKey, newTheme)
