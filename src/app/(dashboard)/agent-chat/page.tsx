@@ -127,7 +127,7 @@ const MessageBubble = memo(function MessageBubble({
     <div className={`flex gap-4 ${isUser ? "flex-row-reverse" : ""}`}>
       <Avatar className="h-10 w-10 shrink-0 relative">
         {isUser ? (
-          <AvatarFallback className="bg-slate-700 text-white border border-slate-600">
+          <AvatarFallback className="bg-slate-600 dark:bg-slate-700 text-white border border-slate-500 dark:border-slate-600">
             <User className="h-5 w-5" />
           </AvatarFallback>
         ) : (
@@ -177,7 +177,7 @@ const MessageBubble = memo(function MessageBubble({
           className={`rounded-2xl px-5 py-4 transition-all duration-300 ${
             isUser
               ? "bg-gradient-to-br from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/20"
-              : "bg-slate-800/80 border border-slate-700/50 backdrop-blur-sm hover:border-cyan-500/30"
+              : "bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 backdrop-blur-sm hover:border-cyan-400/50 dark:hover:border-cyan-500/30"
           }`}
         >
           {isUser ? (
@@ -189,7 +189,7 @@ const MessageBubble = memo(function MessageBubble({
               </ReactMarkdown>
             </div>
           )}
-          <p className={`mt-3 text-xs ${isUser ? "text-white/70" : "text-slate-500"}`}>
+          <p className={`mt-3 text-xs ${isUser ? "text-white/70" : "text-slate-400 dark:text-slate-500"}`}>
             {message.timestamp.toLocaleTimeString("zh-CN", timeFormatOptions)}
           </p>
         </div>
@@ -200,7 +200,7 @@ const MessageBubble = memo(function MessageBubble({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-3 text-xs bg-slate-700/30 border border-slate-600/50 hover:bg-slate-700/50 hover:border-cyan-500/30 transition-all"
+              className="h-8 px-3 text-xs bg-slate-100 dark:bg-slate-700/30 border border-slate-200 dark:border-slate-600/50 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all"
               onClick={onRegenerate}
             >
               <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
@@ -209,11 +209,11 @@ const MessageBubble = memo(function MessageBubble({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-3 text-xs bg-slate-700/30 border border-slate-600/50 hover:bg-slate-700/50 hover:border-cyan-500/30 transition-all"
+              className="h-8 px-3 text-xs bg-slate-100 dark:bg-slate-700/30 border border-slate-200 dark:border-slate-600/50 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all"
               onClick={onCopy}
             >
               {copiedId === message.id ? (
-                <Check className="h-3.5 w-3.5 mr-1.5 text-emerald-400" />
+                <Check className="h-3.5 w-3.5 mr-1.5 text-emerald-500 dark:text-emerald-400" />
               ) : (
                 <Copy className="h-3.5 w-3.5 mr-1.5" />
               )}
@@ -222,7 +222,7 @@ const MessageBubble = memo(function MessageBubble({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-3 text-xs bg-slate-700/30 border border-slate-600/50 hover:bg-slate-700/50 hover:border-cyan-500/30 transition-all"
+              className="h-8 px-3 text-xs bg-slate-100 dark:bg-slate-700/30 border border-slate-200 dark:border-slate-600/50 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all"
               onClick={onGenerateReport}
             >
               <FileText className="h-3.5 w-3.5 mr-1.5" />
@@ -237,9 +237,9 @@ const MessageBubble = memo(function MessageBubble({
             <div className="flex items-center gap-2 mb-3 px-1">
               <div className="relative">
                 <div className="absolute inset-0 bg-cyan-400/30 blur-lg" />
-                <Sparkles className="relative h-4 w-4 text-cyan-400" />
+                <Sparkles className="relative h-4 w-4 text-cyan-500 dark:text-cyan-400" />
               </div>
-              <span className="text-xs text-slate-400 font-medium">您可能还想了解：</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">您可能还想了解：</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {followUps.map((question, index) => (
@@ -247,7 +247,7 @@ const MessageBubble = memo(function MessageBubble({
                   key={index}
                   variant="outline"
                   size="sm"
-                  className="h-7 px-3 text-xs bg-slate-800/40 border-slate-700/50 text-slate-300 hover:bg-cyan-500/10 hover:border-cyan-500/40 hover:text-cyan-300 transition-all"
+                  className="h-7 px-3 text-xs bg-white dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 hover:border-cyan-400 dark:hover:border-cyan-500/40 hover:text-cyan-700 dark:hover:text-cyan-300 transition-all"
                   onClick={() => onFollowUp?.(question)}
                 >
                   {question}
@@ -298,9 +298,9 @@ function LoadingIndicator() {
           </svg>
         </AvatarFallback>
       </Avatar>
-      <div className="rounded-2xl bg-slate-800/80 border border-slate-700/50 backdrop-blur-sm px-5 py-4">
-        <div className="flex items-center gap-3 text-sm text-slate-300">
-          <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
+      <div className="rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 backdrop-blur-sm px-5 py-4">
+        <div className="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+          <Loader2 className="h-5 w-5 animate-spin text-cyan-500 dark:text-cyan-400" />
           <span className="font-medium">Agent 思考中...</span>
         </div>
       </div>
@@ -323,7 +323,7 @@ function ConversationItem({
   return (
     <div
       className={`group relative flex items-center justify-between rounded-xl px-4 py-3 cursor-pointer transition-all duration-300 border ${
-        isActive ? "bg-cyan-500/10 border-cyan-500/30" : "bg-slate-800/30 border-slate-700/30 hover:bg-slate-700/50 hover:border-slate-600/50"
+        isActive ? "bg-cyan-50 dark:bg-cyan-500/10 border-cyan-400 dark:border-cyan-500/30" : "bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-700/30 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600/50"
       }`}
       onClick={onClick}
     >
@@ -332,14 +332,14 @@ function ConversationItem({
           {isActive ? (
             <div className="absolute inset-0 bg-cyan-400/20 blur-lg" />
           ) : null}
-          <MessageSquare className={`relative size-4 ${isActive ? 'text-cyan-400' : 'text-slate-400 group-hover:text-slate-300 transition-colors'}`} />
+          <MessageSquare className={`relative size-4 ${isActive ? 'text-cyan-500 dark:text-cyan-400' : 'text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300 transition-colors'}`} />
         </div>
-        <span className={`truncate text-sm font-medium ${isActive ? 'text-cyan-300' : 'text-slate-300'}`}>{conversation.title}</span>
+        <span className={`truncate text-sm font-medium ${isActive ? 'text-cyan-700 dark:text-cyan-300' : 'text-slate-700 dark:text-slate-300'}`}>{conversation.title}</span>
       </div>
       <Button
         variant="ghost"
         size="sm"
-        className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
+        className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all"
         onClick={(e) => {
           e.stopPropagation()
           onDelete()
@@ -456,21 +456,20 @@ export default function AgentChatPage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* 动态背景 */}
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 -z-10" />
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-violet-500/10 via-transparent to-transparent -z-10" />
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-cyan-500/10 via-transparent to-transparent -z-10" />
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-100 via-white to-blue-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 -z-10" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-violet-200/30 via-transparent to-transparent dark:from-violet-500/10 -z-10" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-cyan-200/30 via-transparent to-transparent dark:from-cyan-500/10 -z-10" />
 
       <div className="relative h-screen flex flex-col min-h-0">
         {/* 顶部标题区 */}
-        <div className="shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex items-center justify-between border-b border-slate-700/30">
+        <div className="shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-700/30">
           <div className="space-y-0.5 sm:space-y-1">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-cyan-400 via-blue-400 to-violet-400 bg-clip-text text-transparent">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-cyan-600 via-blue-600 to-violet-600 dark:from-cyan-400 dark:via-blue-400 dark:to-violet-400 bg-clip-text text-transparent">
               Agent 决策助手
             </h2>
             <div className="flex items-center gap-2">
               <div className="h-px w-8 sm:w-12 bg-gradient-to-r from-cyan-500 to-transparent" />
-              <p className="text-slate-400 text-xs sm:text-sm">
+              <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm">
                 基于 AI 的智能采购决策支持
                 {userId ? " · 历史记录已同步" : " · 登录后可保存对话"}
               </p>
@@ -480,7 +479,7 @@ export default function AgentChatPage() {
             <Button
               variant="outline"
               size="sm"
-              className="border-slate-600/50 text-slate-300 hover:bg-cyan-500/10 hover:border-cyan-500/40 hover:text-cyan-300 transition-all text-xs sm:text-sm"
+              className="border-slate-300 dark:border-slate-600/50 text-slate-700 dark:text-slate-300 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 hover:border-cyan-400 dark:hover:border-cyan-500/40 hover:text-cyan-700 dark:hover:text-cyan-300 transition-all text-xs sm:text-sm"
               onClick={handleNewChat}
             >
               <Plus className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -490,7 +489,7 @@ export default function AgentChatPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="border-slate-600/50 text-slate-300 hover:bg-cyan-500/10 hover:border-cyan-500/40 hover:text-cyan-300 transition-all text-xs sm:text-sm"
+                className="border-slate-300 dark:border-slate-600/50 text-slate-700 dark:text-slate-300 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 hover:border-cyan-400 dark:hover:border-cyan-500/40 hover:text-cyan-700 dark:hover:text-cyan-300 transition-all text-xs sm:text-sm"
                 onClick={() => setShowAuthDialog(true)}
               >
                 登录
@@ -504,10 +503,10 @@ export default function AgentChatPage() {
           <div className="h-full grid gap-4 sm:gap-5 lg:grid-cols-5">
           {/* 对话历史侧边栏 - 仅登录用户显示 */}
           {userId && showHistory && (
-            <Card className="lg:col-span-1 hidden lg:flex flex-col bg-slate-800/40 border-slate-700/50 backdrop-blur-md overflow-hidden max-h-full">
-              <CardHeader className="border-b border-slate-700/50 px-4 py-4 shrink-0">
+            <Card className="lg:col-span-1 hidden lg:flex flex-col bg-white/80 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 backdrop-blur-md overflow-hidden max-h-full">
+              <CardHeader className="border-b border-slate-200 dark:border-slate-700/50 px-4 py-4 shrink-0">
                 <CardTitle className="text-base flex items-center justify-between">
-                  <span className="text-white">对话历史</span>
+                  <span className="text-slate-900 dark:text-white">对话历史</span>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -541,8 +540,8 @@ export default function AgentChatPage() {
           )}
 
           {/* 聊天区域 */}
-          <Card className={`${userId ? "lg:col-span-3" : "lg:col-span-4"} ${userId && showHistory ? "col-span-1 lg:col-span-3" : "col-span-1 lg:col-span-4"} flex flex-col bg-slate-800/40 border-slate-700/50 backdrop-blur-md max-h-full`}>
-            <CardHeader className="border-b border-slate-700/50 px-4 sm:px-5 py-3 sm:py-4 shrink-0">
+          <Card className={`${userId ? "lg:col-span-3" : "lg:col-span-4"} ${userId && showHistory ? "col-span-1 lg:col-span-3" : "col-span-1 lg:col-span-4"} flex flex-col bg-white/80 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 backdrop-blur-md max-h-full`}>
+            <CardHeader className="border-b border-slate-200 dark:border-slate-700/50 px-4 sm:px-5 py-3 sm:py-4 shrink-0">
               <div className="flex items-center gap-3">
                 <Avatar className="h-9 w-9 relative">
                   <AvatarFallback className="relative bg-linear-to-br from-[#0a0a1a] to-[#1b263b] p-0.5 border border-cyan-500/30">
@@ -578,8 +577,8 @@ export default function AgentChatPage() {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <CardTitle className="text-base text-white">硫磺采购顾问</CardTitle>
-                  <CardDescription className="text-xs text-slate-400">在线 · 随时为您解答</CardDescription>
+                  <CardTitle className="text-base text-slate-900 dark:text-white">硫磺采购顾问</CardTitle>
+                  <CardDescription className="text-xs text-slate-500 dark:text-slate-400">在线 · 随时为您解答</CardDescription>
                 </div>
                 {userId && !showHistory && (
                   <Button
@@ -613,7 +612,7 @@ export default function AgentChatPage() {
             </div>
 
             {/* 输入区域 */}
-            <div className="border-t border-slate-700/50 p-4 sm:p-5 shrink-0">
+            <div className="border-t border-slate-200 dark:border-slate-700/50 p-4 sm:p-5 shrink-0">
               <div className="flex gap-3">
                 <Input
                   value={inputValue}
@@ -621,7 +620,7 @@ export default function AgentChatPage() {
                   onKeyDown={handleKeyDown}
                   placeholder="输入您的问题..."
                   disabled={isLoading}
-                  className="flex-1 bg-slate-700/30 border-slate-600/50 text-slate-200 placeholder:text-slate-500 focus:bg-slate-700/50 focus:border-cyan-500/50"
+                  className="flex-1 bg-slate-100 dark:bg-slate-700/30 border-slate-300 dark:border-slate-600/50 text-slate-900 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-700/50 focus:border-cyan-500/50"
                 />
                 <Button
                   onClick={handleSend}
@@ -640,12 +639,12 @@ export default function AgentChatPage() {
 
           {/* 快捷提问侧边栏 */}
           <div className="hidden lg:block space-y-5 overflow-y-auto max-h-full">
-            <Card className="bg-slate-800/40 border-slate-700/50 backdrop-blur-md hover:border-cyan-500/30 transition-all duration-300">
+            <Card className="bg-white/80 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 backdrop-blur-md hover:border-cyan-400/50 dark:hover:border-cyan-500/30 transition-all duration-300">
               <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-base text-white">
+                <CardTitle className="flex items-center gap-2 text-base text-slate-900 dark:text-white">
                   <div className="relative">
                     <div className="absolute inset-0 bg-cyan-400/30 blur-lg" />
-                    <Sparkles className="relative h-5 w-5 text-cyan-400" />
+                    <Sparkles className="relative h-5 w-5 text-cyan-500 dark:text-cyan-400" />
                   </div>
                   快捷提问
                 </CardTitle>
@@ -655,7 +654,7 @@ export default function AgentChatPage() {
                   <Button
                     key={index}
                     variant="ghost"
-                    className="w-full justify-start text-sm h-auto py-3 px-4 text-slate-300 hover:text-white hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/30 transition-all text-left"
+                    className="w-full justify-start text-sm h-auto py-3 px-4 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-cyan-50 dark:hover:bg-cyan-500/10 border border-transparent hover:border-cyan-300 dark:hover:border-cyan-500/30 transition-all text-left"
                     onClick={() => handleSuggestedQuestion(question)}
                     disabled={isLoading}
                   >
@@ -666,61 +665,61 @@ export default function AgentChatPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/40 border-slate-700/50 backdrop-blur-md hover:border-violet-500/30 transition-all duration-300">
+            <Card className="bg-white/80 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 backdrop-blur-md hover:border-violet-400/50 dark:hover:border-violet-500/30 transition-all duration-300">
               <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-base text-white">
-                  <Lightbulb className="h-5 w-5 text-violet-400" />
+                <CardTitle className="flex items-center gap-2 text-base text-slate-900 dark:text-white">
+                  <Lightbulb className="h-5 w-5 text-violet-500 dark:text-violet-400" />
                   使用提示
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-400">如何更好地使用助手</CardDescription>
+                <CardDescription className="text-xs text-slate-500 dark:text-slate-400">如何更好地使用助手</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm text-slate-400">
+              <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
                 <div className="flex items-start gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-cyan-400 mt-1.5 shrink-0" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400 mt-1.5 shrink-0" />
                   提问时尽量具体，包含时间范围
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-cyan-400 mt-1.5 shrink-0" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400 mt-1.5 shrink-0" />
                   可以要求生成数据对比表格
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-cyan-400 mt-1.5 shrink-0" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400 mt-1.5 shrink-0" />
                   支持追问和多轮对话
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-cyan-400 mt-1.5 shrink-0" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400 mt-1.5 shrink-0" />
                   可请求生成采购建议报告
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-cyan-400 mt-1.5 shrink-0" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400 mt-1.5 shrink-0" />
                   点击追问按钮快速深入了解
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/40 border-slate-700/50 backdrop-blur-md hover:border-amber-500/30 transition-all duration-300">
+            <Card className="bg-white/80 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 backdrop-blur-md hover:border-amber-400/50 dark:hover:border-amber-500/30 transition-all duration-300">
               <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-base text-white">
-                  <TrendingUp className="h-5 w-5 text-amber-400" />
+                <CardTitle className="flex items-center gap-2 text-base text-slate-900 dark:text-white">
+                  <TrendingUp className="h-5 w-5 text-amber-500 dark:text-amber-400" />
                   深度分析
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-400">进阶提问技巧</CardDescription>
+                <CardDescription className="text-xs text-slate-500 dark:text-slate-400">进阶提问技巧</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm text-slate-400">
+              <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
                 <div className="flex items-start gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-400 mt-1.5 shrink-0" />
                   要求解释数据来源和计算方法
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-400 mt-1.5 shrink-0" />
                   询问不同情景下的分析
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-400 mt-1.5 shrink-0" />
                   请求对比多个供应商/地区
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-400 mt-1.5 shrink-0" />
                   让 AI 列出风险和不确定性
                 </div>
               </CardContent>
