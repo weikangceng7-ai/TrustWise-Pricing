@@ -186,11 +186,7 @@ export async function POST(req: Request) {
     ]
 
     const stream = await openai.chat.completions.create({
-<<<<<<< HEAD
       model,
-=======
-      model: "z-ai/glm-5",
->>>>>>> 277209802f23217f765e25021cb8406a0db10bf1
       messages: messagesWithSystem,
       stream: true,
     })
