@@ -1,1 +1,5 @@
-OPENROUTER_API_KEY="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"
+# OPENROUTER_API_KEY="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"
+
+# 方式2: OpenAI 兼容 API (如 DeepSeek、QnAI 等)
+OPENAI_API_KEY="sk-8937bc44a7e307183b443804cb355ba61e661ef569abef3e2d9dfba871a20c7f"
+OPENAI_BASE_URL="https://api.qnaigc.com/v1"

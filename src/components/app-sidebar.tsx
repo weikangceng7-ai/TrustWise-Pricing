@@ -69,9 +69,9 @@ export function AppSidebar() {
             <SidebarMenuButton
               size="lg"
               render={<Link href="/dashboard" />}
-              className="relative hover:bg-slate-800/50 transition-all duration-300"
+              className="relative hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all duration-300"
             >
-              <div className="relative flex aspect-square size-8 items-center justify-center rounded-xl bg-linear-to-br from-[#0a0a1a] to-[#1b263b] p-1.5 border border-slate-700/50 shadow-lg group hover:shadow-cyan-500/20 transition-all duration-300">
+              <div className="relative flex aspect-square size-8 items-center justify-center rounded-xl bg-linear-to-br from-slate-100 dark:from-[#0a0a1a] to-slate-200 dark:to-[#1b263b] p-1.5 border border-slate-200 dark:border-slate-700/50 shadow-lg group hover:shadow-cyan-500/20 transition-all duration-300">
                 <svg viewBox="0 0 32 32" className="size-full">
                   <defs>
                     <linearGradient id="sidebarCenter" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -110,8 +110,8 @@ export function AppSidebar() {
                 </svg>
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight relative">
-                <span className="truncate font-semibold text-white">硫磺价格预测</span>
-                <span className="truncate text-xs text-slate-400">
+                <span className="truncate font-semibold text-slate-900 dark:text-white">硫磺价格预测</span>
+                <span className="truncate text-xs text-slate-500 dark:text-slate-400">
                   决策辅助系统
                 </span>
               </div>
@@ -123,7 +123,7 @@ export function AppSidebar() {
       {/* Sidebar Content */}
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold text-slate-400 tracking-wide uppercase px-2">
+          <SidebarGroupLabel className="text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-wide uppercase px-2">
             导航菜单
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -137,16 +137,16 @@ export function AppSidebar() {
                     className={`group relative transition-all duration-300 ${
                       pathname === item.url || pathname.startsWith(item.url + "/")
                         ? `bg-${item.color}-500/10 border-${item.color}-500/30 shadow-lg shadow-${item.color}-500/10`
-                        : 'hover:bg-slate-800/50 border-transparent'
+                        : 'hover:bg-slate-100 dark:hover:bg-slate-800/50 border-transparent'
                     }`}
                   >
                     <div className="relative">
                       {pathname === item.url || pathname.startsWith(item.url + "/") ? (
                         <div className={`absolute inset-0 bg-${item.color}-400/30 blur-lg`} />
                       ) : null}
-                      <item.icon className={`relative size-4.5 ${pathname === item.url || pathname.startsWith(item.url + "/") ? `text-${item.color}-400` : 'text-slate-400 group-hover:text-white transition-colors'}`} />
+                      <item.icon className={`relative size-4.5 ${pathname === item.url || pathname.startsWith(item.url + "/") ? `text-${item.color}-400` : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors'}`} />
                     </div>
-                    <span className={`font-medium ${pathname === item.url || pathname.startsWith(item.url + "/") ? `text-${item.color}-400` : 'text-slate-300'}`}>{item.title}</span>
+                    <span className={`font-medium ${pathname === item.url || pathname.startsWith(item.url + "/") ? `text-${item.color}-400` : 'text-slate-700 dark:text-slate-300'}`}>{item.title}</span>
                     <ChevronRight className={`ml-auto size-3.5 transition-transform duration-300 ${
                       pathname === item.url || pathname.startsWith(item.url + "/") ? 'rotate-90 opacity-100' : 'opacity-0 group-hover:opacity-100'
                     }`} />
@@ -163,7 +163,7 @@ export function AppSidebar() {
         <div className="absolute inset-0 bg-linear-to-t from-violet-500/5 via-transparent to-transparent" />
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="sm" className="text-xs text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 transition-all duration-300">
+            <SidebarMenuButton size="sm" className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all duration-300">
               <div className="flex items-center gap-2">
                 <Sparkles className="size-3" />
                 <span>© 2024 Sulfur Agent</span>
