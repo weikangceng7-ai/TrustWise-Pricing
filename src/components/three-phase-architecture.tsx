@@ -98,10 +98,20 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
   const sources = statsResponse?.data?.sources
 
   return (
-    <div className={`bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 ${className}`}>
+    <div className={`bg-white/80 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-slate-200 dark:border-white/10 ${className}`}>
       <div className="flex items-center gap-2 mb-6">
-        <BarChart3 className="h-5 w-5 text-cyan-400" />
-        <h3 className="text-white font-semibold">系统架构</h3>
+        <BarChart3 className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+        <h3 className="text-slate-900 dark:text-white font-semibold">系统架构</h3>
+        {/* 刷新按钮 */}
+        <button
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="ml-auto p-1 rounded hover:bg-slate-100 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
+          title="刷新数据"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 text-slate-400 ${isFetching ? 'animate-spin' : ''}`} />
+        </button>
+        {isLoading && <span className="text-xs text-slate-400">(加载中...)</span>}
       </div>
 
       {/* 三阶段架构 */}
@@ -111,40 +121,40 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
           <div className="absolute -left-3 top-0 w-1 h-full bg-linear-to-b from-cyan-500 via-cyan-500 to-cyan-500/30 rounded-full" />
           <div className="pl-4">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center">
-                <span className="text-xs font-bold text-cyan-400">1</span>
+              <div className="w-6 h-6 rounded-full bg-cyan-100 dark:bg-cyan-500/20 flex items-center justify-center">
+                <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400">1</span>
               </div>
-              <h4 className="text-sm font-medium text-cyan-400">第一阶段：数据基础</h4>
+              <h4 className="text-sm font-medium text-cyan-600 dark:text-cyan-400">第一阶段：数据基础</h4>
             </div>
 
             {/* 三个数据库卡片 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* 市场资讯库 - 主色调：青色#06b6d4，条形图使用多彩配色 */}
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10 hover:border-cyan-500/30 transition-all">
+              <div className="bg-white/80 dark:bg-white/5 rounded-xl p-4 border border-slate-200 dark:border-white/10 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all">
                 <div className="flex items-center gap-2 mb-3">
-                  <Database className="h-4 w-4 text-cyan-400" />
-                  <span className="text-sm font-medium text-white">市场资讯库</span>
+                  <Database className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                  <span className="text-sm font-medium text-slate-900 dark:text-white">市场资讯库</span>
                 </div>
                 <div className="h-32">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={marketNewsData} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                      <XAxis type="number" tick={{ fontSize: 10, fill: "#94a3b8" }} stroke="rgba(255,255,255,0.2)" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(100,116,139,0.2)" />
+                      <XAxis type="number" tick={{ fontSize: 10, fill: "#64748b" }} stroke="rgba(100,116,139,0.3)" />
                       <YAxis
                         type="category"
                         dataKey="name"
-                        tick={{ fontSize: 9, fill: "#94a3b8" }}
-                        stroke="rgba(255,255,255,0.2)"
+                        tick={{ fontSize: 9, fill: "#64748b" }}
+                        stroke="rgba(100,116,139,0.3)"
                         width={60}
                       />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: "#1e293b",
-                          border: "1px solid rgba(255,255,255,0.1)",
+                          backgroundColor: "var(--popover)",
+                          border: "1px solid var(--border)",
                           borderRadius: "8px",
                         }}
-                        labelStyle={{ color: "#f1f5f9" }}
-                        itemStyle={{ color: "#cbd5e1" }}
+                        labelStyle={{ color: "var(--popover-foreground)" }}
+                        itemStyle={{ color: "var(--muted-foreground)" }}
                         formatter={(value) => [`${value} 条`, "数据量"]}
                       />
                       <Bar dataKey="count" radius={[0, 4, 4, 0]}>
@@ -161,10 +171,10 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
               </div>
 
               {/* 企业经验库 - 主色调：紫罗兰#8b5cf6，饼图使用多彩配色 */}
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10 hover:border-violet-500/30 transition-all">
+              <div className="bg-white/80 dark:bg-white/5 rounded-xl p-4 border border-slate-200 dark:border-white/10 hover:border-violet-400 dark:hover:border-violet-500/30 transition-all">
                 <div className="flex items-center gap-2 mb-3">
-                  <Building className="h-4 w-4 text-violet-400" />
-                  <span className="text-sm font-medium text-white">企业经验库</span>
+                  <Building className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                  <span className="text-sm font-medium text-slate-900 dark:text-white">企业经验库</span>
                 </div>
                 <div className="h-32">
                   <ResponsiveContainer width="100%" height="100%">
@@ -184,8 +194,8 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
                       </Pie>
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: "#1e293b",
-                          border: "1px solid rgba(255,255,255,0.1)",
+                          backgroundColor: "var(--popover)",
+                          border: "1px solid var(--border)",
                           borderRadius: "8px",
                         }}
                         formatter={(value) => [`${value}%`, "占比"]}
@@ -193,7 +203,7 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
                       <Legend
                         verticalAlign="bottom"
                         height={20}
-                        formatter={(value) => <span className="text-xs text-slate-400">{value}</span>}
+                        formatter={(value) => <span className="text-xs text-slate-500 dark:text-slate-400">{value}</span>}
                       />
                     </RechartsPie>
                   </ResponsiveContainer>
@@ -201,28 +211,28 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
               </div>
 
               {/* 制度规则库 - 主色调：琥珀色#f59e0b，条形图使用COLORS循环配色 */}
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10 hover:border-amber-500/30 transition-all">
+              <div className="bg-white/80 dark:bg-white/5 rounded-xl p-4 border border-slate-200 dark:border-white/10 hover:border-amber-400 dark:hover:border-amber-500/30 transition-all">
                 <div className="flex items-center gap-2 mb-3">
-                  <Scale className="h-4 w-4 text-amber-400" />
-                  <span className="text-sm font-medium text-white">制度规则库</span>
+                  <Scale className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <span className="text-sm font-medium text-slate-900 dark:text-white">制度规则库</span>
                 </div>
                 <div className="h-32">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={rulesData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(100,116,139,0.2)" />
                       <XAxis
                         dataKey="name"
-                        tick={{ fontSize: 9, fill: "#94a3b8" }}
-                        stroke="rgba(255,255,255,0.2)"
+                        tick={{ fontSize: 9, fill: "#64748b" }}
+                        stroke="rgba(100,116,139,0.3)"
                         angle={-20}
                         textAnchor="end"
                         height={40}
                       />
-                      <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} stroke="rgba(255,255,255,0.2)" />
+                      <YAxis tick={{ fontSize: 10, fill: "#64748b" }} stroke="rgba(100,116,139,0.3)" />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: "#1e293b",
-                          border: "1px solid rgba(255,255,255,0.1)",
+                          backgroundColor: "var(--popover)",
+                          border: "1px solid var(--border)",
                           borderRadius: "8px",
                         }}
                         formatter={(value) => [`${value} 项`, "数量"]}
@@ -253,15 +263,15 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
           <div className="absolute -left-3 top-0 w-1 h-full bg-linear-to-b from-violet-500 via-violet-500 to-violet-500/30 rounded-full" />
           <div className="pl-4">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-full bg-violet-500/20 flex items-center justify-center">
-                <span className="text-xs font-bold text-violet-400">2</span>
+              <div className="w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center">
+                <span className="text-xs font-bold text-violet-600 dark:text-violet-400">2</span>
               </div>
-              <h4 className="text-sm font-medium text-violet-400">第二阶段：数据处理</h4>
+              <h4 className="text-sm font-medium text-violet-600 dark:text-violet-400">第二阶段：数据处理</h4>
               {/* 刷新按钮 */}
               <button
                 onClick={() => refetch()}
                 disabled={isFetching}
-                className="ml-auto p-1 rounded hover:bg-white/10 transition-colors disabled:opacity-50"
+                className="ml-auto p-1 rounded hover:bg-slate-100 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
                 title="刷新数据"
               >
                 <RefreshCw className={`h-3.5 w-3.5 text-slate-400 ${isFetching ? 'animate-spin' : ''}`} />
@@ -271,10 +281,10 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
             {/* 数据处理统计卡片 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               {/* 处理进度环形图 - 颜色：灰色#64748b(原始)、青色#06b6d4(已清洗)、紫罗兰#8b5cf6(已标注)、翡翠绿#10b981(模型训练) */}
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10 hover:border-violet-500/30 transition-all">
+              <div className="bg-white/80 dark:bg-white/5 rounded-xl p-4 border border-slate-200 dark:border-white/10 hover:border-violet-400 dark:hover:border-violet-500/30 transition-all">
                 <div className="flex items-center gap-2 mb-3">
-                  <Filter className="h-4 w-4 text-violet-400" />
-                  <span className="text-sm font-medium text-white">数据清洗进度</span>
+                  <Filter className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                  <span className="text-sm font-medium text-slate-900 dark:text-white">数据清洗进度</span>
                   {isLoading && <span className="text-xs text-slate-400">(加载中...)</span>}
                 </div>
                 <div className="h-32">
@@ -295,8 +305,8 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
                       </Pie>
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: "#1e293b",
-                          border: "1px solid rgba(255,255,255,0.1)",
+                          backgroundColor: "var(--popover)",
+                          border: "1px solid var(--border)",
                           borderRadius: "8px",
                         }}
                         formatter={(value) => [`${(value as number)?.toLocaleString() ?? 0} 条`, "数据量"]}
@@ -304,14 +314,14 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
                       <Legend
                         verticalAlign="bottom"
                         height={20}
-                        formatter={(value) => <span className="text-xs text-slate-400">{value}</span>}
+                        formatter={(value) => <span className="text-xs text-slate-500 dark:text-slate-400">{value}</span>}
                       />
                     </RechartsPie>
                   </ResponsiveContainer>
                 </div>
                 {/* 数据源信息 */}
                 {sources && (
-                  <div className="mt-2 pt-2 border-t border-white/5">
+                  <div className="mt-2 pt-2 border-t border-slate-200 dark:border-white/5">
                     <div className="flex justify-between text-xs text-slate-500">
                       <span>价格数据: {sources.prices.total} 条</span>
                       <span>库存数据: {sources.inventory.total} 条</span>
@@ -321,32 +331,32 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
               </div>
 
               {/* 处理效率对比图 - 颜色：灰色#64748b(处理前)、蓝色#3b82f6(处理后) */}
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10 hover:border-blue-500/30 transition-all">
+              <div className="bg-white/80 dark:bg-white/5 rounded-xl p-4 border border-slate-200 dark:border-white/10 hover:border-blue-400 dark:hover:border-blue-500/30 transition-all">
                 <div className="flex items-center gap-2 mb-3">
-                  <BarChart3 className="h-4 w-4 text-blue-400" />
-                  <span className="text-sm font-medium text-white">处理效率分析</span>
+                  <BarChart3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-sm font-medium text-slate-900 dark:text-white">处理效率分析</span>
                   {isLoading && <span className="text-xs text-slate-400">(加载中...)</span>}
                 </div>
                 <div className="h-32">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={processingEfficiency} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                      <XAxis type="number" tick={{ fontSize: 10, fill: "#94a3b8" }} stroke="rgba(255,255,255,0.2)" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(100,116,139,0.2)" />
+                      <XAxis type="number" tick={{ fontSize: 10, fill: "#64748b" }} stroke="rgba(100,116,139,0.3)" />
                       <YAxis
                         type="category"
                         dataKey="stage"
-                        tick={{ fontSize: 10, fill: "#94a3b8" }}
-                        stroke="rgba(255,255,255,0.2)"
+                        tick={{ fontSize: 10, fill: "#64748b" }}
+                        stroke="rgba(100,116,139,0.3)"
                         width={50}
                       />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: "#1e293b",
-                          border: "1px solid rgba(255,255,255,0.1)",
+                          backgroundColor: "var(--popover)",
+                          border: "1px solid var(--border)",
                           borderRadius: "8px",
                         }}
-                        labelStyle={{ color: "#f1f5f9" }}
-                        itemStyle={{ color: "#cbd5e1" }}
+                        labelStyle={{ color: "var(--popover-foreground)" }}
+                        itemStyle={{ color: "var(--muted-foreground)" }}
                       />
                       <Bar dataKey="before" fill="#64748b" name="处理前" radius={[0, 0, 0, 0]} />
                       <Bar dataKey="after" fill="#3b82f6" name="处理后" radius={[0, 4, 4, 0]} />
@@ -358,23 +368,23 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
 
             {/* 处理能力指标 - 颜色：青色#06b6d4(数据利用率)、紫罗兰#8b5cf6(标注完成率)、翡翠绿#10b981(模型准确率) */}
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-white/5 rounded-lg p-3 border border-white/10 text-center">
-                <div className="text-lg font-bold text-cyan-400">
+              <div className="bg-white/80 dark:bg-white/5 rounded-lg p-3 border border-slate-200 dark:border-white/10 text-center">
+                <div className="text-lg font-bold text-cyan-600 dark:text-cyan-400">
                   {metrics?.utilizationRate ?? '...'}{metrics ? '%' : ''}
                 </div>
-                <div className="text-xs text-slate-400">数据利用率</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">数据利用率</div>
               </div>
-              <div className="bg-white/5 rounded-lg p-3 border border-white/10 text-center">
-                <div className="text-lg font-bold text-violet-400">
+              <div className="bg-white/80 dark:bg-white/5 rounded-lg p-3 border border-slate-200 dark:border-white/10 text-center">
+                <div className="text-lg font-bold text-violet-600 dark:text-violet-400">
                   {metrics?.labelingRate ?? '...'}{metrics ? '%' : ''}
                 </div>
-                <div className="text-xs text-slate-400">标注完成率</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">标注完成率</div>
               </div>
-              <div className="bg-white/5 rounded-lg p-3 border border-white/10 text-center">
-                <div className="text-lg font-bold text-emerald-400">
+              <div className="bg-white/80 dark:bg-white/5 rounded-lg p-3 border border-slate-200 dark:border-white/10 text-center">
+                <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
                   {metrics?.modelAccuracy ?? '...'}{metrics ? '%' : ''}
                 </div>
-                <div className="text-xs text-slate-400">模型准确率</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">模型准确率</div>
               </div>
             </div>
           </div>
@@ -390,29 +400,29 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
           <div className="absolute -left-3 top-0 w-1 h-full bg-linear-to-b from-emerald-500 via-emerald-500 to-emerald-500/30 rounded-full" />
           <div className="pl-4">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                <span className="text-xs font-bold text-emerald-400">3</span>
+              <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">3</span>
               </div>
-              <h4 className="text-sm font-medium text-emerald-400">第三阶段：AI 智能体中心</h4>
+              <h4 className="text-sm font-medium text-emerald-600 dark:text-emerald-400">第三阶段：AI 智能体中心</h4>
             </div>
 
             <Link href="/agent-chat" className="block">
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10 hover:border-emerald-500/30 transition-all cursor-pointer group">
+              <div className="bg-white/80 dark:bg-white/5 rounded-xl p-4 border border-slate-200 dark:border-white/10 hover:border-emerald-400 dark:hover:border-emerald-500/30 transition-all cursor-pointer group">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-linear-to-br from-emerald-500/30 to-cyan-500/30 border border-emerald-400/50 flex items-center justify-center">
-                      <Brain className="h-6 w-6 text-emerald-400" />
+                    <div className="w-12 h-12 rounded-xl bg-linear-to-br from-emerald-100 dark:from-emerald-500/30 to-cyan-100 dark:to-cyan-500/30 border border-emerald-300 dark:border-emerald-400/50 flex items-center justify-center">
+                      <Brain className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-white group-hover:text-emerald-400 transition-colors">智能决策助手</div>
-                      <div className="text-xs text-slate-400">智能决策、自动化采购、风险预警</div>
+                      <div className="text-sm font-medium text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">智能决策助手</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">智能决策、自动化采购、风险预警</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30">
-                      <span className="text-xs text-emerald-400">已激活</span>
+                    <div className="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-500/30">
+                      <span className="text-xs text-emerald-700 dark:text-emerald-400">已激活</span>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-emerald-400 transition-colors" />
+                    <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-emerald-500 transition-colors" />
                   </div>
                 </div>
               </div>
