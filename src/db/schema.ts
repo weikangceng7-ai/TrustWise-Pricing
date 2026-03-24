@@ -10,6 +10,9 @@ export const user = pgTable("user", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   role: text("role").default("user"),
+  // 手机号登录支持
+  phone: text("phone").unique(),
+  phoneVerified: boolean("phone_verified").notNull().default(false),
 })
 
 // Better Auth 会话表 - 必须导出为 session

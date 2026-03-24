@@ -12,10 +12,10 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, Eye, EyeOff, Check, X } from "lucide-react"
+import { Loader2, Eye, EyeOff, Check, X, ArrowLeft } from "lucide-react"
 import { signIn, signUp } from "@/lib/auth-client"
 
-type AuthMode = "login" | "register"
+type AuthMode = "login" | "register" | "forgot-password"
 
 interface AuthDialogProps {
   open: boolean
@@ -114,6 +114,8 @@ export function AuthDialog({
   const [loginEmail, setLoginEmail] = useState("")
   const [loginPassword, setLoginPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [forgotEmail, setForgotEmail] = useState("")
+  const [forgotSuccess, setForgotSuccess] = useState(false)
 
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password])
   const emailSuggestions = useMemo(() => getEmailSuggestions(email), [email])
@@ -205,17 +207,57 @@ export function AuthDialog({
     setShowEmailSuggestions(false)
   }
 
+  const handleForgotPassword = async (formData: FormData) => {
+    setError(null)
+    setIsLoading(true)
+
+    const email = formData.get("email") as string
+
+    if (!isValidEmail(email)) {
+      setError("请输入有效的邮箱地址")
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || "发送重置邮件失败")
+        setIsLoading(false)
+        return
+      }
+
+      setForgotSuccess(true)
+    } catch {
+      setError("发送重置邮件失败，请稍后重试")
+      setIsLoading(false)
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {mode === "login" ? "登录账户" : "创建账户"}
+            {mode === "login"
+              ? "登录账户"
+              : mode === "forgot-password"
+                ? "重置密码"
+                : "创建账户"}
           </DialogTitle>
           <DialogDescription>
             {mode === "login"
               ? "登录以保存您的数据和偏好设置"
-              : "注册以使用完整功能"}
+              : mode === "forgot-password"
+                ? "输入邮箱接收密码重置链接"
+                : "注册以使用完整功能"}
           </DialogDescription>
         </DialogHeader>
 
@@ -267,17 +309,82 @@ export function AuthDialog({
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               登录
             </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              还没有账户？{" "}
+            <div className="flex items-center justify-between text-sm">
               <button
                 type="button"
                 className="text-primary underline-offset-4 hover:underline"
-                onClick={() => setMode("register")}
+                onClick={() => setMode("forgot-password")}
               >
-                立即注册
+                忘记密码？
               </button>
-            </p>
+              <span className="text-muted-foreground">
+                还没有账户？{" "}
+                <button
+                  type="button"
+                  className="text-primary underline-offset-4 hover:underline"
+                  onClick={() => setMode("register")}
+                >
+                  立即注册
+                </button>
+              </span>
+            </div>
           </form>
+        ) : mode === "forgot-password" ? (
+          forgotSuccess ? (
+            <div className="space-y-4 text-center">
+              <div className="rounded-full bg-green-100 dark:bg-green-900/20 p-3 mx-auto w-fit">
+                <Check className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+              <p className="text-muted-foreground">
+                如果该邮箱已注册，您将收到密码重置邮件。
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setMode("login")
+                  setForgotSuccess(false)
+                  setForgotEmail("")
+                }}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                返回登录
+              </Button>
+            </div>
+          ) : (
+            <form action={handleForgotPassword} className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                输入您的邮箱地址，我们将发送密码重置链接。
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="forgot-email">邮箱</Label>
+                <Input
+                  id="forgot-email"
+                  name="email"
+                  type="email"
+                  placeholder="请输入注册邮箱"
+                  required
+                  disabled={isLoading}
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                发送重置邮件
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => setMode("login")}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                返回登录
+              </Button>
+            </form>
+          )
         ) : (
           <form action={handleRegister} className="space-y-4">
             <div className="space-y-2">
