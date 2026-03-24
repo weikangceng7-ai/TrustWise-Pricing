@@ -28,7 +28,6 @@ interface ChatMessage {
   content: MessageContent
 }
 
-// 检测消息中是否包含图片
 function hasImageInMessages(messages: ChatMessage[]): boolean {
   return messages.some((msg) => {
     if (Array.isArray(msg.content)) {
@@ -38,7 +37,6 @@ function hasImageInMessages(messages: ChatMessage[]): boolean {
   })
 }
 
-// 生成图片分析专用系统提示
 function generateImageAnalysisPrompt(): string {
   return `你是一个专业的硫磺采购决策助手，具备强大的图像分析能力。当用户上传图片时，请仔细分析图片内容。
 
@@ -74,7 +72,6 @@ function generateImageAnalysisPrompt(): string {
 请用中文回答，保持专业、准确、实用。`
 }
 
-// 格式化价格数据为文本
 function formatPricesData(prices: Awaited<ReturnType<typeof getPrices>>): string {
   if (!prices || prices.length === 0) return "暂无价格数据"
 
@@ -87,7 +84,6 @@ function formatPricesData(prices: Awaited<ReturnType<typeof getPrices>>): string
   return headers + rows
 }
 
-// 格式化库存数据为文本
 function formatInventoryData(inventory: Awaited<ReturnType<typeof getInventory>>): string {
   if (!inventory || inventory.length === 0) return "暂无库存数据"
 
@@ -110,7 +106,6 @@ export async function POST(req: Request) {
       })
     }
 
-    // 检测是否包含图片
     const containsImage = hasImageInMessages(messages)
 
     let pricesContext = ""
@@ -133,17 +128,13 @@ export async function POST(req: Request) {
       console.error("Failed to fetch context data:", dataError)
     }
 
-    // 根据是否有图片选择系统提示和模型
     let systemPrompt: string
     let model: string
 
     if (containsImage) {
-      // 图片分析模式：使用支持视觉的模型
       systemPrompt = generateImageAnalysisPrompt()
-      // 尝试使用 gpt-4o-mini (支持视觉且更可能可用)
       model = "gpt-4o-mini"
     } else {
-      // 普通对话模式
       systemPrompt = generateSystemPromptWithContext({
         prices: pricesContext || undefined,
         inventory: inventoryContext || undefined,
@@ -157,11 +148,9 @@ export async function POST(req: Request) {
       model = "deepseek-v3-0324"
     }
 
-    // 转换消息格式，支持图片
     const formattedMessages = messages.map((msg) => {
       const role = msg.role === "agent" ? "assistant" : msg.role as "user" | "assistant" | "system"
       
-      // 处理图片消息
       if (Array.isArray(msg.content)) {
         const content = msg.content.map((item) => {
           if (item.type === "image_url") {
@@ -191,7 +180,6 @@ export async function POST(req: Request) {
       stream: true,
     })
 
-    // 创建流式响应
     const encoder = new TextEncoder()
     const readable = new ReadableStream({
       async start(controller) {

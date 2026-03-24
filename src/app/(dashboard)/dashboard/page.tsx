@@ -283,7 +283,7 @@ export default function DashboardPage() {
               <div className="p-2 rounded-xl bg-cyan-100 dark:bg-cyan-500/20 group-hover:bg-cyan-200 dark:group-hover:bg-cyan-500/30 transition-colors">
                 <BarChart3 className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
               </div>
-              <span className="text-xs text-cyan-600 dark:text-cyan-400">首页</span>
+<span className="text-xs text-cyan-600 dark:text-cyan-400">首页</span>
             </Link>
             <Link href="/agent-chat" className="flex flex-col items-center gap-1 group">
               <div className="p-2 rounded-xl group-hover:bg-slate-100 dark:group-hover:bg-white/10 transition-colors">
