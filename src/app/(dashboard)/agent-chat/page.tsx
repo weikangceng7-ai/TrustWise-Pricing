@@ -21,6 +21,8 @@ import {
   Lightbulb,
   TrendingUp,
   ChevronRight,
+  Image as ImageIcon,
+  X,
 } from "lucide-react"
 import { useChatWithHistory, type ChatMessage, type Conversation } from "@/hooks/use-chat-with-history"
 import { generateChatReport } from "@/lib/report-generator"
@@ -176,12 +178,27 @@ const MessageBubble = memo(function MessageBubble({
         <div
           className={`rounded-2xl px-5 py-4 transition-all duration-300 ${
             isUser
-              ? "bg-gradient-to-br from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/20"
-              : "bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 backdrop-blur-sm hover:border-cyan-400/50 dark:hover:border-cyan-500/30"
+              ? "bg-gradient-to-br from-cyan-500 via-blue-500 to-violet-500 text-white shadow-lg shadow-cyan-500/25 dark:shadow-cyan-500/20"
+              : "bg-white/80 dark:bg-slate-800/80 border border-indigo-100/50 dark:border-slate-700/50 backdrop-blur-sm hover:border-cyan-300/50 dark:hover:border-cyan-500/30 shadow-sm hover:shadow-md"
           }`}
         >
           {isUser ? (
-            <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+            <div className="space-y-2">
+              {message.images && message.images.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {message.images.map((img, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={img}
+                        alt={`上传图片 ${index + 1}`}
+                        className="max-w-[200px] max-h-[150px] rounded-lg object-cover border border-white/20"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+            </div>
           ) : (
             <div className={proseClassName}>
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -200,7 +217,7 @@ const MessageBubble = memo(function MessageBubble({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-3 text-xs bg-slate-100 dark:bg-slate-700/30 border border-slate-200 dark:border-slate-600/50 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all"
+              className="h-8 px-3 text-xs bg-gradient-to-r from-slate-50 to-indigo-50 dark:bg-slate-700/30 border border-indigo-100/50 dark:border-slate-600/50 text-indigo-600 dark:text-slate-300 hover:from-cyan-50 hover:to-blue-50 dark:hover:bg-slate-700/50 hover:border-cyan-300 dark:hover:border-cyan-500/30 hover:text-cyan-600 dark:hover:text-cyan-300 transition-all shadow-sm"
               onClick={onRegenerate}
             >
               <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
@@ -209,7 +226,7 @@ const MessageBubble = memo(function MessageBubble({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-3 text-xs bg-slate-100 dark:bg-slate-700/30 border border-slate-200 dark:border-slate-600/50 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all"
+              className="h-8 px-3 text-xs bg-gradient-to-r from-slate-50 to-indigo-50 dark:bg-slate-700/30 border border-indigo-100/50 dark:border-slate-600/50 text-indigo-600 dark:text-slate-300 hover:from-violet-50 hover:to-pink-50 dark:hover:bg-slate-700/50 hover:border-violet-300 dark:hover:border-violet-500/30 hover:text-violet-600 dark:hover:text-violet-300 transition-all shadow-sm"
               onClick={onCopy}
             >
               {copiedId === message.id ? (
@@ -222,7 +239,7 @@ const MessageBubble = memo(function MessageBubble({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-3 text-xs bg-slate-100 dark:bg-slate-700/30 border border-slate-200 dark:border-slate-600/50 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all"
+              className="h-8 px-3 text-xs bg-gradient-to-r from-slate-50 to-indigo-50 dark:bg-slate-700/30 border border-indigo-100/50 dark:border-slate-600/50 text-indigo-600 dark:text-slate-300 hover:from-emerald-50 hover:to-teal-50 dark:hover:bg-slate-700/50 hover:border-emerald-300 dark:hover:border-emerald-500/30 hover:text-emerald-600 dark:hover:text-emerald-300 transition-all shadow-sm"
               onClick={onGenerateReport}
             >
               <FileText className="h-3.5 w-3.5 mr-1.5" />
@@ -236,10 +253,10 @@ const MessageBubble = memo(function MessageBubble({
           <div className="mt-4">
             <div className="flex items-center gap-2 mb-3 px-1">
               <div className="relative">
-                <div className="absolute inset-0 bg-cyan-400/30 blur-lg" />
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-violet-400 blur-lg opacity-60 dark:opacity-30" />
                 <Sparkles className="relative h-4 w-4 text-cyan-500 dark:text-cyan-400" />
               </div>
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">您可能还想了解：</span>
+              <span className="text-xs text-indigo-500/80 dark:text-slate-400 font-medium">您可能还想了解：</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {followUps.map((question, index) => (
@@ -247,7 +264,7 @@ const MessageBubble = memo(function MessageBubble({
                   key={index}
                   variant="outline"
                   size="sm"
-                  className="h-7 px-3 text-xs bg-white dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 hover:border-cyan-400 dark:hover:border-cyan-500/40 hover:text-cyan-700 dark:hover:text-cyan-300 transition-all"
+                  className="h-7 px-3 text-xs bg-gradient-to-r from-white to-indigo-50/50 dark:bg-slate-800/40 border-indigo-100/50 dark:border-slate-700/50 text-indigo-600 dark:text-slate-300 hover:from-cyan-50 hover:to-violet-50 dark:hover:bg-cyan-500/10 hover:border-cyan-300 dark:hover:border-cyan-500/40 hover:text-cyan-600 dark:hover:text-cyan-300 transition-all shadow-sm"
                   onClick={() => onFollowUp?.(question)}
                 >
                   {question}
@@ -323,23 +340,25 @@ function ConversationItem({
   return (
     <div
       className={`group relative flex items-center justify-between rounded-xl px-4 py-3 cursor-pointer transition-all duration-300 border ${
-        isActive ? "bg-cyan-50 dark:bg-cyan-500/10 border-cyan-400 dark:border-cyan-500/30" : "bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-700/30 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600/50"
+        isActive 
+          ? "bg-gradient-to-r from-cyan-50 via-blue-50 to-violet-50 dark:bg-cyan-500/10 border-cyan-300/50 dark:border-cyan-500/30 shadow-sm" 
+          : "bg-gradient-to-r from-white to-indigo-50/30 dark:bg-slate-800/30 border-indigo-100/50 dark:border-slate-700/30 hover:from-cyan-50/50 hover:to-violet-50/50 dark:hover:bg-slate-700/50 hover:border-cyan-200 dark:hover:border-slate-600/50"
       }`}
       onClick={onClick}
     >
       <div className="flex items-center gap-3 overflow-hidden">
         <div className="relative">
           {isActive ? (
-            <div className="absolute inset-0 bg-cyan-400/20 blur-lg" />
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-violet-400 blur-lg opacity-40" />
           ) : null}
-          <MessageSquare className={`relative size-4 ${isActive ? 'text-cyan-500 dark:text-cyan-400' : 'text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300 transition-colors'}`} />
+          <MessageSquare className={`relative size-4 ${isActive ? 'text-cyan-500 dark:text-cyan-400' : 'text-indigo-400 group-hover:text-cyan-500 dark:group-hover:text-slate-300 transition-colors'}`} />
         </div>
-        <span className={`truncate text-sm font-medium ${isActive ? 'text-cyan-700 dark:text-cyan-300' : 'text-slate-700 dark:text-slate-300'}`}>{conversation.title}</span>
+        <span className={`truncate text-sm font-medium ${isActive ? 'text-cyan-700 dark:text-cyan-300' : 'text-indigo-600 dark:text-slate-300'}`}>{conversation.title}</span>
       </div>
       <Button
         variant="ghost"
         size="sm"
-        className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all"
+        className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 text-indigo-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all"
         onClick={(e) => {
           e.stopPropagation()
           onDelete()
@@ -369,8 +388,36 @@ export default function AgentChatPage() {
   } = useChatWithHistory({ userId })
 
   const [inputValue, setInputValue] = useState("")
+  const [uploadedImages, setUploadedImages] = useState<string[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [showHistory, setShowHistory] = useState(true)
+
+  // 处理图片上传
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files) return
+
+    Array.from(files).forEach((file) => {
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          const base64 = event.target?.result as string
+          setUploadedImages((prev) => [...prev, base64])
+        }
+        reader.readAsDataURL(file)
+      }
+    })
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
+  // 移除已上传的图片
+  const removeImage = (index: number) => {
+    setUploadedImages((prev) => prev.filter((_, i) => i !== index))
+  }
 
   // 检查登录状态
   useEffect(() => {
@@ -394,16 +441,39 @@ export default function AgentChatPage() {
   }, [messages])
 
   const handleSend = async () => {
-    if (!inputValue.trim() || isLoading) return
-    const message = inputValue
+    if ((!inputValue.trim() && uploadedImages.length === 0) || isLoading) return
+    const message = inputValue || "请分析这张图片"
+    const images = [...uploadedImages]
     setInputValue("")
-    await sendMessage(message)
+    setUploadedImages([])
+    await sendMessage(message, images.length > 0 ? images : undefined)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
       handleSend()
+    }
+  }
+
+  // 处理粘贴图片
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        e.preventDefault()
+        const file = item.getAsFile()
+        if (file) {
+          const reader = new FileReader()
+          reader.onload = (event) => {
+            const base64 = event.target?.result as string
+            setUploadedImages((prev) => [...prev, base64])
+          }
+          reader.readAsDataURL(file)
+        }
+      }
     }
   }
 
@@ -456,20 +526,29 @@ export default function AgentChatPage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-100 via-white to-blue-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 -z-10" />
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-violet-200/30 via-transparent to-transparent dark:from-violet-500/10 -z-10" />
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-cyan-200/30 via-transparent to-transparent dark:from-cyan-500/10 -z-10" />
+      <div className="fixed inset-0 bg-gradient-to-br from-sky-50 via-indigo-50/50 to-violet-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 -z-10" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-rose-200/40 via-violet-200/30 to-transparent dark:from-violet-500/10 -z-10" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-cyan-300/40 via-teal-200/30 to-transparent dark:from-cyan-500/10 -z-10" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-100/20 via-transparent to-transparent dark:from-transparent -z-10" />
+      <div className="fixed top-20 right-20 w-96 h-96 bg-gradient-to-br from-pink-300/20 to-violet-300/20 rounded-full blur-3xl dark:hidden -z-10" />
+      <div className="fixed bottom-20 left-20 w-80 h-80 bg-gradient-to-tr from-cyan-300/20 to-emerald-300/20 rounded-full blur-3xl dark:hidden -z-10" />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-indigo-200/10 to-transparent rounded-full blur-3xl dark:hidden -z-10" />
 
       <div className="relative h-screen flex flex-col min-h-0">
         {/* 顶部标题区 */}
-        <div className="shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-700/30">
+        <div className="shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex items-center justify-between border-b border-indigo-100/50 dark:border-slate-700/30 bg-white/30 dark:bg-transparent backdrop-blur-sm">
           <div className="space-y-0.5 sm:space-y-1">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-cyan-600 via-blue-600 to-violet-600 dark:from-cyan-400 dark:via-blue-400 dark:to-violet-400 bg-clip-text text-transparent">
-              Agent 决策助手
-            </h2>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-violet-400 blur-lg opacity-50 dark:opacity-30" />
+                <h2 className="relative text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-cyan-600 via-blue-600 to-violet-600 dark:from-cyan-400 dark:via-blue-400 dark:to-violet-400 bg-clip-text text-transparent">
+                  Agent 决策助手
+                </h2>
+              </div>
+            </div>
             <div className="flex items-center gap-2">
-              <div className="h-px w-8 sm:w-12 bg-gradient-to-r from-cyan-500 to-transparent" />
-              <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm">
+              <div className="h-px w-8 sm:w-12 bg-gradient-to-r from-cyan-400 via-blue-400 to-transparent dark:from-cyan-500 dark:via-blue-500" />
+              <p className="text-indigo-600/70 dark:text-slate-400 text-xs sm:text-sm font-medium">
                 基于 AI 的智能采购决策支持
                 {userId ? " · 历史记录已同步" : " · 登录后可保存对话"}
               </p>
@@ -479,7 +558,7 @@ export default function AgentChatPage() {
             <Button
               variant="outline"
               size="sm"
-              className="border-slate-300 dark:border-slate-600/50 text-slate-700 dark:text-slate-300 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 hover:border-cyan-400 dark:hover:border-cyan-500/40 hover:text-cyan-700 dark:hover:text-cyan-300 transition-all text-xs sm:text-sm"
+              className="border-indigo-200/50 dark:border-slate-600/50 bg-white/60 dark:bg-slate-800/30 text-indigo-700 dark:text-slate-300 hover:bg-gradient-to-r hover:from-cyan-50 hover:to-violet-50 dark:hover:bg-cyan-500/10 hover:border-cyan-300 dark:hover:border-cyan-500/40 hover:text-cyan-700 dark:hover:text-cyan-300 transition-all text-xs sm:text-sm shadow-sm hover:shadow-md"
               onClick={handleNewChat}
             >
               <Plus className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -489,7 +568,7 @@ export default function AgentChatPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="border-slate-300 dark:border-slate-600/50 text-slate-700 dark:text-slate-300 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 hover:border-cyan-400 dark:hover:border-cyan-500/40 hover:text-cyan-700 dark:hover:text-cyan-300 transition-all text-xs sm:text-sm"
+                className="border-indigo-200/50 dark:border-slate-600/50 bg-white/60 dark:bg-slate-800/30 text-indigo-700 dark:text-slate-300 hover:bg-gradient-to-r hover:from-violet-50 hover:to-pink-50 dark:hover:bg-violet-500/10 hover:border-violet-300 dark:hover:border-violet-500/40 hover:text-violet-700 dark:hover:text-violet-300 transition-all text-xs sm:text-sm shadow-sm hover:shadow-md"
                 onClick={() => setShowAuthDialog(true)}
               >
                 登录
@@ -613,18 +692,57 @@ export default function AgentChatPage() {
 
             {/* 输入区域 */}
             <div className="border-t border-slate-200 dark:border-slate-700/50 p-4 sm:p-5 shrink-0">
+              {/* 图片预览区域 */}
+              {uploadedImages.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {uploadedImages.map((img, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={img}
+                        alt={`预览图片 ${index + 1}`}
+                        className="w-20 h-20 rounded-lg object-cover border border-slate-200 dark:border-slate-600"
+                      />
+                      <button
+                        onClick={() => removeImage(index)}
+                        className="absolute -top-2 -right-2 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="flex gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleImageUpload}
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isLoading}
+                  className="shrink-0 bg-slate-100 dark:bg-slate-700/30 border-slate-300 dark:border-slate-600/50 hover:bg-slate-200 dark:hover:bg-slate-700/50"
+                  title="上传图片"
+                >
+                  <ImageIcon className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                </Button>
                 <Input
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="输入您的问题..."
+                  onPaste={handlePaste}
+                  placeholder={uploadedImages.length > 0 ? "添加描述或直接发送..." : "输入您的问题（支持粘贴图片）..."}
                   disabled={isLoading}
                   className="flex-1 bg-slate-100 dark:bg-slate-700/30 border-slate-300 dark:border-slate-600/50 text-slate-900 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-700/50 focus:border-cyan-500/50"
                 />
                 <Button
                   onClick={handleSend}
-                  disabled={!inputValue.trim() || isLoading}
+                  disabled={(!inputValue.trim() && uploadedImages.length === 0) || isLoading}
                   className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/30 border border-cyan-400/20 shrink-0"
                 >
                   {isLoading ? (
