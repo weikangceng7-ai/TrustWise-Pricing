@@ -2,7 +2,7 @@ import { convertToModelMessages, streamText, type UIMessage } from "ai"
 import { Hono } from "hono"
 import { DEFAULT_CHAT_MODEL, isSupportedChatModel } from "@/lib/chat-models"
 import { getOpenRouterProvider } from "@/lib/openrouter"
-import { requireAuth, type AuthContext } from "@/middleware/auth"
+import { requireAuth } from "@/middleware/auth"
 
 // Hono 泛型参数顺序: <Env, Schema, Variables>
 // 使用 Hono 基础实例，不指定泛型

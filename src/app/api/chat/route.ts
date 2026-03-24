@@ -1,13 +1,39 @@
 import OpenAI from "openai"
-import { SYSTEM_PROMPT } from "@/lib/system-prompt"
+import { generateSystemPromptWithContext } from "@/lib/system-prompt"
+import { getPrices, getInventory } from "@/services/prices"
 
 export const maxDuration = 60
 
 // 创建 OpenAI 实例 (使用 qnaigc API)
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "sk-88df478c39ae4067df5bd6c5b2c72dcd63b944e0cb6ea5134a9564c21898ae12",
+  apiKey: process.env.OPENAI_API_KEY,
   baseURL: process.env.OPENAI_BASE_URL || "https://api.qnaigc.com/v1",
 })
+
+// 格式化价格数据为文本
+function formatPricesData(prices: Awaited<ReturnType<typeof getPrices>>): string {
+  if (!prices || prices.length === 0) return "暂无价格数据"
+
+  const headers = "| 日期 | 产品 | 市场 | 规格 | 主流价 | 涨跌 |\n|------|------|------|------|--------|------|\n"
+  const rows = prices.slice(0, 10).map(p => {
+    const change = p.changeValue ? `${Number(p.changeValue) > 0 ? '+' : ''}${p.changeValue}` : '-'
+    return `| ${p.date} | ${p.productName || '-'} | ${p.market || '-'} | ${p.specification || '-'} | ${p.mainPrice || '-'} | ${change} |`
+  }).join('\n')
+
+  return headers + rows
+}
+
+// 格式化库存数据为文本
+function formatInventoryData(inventory: Awaited<ReturnType<typeof getInventory>>): string {
+  if (!inventory || inventory.length === 0) return "暂无库存数据"
+
+  const headers = "| 日期 | 库存量(万吨) | 价格(元/吨) |\n|------|-------------|------------|\n"
+  const rows = inventory.slice(0, 5).map(i => {
+    return `| ${i.date} | ${i.inventory || '-'} | ${i.price || '-'} |`
+  }).join('\n')
+
+  return headers + rows
+}
 
 export async function POST(req: Request) {
   try {
@@ -20,6 +46,40 @@ export async function POST(req: Request) {
       })
     }
 
+    // 获取实时数据
+    let pricesContext = ""
+    let inventoryContext = ""
+
+    try {
+      const [prices, inventory] = await Promise.all([
+        getPrices(10),
+        getInventory(5),
+      ])
+
+      if (prices && prices.length > 0) {
+        pricesContext = formatPricesData(prices)
+      }
+
+      if (inventory && inventory.length > 0) {
+        inventoryContext = formatInventoryData(inventory)
+      }
+    } catch (dataError) {
+      console.error("Failed to fetch context data:", dataError)
+      // 即使数据获取失败，也继续处理请求
+    }
+
+    // 生成带上下文的系统提示
+    const systemPrompt = generateSystemPromptWithContext({
+      prices: pricesContext || undefined,
+      inventory: inventoryContext || undefined,
+      date: new Date().toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'long'
+      }),
+    })
+
     // 转换消息格式
     const formattedMessages = messages.map((msg: { role: string; content: string }) => {
       const role = msg.role === "agent" ? "assistant" : msg.role as "user" | "assistant" | "system"
@@ -31,7 +91,7 @@ export async function POST(req: Request) {
 
     // 添加系统提示
     const messagesWithSystem = [
-      { role: "system" as const, content: SYSTEM_PROMPT },
+      { role: "system" as const, content: systemPrompt },
       ...formattedMessages,
     ]
 

@@ -96,7 +96,7 @@ async function fetchGDELTTimeline(query: string) {
     return parseTimelineData(data)
   } catch {
     // 返回模拟数据
-    return getMockTimelineData(query)
+    return getMockTimelineData()
   }
 }
 
@@ -142,24 +142,47 @@ async function getSulfurNewsSummary() {
   }
 }
 
-function parseTimelineData(data: any) {
+interface GDELTTimelineItem {
+  date: string
+  value?: number
+  count?: number
+}
+
+interface GDELTTimelineData {
+  timeline?: GDELTTimelineItem[]
+}
+
+function parseTimelineData(data: GDELTTimelineData) {
   if (!data?.timeline || !Array.isArray(data.timeline)) {
     return []
   }
 
-  return data.timeline.map((item: any) => ({
+  return data.timeline.map((item) => ({
     date: item.date,
     value: item.value || 0,
     count: item.count || 0
   }))
 }
 
-function parseNewsData(data: any) {
+interface GDELTArticle {
+  title?: string
+  url?: string
+  sourcecountry?: string
+  seendate?: string
+  language?: string
+  tone?: number
+}
+
+interface GDELTNewsData {
+  articles?: GDELTArticle[]
+}
+
+function parseNewsData(data: GDELTNewsData) {
   if (!data?.articles || !Array.isArray(data.articles)) {
     return []
   }
 
-  return data.articles.map((article: any) => ({
+  return data.articles.map((article) => ({
     title: article.title || "",
     url: article.url || "",
     source: article.sourcecountry || "",
@@ -169,7 +192,7 @@ function parseNewsData(data: any) {
   }))
 }
 
-function getMockTimelineData(query: string) {
+function getMockTimelineData() {
   const now = new Date()
   const data = []
 

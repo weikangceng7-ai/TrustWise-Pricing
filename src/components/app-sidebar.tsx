@@ -7,6 +7,8 @@ import {
   MessageSquareText,
   FileText,
   Network,
+  Sparkles,
+  ChevronRight,
 } from "lucide-react"
 
 import {
@@ -29,24 +31,28 @@ const navItems = [
     url: "/dashboard",
     icon: LayoutDashboard,
     description: "数据概览与价格趋势",
+    color: "cyan",
   },
   {
     title: "价格预测知识图谱",
     url: "/yihua-code-graph",
     icon: Network,
     description: "市场资讯、企业经验、制度规则知识库",
+    color: "violet",
   },
   {
     title: "Agent 决策助手",
     url: "/agent-chat",
     icon: MessageSquareText,
     description: "智能采购决策支持",
+    color: "amber",
   },
   {
     title: "采购报告单",
     url: "/reports",
     icon: FileText,
     description: "历史报告与数据分析",
+    color: "emerald",
   },
 ]
 
@@ -55,14 +61,17 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader>
+      {/* Sidebar Header */}
+      <SidebarHeader className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-linear-to-b from-cyan-500/5 via-transparent to-transparent" />
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
               render={<Link href="/dashboard" />}
+              className="relative hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all duration-300"
             >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#0a0a1a] to-[#1b263b] p-1">
+              <div className="relative flex aspect-square size-8 items-center justify-center rounded-xl bg-linear-to-br from-slate-100 dark:from-[#0a0a1a] to-slate-200 dark:to-[#1b263b] p-1.5 border border-slate-200 dark:border-slate-700/50 shadow-lg group hover:shadow-cyan-500/20 transition-all duration-300">
                 <svg viewBox="0 0 32 32" className="size-full">
                   <defs>
                     <linearGradient id="sidebarCenter" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -73,8 +82,15 @@ export function AppSidebar() {
                       <stop offset="0%" stopColor="#00d4ff"/>
                       <stop offset="100%" stopColor="#a855f7"/>
                     </linearGradient>
+                    <filter id="glow">
+                      <feGaussianBlur stdDeviation="0.5" result="coloredBlur"/>
+                      <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
                   </defs>
-                  <g stroke="url(#sidebarLine)" strokeWidth="1.5" strokeLinecap="round">
+                  <g stroke="url(#sidebarLine)" strokeWidth="1.5" strokeLinecap="round" filter="url(#glow)">
                     <line x1="16" y1="16" x2="16" y2="5"/>
                     <line x1="16" y1="16" x2="26" y2="10"/>
                     <line x1="16" y1="16" x2="26" y2="22"/>
@@ -93,9 +109,9 @@ export function AppSidebar() {
                   <text x="16" y="19" fontFamily="Arial" fontSize="6.5" fontWeight="bold" fill="#0a0a1a" textAnchor="middle">S</text>
                 </svg>
               </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">硫磺价格预测</span>
-                <span className="truncate text-xs text-muted-foreground">
+              <div className="grid flex-1 text-left text-sm leading-tight relative">
+                <span className="truncate font-semibold text-slate-900 dark:text-white">硫磺价格预测</span>
+                <span className="truncate text-xs text-slate-500 dark:text-slate-400">
                   决策辅助系统
                 </span>
               </div>
@@ -104,9 +120,12 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
+      {/* Sidebar Content */}
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>导航菜单</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-wide uppercase px-2">
+            导航菜单
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
@@ -115,9 +134,22 @@ export function AppSidebar() {
                     render={<Link href={item.url} />}
                     isActive={pathname === item.url || pathname.startsWith(item.url + "/")}
                     tooltip={item.description}
+                    className={`group relative transition-all duration-300 ${
+                      pathname === item.url || pathname.startsWith(item.url + "/")
+                        ? `bg-${item.color}-500/10 border-${item.color}-500/30 shadow-lg shadow-${item.color}-500/10`
+                        : 'hover:bg-slate-100 dark:hover:bg-slate-800/50 border-transparent'
+                    }`}
                   >
-                    <item.icon className="size-4" />
-                    <span>{item.title}</span>
+                    <div className="relative">
+                      {pathname === item.url || pathname.startsWith(item.url + "/") ? (
+                        <div className={`absolute inset-0 bg-${item.color}-400/30 blur-lg`} />
+                      ) : null}
+                      <item.icon className={`relative size-4.5 ${pathname === item.url || pathname.startsWith(item.url + "/") ? `text-${item.color}-400` : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors'}`} />
+                    </div>
+                    <span className={`font-medium ${pathname === item.url || pathname.startsWith(item.url + "/") ? `text-${item.color}-400` : 'text-slate-700 dark:text-slate-300'}`}>{item.title}</span>
+                    <ChevronRight className={`ml-auto size-3.5 transition-transform duration-300 ${
+                      pathname === item.url || pathname.startsWith(item.url + "/") ? 'rotate-90 opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`} />
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -126,11 +158,16 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
+      {/* Sidebar Footer */}
+      <SidebarFooter className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-linear-to-t from-violet-500/5 via-transparent to-transparent" />
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="sm" className="text-xs text-muted-foreground">
-              <span>© 2024 Sulfur Agent</span>
+            <SidebarMenuButton size="sm" className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all duration-300">
+              <div className="flex items-center gap-2">
+                <Sparkles className="size-3" />
+                <span>© 2024 Sulfur Agent</span>
+              </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
