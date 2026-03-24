@@ -3,22 +3,26 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { db } from "@/db"
 import * as schema from "@/db/schema"
 
+const isDatabaseAvailable = db !== null
+
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
-  database: drizzleAdapter(db!, {
-    provider: "pg",
-    schema,
-  }),
+  database: isDatabaseAvailable
+    ? drizzleAdapter(db, {
+        provider: "pg",
+        schema,
+      })
+    : undefined,
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
   },
   session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 天
-    updateAge: 60 * 60 * 24, // 每天更新一次
+    expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24,
     cookieCache: {
       enabled: true,
-      maxAge: 5 * 60, // 5 分钟缓存
+      maxAge: 5 * 60,
     },
   },
   user: {

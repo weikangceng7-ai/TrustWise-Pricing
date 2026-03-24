@@ -2,12 +2,27 @@
 
 import { useState, useCallback, useRef, useEffect } from "react"
 
+export interface ImageContent {
+  type: "image_url"
+  imageUrl: {
+    url: string
+  }
+}
+
+export interface TextContent {
+  type: "text"
+  text: string
+}
+
+export type MessageContent = string | (TextContent | ImageContent)[]
+
 export interface ChatMessage {
   id: string
   role: "user" | "agent"
   content: string
   timestamp: Date
   conversationId?: string
+  images?: string[]
 }
 
 export interface Conversation {
@@ -156,7 +171,7 @@ export function useChatWithHistory(options: UseChatWithHistoryOptions = {}) {
   }, [currentConversationId])
 
   // 发送消息
-  const sendMessage = useCallback(async (content: string) => {
+  const sendMessage = useCallback(async (content: string, images?: string[]) => {
     if (!content.trim() || isLoading) return
 
     if (abortControllerRef.current) {
@@ -169,6 +184,7 @@ export function useChatWithHistory(options: UseChatWithHistoryOptions = {}) {
       content: content.trim(),
       timestamp: new Date(),
       conversationId: currentConversationId || undefined,
+      images,
     }
 
     setMessages((prev) => [...prev, userMessage])
@@ -200,14 +216,44 @@ export function useChatWithHistory(options: UseChatWithHistoryOptions = {}) {
     try {
       abortControllerRef.current = new AbortController()
 
+      // 构建消息内容
+      const formattedMessages = messages
+        .filter((m) => m.id !== "welcome")
+        .map((m) => {
+          if (m.images && m.images.length > 0) {
+            return {
+              role: m.role,
+              content: [
+                { type: "text", text: m.content },
+                ...m.images.map((img) => ({
+                  type: "image_url",
+                  imageUrl: { url: img },
+                })),
+              ],
+            }
+          }
+          return { role: m.role, content: m.content }
+        })
+
+      // 添加当前消息
+      const currentMsg: { role: string; content: string | (TextContent | ImageContent)[] } = images && images.length > 0
+        ? {
+            role: "user",
+            content: [
+              { type: "text", text: content.trim() },
+              ...images.map((img) => ({
+                type: "image_url" as const,
+                imageUrl: { url: img },
+              })),
+            ],
+          }
+        : { role: "user", content: content.trim() }
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: messages
-            .filter((m) => m.id !== "welcome")
-            .map((m) => ({ role: m.role, content: m.content }))
-            .concat({ role: "user", content: content.trim() }),
+          messages: [...formattedMessages, currentMsg],
         }),
         signal: abortControllerRef.current.signal,
       })

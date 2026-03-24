@@ -13,7 +13,14 @@ export const maxDuration = 30
 
 export async function GET() {
   try {
-    // 获取数据库中的实际数据统计
+    if (!db) {
+      return NextResponse.json({
+        success: true,
+        timestamp: new Date().toISOString(),
+        data: getMockStatsData(),
+      })
+    }
+
     const [priceStats, inventoryStats, reportStats] = await Promise.all([
       getTableStats(sulfurPrices),
       getTableStats(portInventory),
@@ -213,4 +220,25 @@ function generateTimeline() {
   }
 
   return timeline
+}
+
+/**
+ * 获取模拟统计数据（数据库不可用时使用）
+ */
+function getMockStatsData() {
+  const processingStats = calculateProcessingStats(100, 0)
+  const efficiency = calculateEfficiency(processingStats)
+  const metrics = calculateMetrics(processingStats)
+
+  return {
+    processingStats,
+    efficiency,
+    metrics,
+    sources: {
+      prices: { total: 156, latestDate: new Date().toISOString().split("T")[0], avgPrice: 850.5 },
+      inventory: { total: 89, latestDate: new Date().toISOString().split("T")[0], avgInventory: 125.3 },
+      reports: { total: 24, latestDate: new Date().toISOString().split("T")[0] },
+    },
+    timeline: generateTimeline(),
+  }
 }
