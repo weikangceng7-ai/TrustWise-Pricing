@@ -151,7 +151,7 @@ export async function POST(req: Request) {
 
     if (containsImage) {
       systemPrompt = generateImageAnalysisPrompt()
-      model = "gpt-4o-mini"
+      model = "gpt-4-vision-preview"
     } else {
       systemPrompt = generateSystemPromptWithContext({
         prices: pricesContext || undefined,

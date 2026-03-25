@@ -374,7 +374,7 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <StatCard
           title="总报告数"
           value={stats?.total || 0}
@@ -395,13 +395,6 @@ export default function ReportsPage() {
           icon={PieChart}
           trend="up"
           description="较上月+15%"
-        />
-        <StatCard
-          title="待审核"
-          value={stats?.pending || 0}
-          icon={Clock}
-          trend="down"
-          description="较上周-2"
         />
       </div>
 
