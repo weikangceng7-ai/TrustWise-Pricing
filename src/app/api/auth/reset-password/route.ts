@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/db"
-import { user } from "@/db/schema"
+import { user, account } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { resetTokens } from "../forgot-password/route"
 import { hash } from "bcryptjs"
 
 export async function POST(request: NextRequest) {
   try {
+    // 检查数据库连接
+    if (!db) {
+      return NextResponse.json({ error: "数据库连接失败" }, { status: 500 })
+    }
+
     const body = await request.json()
     const { token, password, confirmPassword } = body
 
@@ -38,14 +43,25 @@ export async function POST(request: NextRequest) {
     // 哈希新密码
     const hashedPassword = await hash(password, 10)
 
-    // 更新用户密码
+    // 查找用户
+    const [existingUser] = await db
+      .select()
+      .from(user)
+      .where(eq(user.email, tokenData.email))
+      .limit(1)
+
+    if (!existingUser) {
+      return NextResponse.json({ error: "用户不存在" }, { status: 400 })
+    }
+
+    // 更新用户账户密码（密码存储在 account 表中）
     await db
-      .update(user)
+      .update(account)
       .set({
         password: hashedPassword,
         updatedAt: new Date(),
       })
-      .where(eq(user.email, tokenData.email))
+      .where(eq(account.userId, existingUser.id))
 
     // 删除已使用的 token
     resetTokens.delete(token)

@@ -268,7 +268,7 @@ export function AuthDialog({
         )}
 
         {mode === "login" ? (
-          <form action={handleLogin} className="space-y-4">
+          <form key="login-form" action={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="login-email">邮箱</Label>
               <Input
@@ -353,7 +353,7 @@ export function AuthDialog({
               </Button>
             </div>
           ) : (
-            <form action={handleForgotPassword} className="space-y-4">
+            <form key="forgot-form" action={handleForgotPassword} className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 输入您的邮箱地址，我们将发送密码重置链接。
               </p>
@@ -386,7 +386,7 @@ export function AuthDialog({
             </form>
           )
         ) : (
-          <form action={handleRegister} className="space-y-4">
+          <form key="register-form" action={handleRegister} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="register-name">姓名</Label>
               <Input

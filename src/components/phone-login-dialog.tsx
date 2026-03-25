@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2 } from "lucide-react"
-import { signIn } from "@/lib/auth-client"
 import { verifyCode } from "@/lib/services/sms"
 
 interface PhoneLoginDialogProps {
@@ -102,15 +101,17 @@ export function PhoneLoginDialog({
         return
       }
 
-      // 调用 better-auth 的手机号登录
-      // 注意：better-auth 需要配置手机号登录插件
-      const result = await signIn.phone({
-        phone,
-        code,
+      // 调用自定义手机号登录 API
+      const res = await fetch("/api/auth/phone-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, code }),
       })
 
-      if (result.error) {
-        setError(result.error.message || "登录失败")
+      const result = await res.json()
+
+      if (!res.ok) {
+        setError(result.error || "登录失败")
         setIsLoading(false)
         return
       }

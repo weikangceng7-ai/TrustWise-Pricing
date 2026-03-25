@@ -8,7 +8,7 @@
   "crons": [
     {
       "path": "/api/cron/global-news",
-      "schedule": "0 */12 * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }

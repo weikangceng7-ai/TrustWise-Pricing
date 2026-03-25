@@ -195,7 +195,7 @@ export function PriceChart({ timeRange = "month" }: PriceChartProps) {
   const tooltipItemColor = isDark ? "#cbd5e1" : "#475569"
 
   return (
-    <ResponsiveContainer width="100%" height={280}>
+    <ResponsiveContainer width="100%" height={280} minWidth={0} minHeight={0}>
       <LineChart
         data={chartData}
         margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
