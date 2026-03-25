@@ -1,5 +1,6 @@
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } from "docx"
 import { saveAs } from "file-saver"
+import { generateKnowledgeGraphContext, formatGraphContextAsText } from "@/services/knowledge-graph-reasoning"
 
 export interface ReportMessage {
   role: "user" | "agent"
@@ -7,9 +8,34 @@ export interface ReportMessage {
   timestamp: Date
 }
 
-export async function generateChatReport(messages: ReportMessage[], title: string = "硫磺采购决策报告"): Promise<string> {
+export interface ReportOptions {
+  title?: string
+  enterpriseCode?: string
+  includeKnowledgeGraph?: boolean
+}
+
+export async function generateChatReport(
+  messages: ReportMessage[],
+  options: ReportOptions = {}
+): Promise<string> {
+  const { title = "硫磺采购决策报告", enterpriseCode, includeKnowledgeGraph = true } = options
   const now = new Date()
   const dateStr = now.toLocaleString("zh-CN")
+
+  // 获取知识图谱上下文
+  let knowledgeGraphText = ""
+  if (includeKnowledgeGraph) {
+    try {
+      const lastUserMessage = [...messages].reverse().find(m => m.role === "user")
+      const question = lastUserMessage?.content || ""
+      const graphContext = await generateKnowledgeGraphContext(question)
+      if (graphContext.enterprises.length > 0 || graphContext.factors.length > 0) {
+        knowledgeGraphText = formatGraphContextAsText(graphContext)
+      }
+    } catch (error) {
+      console.error("Failed to get knowledge graph context:", error)
+    }
+  }
 
   // 创建文档内容
   const children: Paragraph[] = [
@@ -92,6 +118,45 @@ export async function generateChatReport(messages: ReportMessage[], title: strin
       )
     }
   })
+
+  // 添加知识图谱分析章节
+  if (knowledgeGraphText) {
+    children.push(
+      new Paragraph({
+        text: "━".repeat(40),
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 300, after: 200 },
+      }),
+      new Paragraph({
+        text: "📊 知识图谱分析",
+        heading: HeadingLevel.HEADING_2,
+        spacing: { after: 200 },
+      })
+    )
+
+    // 解析知识图谱文本并添加到报告
+    const kgLines = knowledgeGraphText.split("\n")
+    kgLines.forEach((line) => {
+      if (line.startsWith("### ")) {
+        children.push(
+          new Paragraph({
+            text: line.replace("### ", ""),
+            heading: HeadingLevel.HEADING_3,
+            spacing: { before: 150, after: 100 },
+          })
+        )
+      } else if (line.startsWith("## ")) {
+        // 跳过主标题，已单独添加
+      } else if (line.trim()) {
+        children.push(
+          new Paragraph({
+            text: line,
+            spacing: { after: 60 },
+          })
+        )
+      }
+    })
+  }
 
   // 页脚
   children.push(
