@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSession, signOut } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { AuthDialog } from "@/components/auth-dialog"
@@ -16,8 +16,24 @@ export function UserDropdown() {
   const { data: session, isPending } = useSession()
   const [showAuthDialog, setShowAuthDialog] = useState(false)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
-  // 加载中显示骨架按钮，避免 session 状态变化导致的受控/非受控警告
+  // 等待客户端挂载后再渲染，避免 SSR hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // SSR 时渲染一致的占位符，避免 hydration mismatch
+  if (!mounted) {
+    return (
+      <Button variant="outline" size="sm" disabled>
+        <User className="size-4" />
+        <span className="hidden md:inline">登录</span>
+      </Button>
+    )
+  }
+
+  // 客户端加载中显示骨架按钮
   if (isPending) {
     return (
       <Button variant="outline" size="sm" disabled>

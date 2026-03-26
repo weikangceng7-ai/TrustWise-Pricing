@@ -24,6 +24,7 @@ import {
   Image as ImageIcon,
   X,
 } from "lucide-react"
+import { ThreePhaseArchitectureCarousel } from "@/components/three-phase-architecture-carousel"
 import { useChatWithHistory, type ChatMessage, type Conversation } from "@/hooks/use-chat-with-history"
 import { generateChatReport } from "@/lib/report-generator"
 import { AuthDialog } from "@/components/auth-dialog"
@@ -671,6 +672,11 @@ export default function AgentChatPage() {
                 )}
               </div>
             </CardHeader>
+
+            {/* 系统架构轮播 - 放在聊天区域内顶部 */}
+            <div className="border-b border-slate-200 dark:border-slate-700/50 shrink-0">
+              <ThreePhaseArchitectureCarousel className="rounded-none border-0" autoPlay={true} interval={5000} />
+            </div>
 
             {/* 消息滚动区域 */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-5 min-h-0">
