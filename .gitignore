@@ -43,3 +43,5 @@ next-env.d.ts
 
 # gstack (local dev tool)
 .gstack/
+
+.vercel

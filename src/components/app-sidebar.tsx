@@ -9,7 +9,10 @@ import {
   Network,
   Sparkles,
   ChevronRight,
+  Building2,
+  ChevronDown,
 } from "lucide-react"
+import { useState } from "react"
 
 import {
   Sidebar,
@@ -24,6 +27,44 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
+
+// 颜色样式映射 - 解决 Tailwind JIT 无法检测动态类名的问题
+const COLOR_STYLES: Record<string, {
+  bg: string
+  border: string
+  shadow: string
+  text: string
+  glow: string
+}> = {
+  cyan: {
+    bg: "bg-cyan-500/10",
+    border: "border-cyan-500/30",
+    shadow: "shadow-cyan-500/10",
+    text: "text-cyan-400",
+    glow: "bg-cyan-400/30",
+  },
+  violet: {
+    bg: "bg-violet-500/10",
+    border: "border-violet-500/30",
+    shadow: "shadow-violet-500/10",
+    text: "text-violet-400",
+    glow: "bg-violet-400/30",
+  },
+  amber: {
+    bg: "bg-amber-500/10",
+    border: "border-amber-500/30",
+    shadow: "shadow-amber-500/10",
+    text: "text-amber-400",
+    glow: "bg-amber-400/30",
+  },
+  emerald: {
+    bg: "bg-emerald-500/10",
+    border: "border-emerald-500/30",
+    shadow: "shadow-emerald-500/10",
+    text: "text-emerald-400",
+    glow: "bg-emerald-400/30",
+  },
+}
 
 const navItems = [
   {
@@ -56,8 +97,35 @@ const navItems = [
   },
 ]
 
+// 企业导航配置
+const enterpriseItems = [
+  {
+    title: "湖北宜化集团",
+    url: "/enterprise/yihua",
+    code: "yihua",
+    description: "硫磺产能约120万吨/年",
+    color: "cyan",
+  },
+  {
+    title: "鲁西化工集团",
+    url: "/enterprise/luxi",
+    code: "luxi",
+    description: "山东大型化工企业",
+    color: "violet",
+  },
+  {
+    title: "金正大生态工程",
+    url: "/enterprise/jinzhengda",
+    code: "jinzhengda",
+    description: "化肥行业龙头",
+    color: "amber",
+  },
+]
+
 export function AppSidebar() {
   const pathname = usePathname()
+  const [enterprisesOpen, setEnterprisesOpen] = useState(true)
+  const isEnterpriseActive = pathname.startsWith("/enterprise/")
 
   return (
     <Sidebar collapsible="icon">
@@ -128,33 +196,83 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    render={<Link href={item.url} />}
-                    isActive={pathname === item.url || pathname.startsWith(item.url + "/")}
-                    tooltip={item.description}
-                    className={`group relative transition-all duration-300 ${
-                      pathname === item.url || pathname.startsWith(item.url + "/")
-                        ? `bg-${item.color}-500/10 border-${item.color}-500/30 shadow-lg shadow-${item.color}-500/10`
-                        : 'hover:bg-slate-100 dark:hover:bg-slate-800/50 border-transparent'
-                    }`}
-                  >
-                    <div className="relative">
-                      {pathname === item.url || pathname.startsWith(item.url + "/") ? (
-                        <div className={`absolute inset-0 bg-${item.color}-400/30 blur-lg`} />
-                      ) : null}
-                      <item.icon className={`relative size-4.5 ${pathname === item.url || pathname.startsWith(item.url + "/") ? `text-${item.color}-400` : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors'}`} />
-                    </div>
-                    <span className={`font-medium ${pathname === item.url || pathname.startsWith(item.url + "/") ? `text-${item.color}-400` : 'text-slate-700 dark:text-slate-300'}`}>{item.title}</span>
-                    <ChevronRight className={`ml-auto size-3.5 transition-transform duration-300 ${
-                      pathname === item.url || pathname.startsWith(item.url + "/") ? 'rotate-90 opacity-100' : 'opacity-0 group-hover:opacity-100'
-                    }`} />
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {navItems.map((item) => {
+                const isActive = pathname === item.url || pathname.startsWith(item.url + "/")
+                const styles = COLOR_STYLES[item.color]
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      render={<Link href={item.url} />}
+                      isActive={isActive}
+                      tooltip={item.description}
+                      className={`group relative transition-all duration-300 ${
+                        isActive
+                          ? `${styles.bg} ${styles.border} shadow-lg ${styles.shadow}`
+                          : 'hover:bg-slate-100 dark:hover:bg-slate-800/50 border-transparent'
+                      }`}
+                    >
+                      <div className="relative">
+                        {isActive ? (
+                          <div className={`absolute inset-0 ${styles.glow} blur-lg`} />
+                        ) : null}
+                        <item.icon className={`relative size-4.5 ${isActive ? styles.text : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors'}`} />
+                      </div>
+                      <span className={`font-medium ${isActive ? styles.text : 'text-slate-700 dark:text-slate-300'}`}>{item.title}</span>
+                      <ChevronRight className={`ml-auto size-3.5 transition-transform duration-300 ${
+                        isActive ? 'rotate-90 opacity-100' : 'opacity-0 group-hover:opacity-100'
+                      }`} />
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* 企业导航 */}
+        <SidebarGroup>
+          <button
+            onClick={() => setEnterprisesOpen(!enterprisesOpen)}
+            className="w-full flex items-center justify-between px-2 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-wide uppercase hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+          >
+            <span>企业价格分析</span>
+            <ChevronDown className={`size-3.5 transition-transform duration-200 ${enterprisesOpen ? 'rotate-0' : '-rotate-90'}`} />
+          </button>
+          {enterprisesOpen && (
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {enterpriseItems.map((item) => {
+                  const isActive = pathname === item.url
+                  const styles = COLOR_STYLES[item.color]
+                  return (
+                    <SidebarMenuItem key={item.code}>
+                      <SidebarMenuButton
+                        render={<Link href={item.url} />}
+                        isActive={isActive}
+                        tooltip={item.description}
+                        className={`group relative transition-all duration-300 ${
+                          isActive
+                            ? `${styles.bg} ${styles.border} shadow-lg ${styles.shadow}`
+                            : 'hover:bg-slate-100 dark:hover:bg-slate-800/50 border-transparent'
+                        }`}
+                      >
+                        <div className="relative">
+                          {isActive ? (
+                            <div className={`absolute inset-0 ${styles.glow} blur-lg`} />
+                          ) : null}
+                          <Building2 className={`relative size-4.5 ${isActive ? styles.text : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors'}`} />
+                        </div>
+                        <span className={`font-medium ${isActive ? styles.text : 'text-slate-700 dark:text-slate-300'}`}>{item.title}</span>
+                        <ChevronRight className={`ml-auto size-3.5 transition-transform duration-300 ${
+                          isActive ? 'rotate-90 opacity-100' : 'opacity-0 group-hover:opacity-100'
+                        }`} />
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          )}
         </SidebarGroup>
       </SidebarContent>
 

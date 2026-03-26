@@ -1,6 +1,7 @@
 import OpenAI from "openai"
 import { generateSystemPromptWithContext } from "@/lib/system-prompt"
 import { getPrices, getInventory } from "@/services/prices"
+import { generateKnowledgeGraphContext, formatGraphContextAsText } from "@/services/knowledge-graph-reasoning"
 
 export const maxDuration = 60
 
@@ -110,11 +111,23 @@ export async function POST(req: Request) {
 
     let pricesContext = ""
     let inventoryContext = ""
+    let knowledgeGraphContext = ""
+
+    // 获取用户最后一条消息用于知识图谱查询
+    const lastUserMessage = [...messages].reverse().find(m => m.role === "user")
+    const userQuestion = lastUserMessage
+      ? (typeof lastUserMessage.content === "string"
+          ? lastUserMessage.content
+          : Array.isArray(lastUserMessage.content)
+            ? lastUserMessage.content.find(c => c.type === "text")?.text || ""
+            : "")
+      : ""
 
     try {
-      const [prices, inventory] = await Promise.all([
+      const [prices, inventory, graphContext] = await Promise.all([
         getPrices(10),
         getInventory(5),
+        generateKnowledgeGraphContext(userQuestion),
       ])
 
       if (prices && prices.length > 0) {
@@ -123,6 +136,11 @@ export async function POST(req: Request) {
 
       if (inventory && inventory.length > 0) {
         inventoryContext = formatInventoryData(inventory)
+      }
+
+      // 格式化知识图谱上下文
+      if (graphContext && (graphContext.enterprises.length > 0 || graphContext.factors.length > 0)) {
+        knowledgeGraphContext = formatGraphContextAsText(graphContext)
       }
     } catch (dataError) {
       console.error("Failed to fetch context data:", dataError)
@@ -138,6 +156,7 @@ export async function POST(req: Request) {
       systemPrompt = generateSystemPromptWithContext({
         prices: pricesContext || undefined,
         inventory: inventoryContext || undefined,
+        knowledgeGraph: knowledgeGraphContext || undefined,
         date: new Date().toLocaleDateString('zh-CN', {
           year: 'numeric',
           month: 'long',
@@ -150,7 +169,7 @@ export async function POST(req: Request) {
 
     const formattedMessages = messages.map((msg) => {
       const role = msg.role === "agent" ? "assistant" : msg.role as "user" | "assistant" | "system"
-      
+
       if (Array.isArray(msg.content)) {
         const content = msg.content.map((item) => {
           if (item.type === "image_url") {
@@ -163,14 +182,14 @@ export async function POST(req: Request) {
           }
           return item
         })
-        return { role, content }
+        return { role: role as "user" | "assistant", content }
       }
-      
-      return { role, content: msg.content }
-    })
 
-    const messagesWithSystem = [
-      { role: "system" as const, content: systemPrompt },
+      return { role: role as "user" | "assistant", content: msg.content }
+    }) as OpenAI.ChatCompletionMessageParam[]
+
+    const messagesWithSystem: OpenAI.ChatCompletionMessageParam[] = [
+      { role: "system", content: systemPrompt },
       ...formattedMessages,
     ]
 

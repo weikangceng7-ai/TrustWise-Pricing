@@ -11,7 +11,7 @@ export const user = pgTable("user", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   role: text("role").default("user"),
   // 手机号登录支持
-  phone: text("phone").unique(),
+  phone: text("phone").unique(), // 手机号需要唯一约束，防止重复注册
   phoneVerified: boolean("phone_verified").notNull().default(false),
 })
 
@@ -173,6 +173,22 @@ export const notifications = pgTable("notifications", {
   readAt: timestamp("read_at"),
 })
 
+// 企业硫磺价格预测表
+export const enterprisePricePredictions = pgTable("enterprise_price_predictions", {
+  id: serial("id").primaryKey(),
+  enterpriseName: varchar("enterprise_name", { length: 100 }).notNull(), // 企业名称
+  enterpriseCode: varchar("enterprise_code", { length: 20 }).notNull(), // 企业代码 (yihua/luxi/jinzhengda)
+  date: date("date").notNull(), // 日期
+  actualPrice: decimal("actual_price", { precision: 10, scale: 2 }), // 实际价格
+  predictedPrice: decimal("predicted_price", { precision: 10, scale: 2 }), // 预测价格
+  lowerBound: decimal("lower_bound", { precision: 10, scale: 2 }), // 预测下限
+  upperBound: decimal("upper_bound", { precision: 10, scale: 2 }), // 预测上限
+  confidence: decimal("confidence", { precision: 5, scale: 2 }), // 置信度
+  modelType: varchar("model_type", { length: 50 }), // 模型类型 (LSTM/ARIMA/EEMD-LSTM)
+  unit: varchar("unit", { length: 20 }).default("元/吨"),
+  createdAt: timestamp("created_at").defaultNow(),
+})
+
 // 类型导出
 export type SulfurPrice = typeof sulfurPrices.$inferSelect
 export type NewSulfurPrice = typeof sulfurPrices.$inferInsert
@@ -190,3 +206,5 @@ export type ChatMessage = typeof chatMessages.$inferSelect
 export type NewChatMessage = typeof chatMessages.$inferInsert
 export type Notification = typeof notifications.$inferSelect
 export type NewNotification = typeof notifications.$inferInsert
+export type EnterprisePricePrediction = typeof enterprisePricePredictions.$inferSelect
+export type NewEnterprisePricePrediction = typeof enterprisePricePredictions.$inferInsert

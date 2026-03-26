@@ -13,9 +13,19 @@ import {
 } from "@/components/ui/dialog"
 
 export function UserDropdown() {
-  const { data: session } = useSession()
+  const { data: session, isPending } = useSession()
   const [showAuthDialog, setShowAuthDialog] = useState(false)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+
+  // 加载中显示骨架按钮，避免 session 状态变化导致的受控/非受控警告
+  if (isPending) {
+    return (
+      <Button variant="outline" size="sm" disabled>
+        <User className="size-4 animate-pulse" />
+        <span className="hidden md:inline">...</span>
+      </Button>
+    )
+  }
 
   if (!session) {
     return (

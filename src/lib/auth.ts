@@ -3,12 +3,10 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { db } from "@/db"
 import * as schema from "@/db/schema"
 
-const isDatabaseAvailable = db !== null
-
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
-  database: isDatabaseAvailable
-    ? drizzleAdapter(db, {
+  database: db
+    ? drizzleAdapter(db as NonNullable<typeof db>, {
         provider: "pg",
         schema,
       })
@@ -54,10 +52,6 @@ export const auth = betterAuth({
       const internationalRegex = /^\+[1-9]\d{6,14}$/
       return chinaPhoneRegex.test(phone) || internationalRegex.test(phone)
     },
-  },
-  // 高级安全设置
-  advanced: {
-    generateId: false, // 使用默认 ID 生成
   },
 })
 

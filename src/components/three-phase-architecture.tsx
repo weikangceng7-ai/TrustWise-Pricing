@@ -136,7 +136,7 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
                   <span className="text-sm font-medium text-slate-900 dark:text-white">市场资讯库</span>
                 </div>
                 <div className="h-32">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <BarChart data={marketNewsData} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(100,116,139,0.2)" />
                       <XAxis type="number" tick={{ fontSize: 10, fill: "#64748b" }} stroke="rgba(100,116,139,0.3)" />
@@ -177,7 +177,7 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
                   <span className="text-sm font-medium text-slate-900 dark:text-white">企业经验库</span>
                 </div>
                 <div className="h-32">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <RechartsPie>
                       <Pie
                         data={enterpriseData}
@@ -217,7 +217,7 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
                   <span className="text-sm font-medium text-slate-900 dark:text-white">制度规则库</span>
                 </div>
                 <div className="h-32">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <BarChart data={rulesData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(100,116,139,0.2)" />
                       <XAxis
@@ -288,7 +288,7 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
                   {isLoading && <span className="text-xs text-slate-400">(加载中...)</span>}
                 </div>
                 <div className="h-32">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <RechartsPie>
                       <Pie
                         data={dataProcessingStats}
@@ -338,7 +338,7 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
                   {isLoading && <span className="text-xs text-slate-400">(加载中...)</span>}
                 </div>
                 <div className="h-32">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <BarChart data={processingEfficiency} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(100,116,139,0.2)" />
                       <XAxis type="number" tick={{ fontSize: 10, fill: "#64748b" }} stroke="rgba(100,116,139,0.3)" />
