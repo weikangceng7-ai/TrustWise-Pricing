@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { TrendingUp, Package, DollarSign, BarChart3, AlertTriangle, ChevronRight, MessageCircle, FileText, Settings, ArrowRight, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react"
 import { PriceChart, TimeRange } from "@/components/price-chart"
-import { ThreePhaseArchitecture } from "@/components/three-phase-architecture"
 import { EnterprisePredictionOverview } from "@/components/enterprise-prediction-chart"
 import Link from "next/link"
 import { getBackgroundImage } from "@/config/images"
@@ -407,9 +406,6 @@ export default function DashboardPage() {
 
         {/* 企业价格预测图谱 */}
         <EnterprisePredictionOverview className="mb-6" />
-
-        {/* 三阶段系统架构 */}
-        <ThreePhaseArchitecture className="mb-6" />
 
         {/* 下方功能板块 */}
         <div className="grid grid-cols-1 gap-4">
