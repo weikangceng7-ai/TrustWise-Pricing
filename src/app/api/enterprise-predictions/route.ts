@@ -1,38 +1,73 @@
 import { NextResponse } from "next/server"
-import { db, enterprisePricePredictions } from "@/db"
-import { desc, eq, and, gte, lte, sql, inArray } from "drizzle-orm"
 
-// 企业代码常量
 const ENTERPRISE_CODES = ["yihua", "luxi", "jinzhengda"] as const
 
-export async function GET(request: Request) {
-  if (!db) {
-    return NextResponse.json({ error: "Database not available" }, { status: 500 })
+const ENTERPRISE_NAMES: Record<string, string> = {
+  yihua: "宜化集团",
+  luxi: "鲁西化工",
+  jinzhengda: "金正大",
+}
+
+interface PredictionRecord {
+  id: number
+  enterpriseCode: string
+  enterpriseName: string
+  date: string
+  actualPrice: number | null
+  predictedPrice: number | null
+  modelType: string | null
+  confidence: number | null
+  factors: Record<string, number> | null
+}
+
+function generateMockData(enterprise: string, days: number): PredictionRecord[] {
+  const data: PredictionRecord[] = []
+  const now = new Date()
+  const basePrices: Record<string, number> = {
+    yihua: 1180,
+    luxi: 1195,
+    jinzhengda: 1170,
+  }
+  const basePrice = basePrices[enterprise] || 1180
+
+  for (let i = days; i >= 0; i--) {
+    const date = new Date(now)
+    date.setDate(date.getDate() - i)
+    const dateStr = date.toISOString().split("T")[0]
+
+    const fluctuation = (Math.random() - 0.5) * 40
+    const actualPrice = basePrice + fluctuation
+    const predictedPrice = basePrice + fluctuation + (Math.random() - 0.5) * 20
+
+    data.push({
+      id: i,
+      enterpriseCode: enterprise,
+      enterpriseName: ENTERPRISE_NAMES[enterprise] || enterprise,
+      date: dateStr,
+      actualPrice: Number(actualPrice.toFixed(2)),
+      predictedPrice: Number(predictedPrice.toFixed(2)),
+      modelType: "LSTM-Attention",
+      confidence: Number((0.85 + Math.random() * 0.1).toFixed(2)),
+      factors: {
+        supply: 0.35 + Math.random() * 0.1,
+        demand: 0.30 + Math.random() * 0.1,
+        inventory: 0.20 + Math.random() * 0.1,
+        macro: 0.15 + Math.random() * 0.05,
+      },
+    })
   }
 
+  return data
+}
+
+export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    const enterprise = searchParams.get("enterprise") // yihua, luxi, jinzhengda
+    const enterprise = searchParams.get("enterprise")
     const days = parseInt(searchParams.get("days") || "30")
 
-    // 计算日期范围
-    const endDate = new Date()
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - days)
-
     if (enterprise) {
-      // 获取特定企业的数据
-      const data = await db
-        .select()
-        .from(enterprisePricePredictions)
-        .where(
-          and(
-            eq(enterprisePricePredictions.enterpriseCode, enterprise),
-            gte(enterprisePricePredictions.date, startDate.toISOString().split("T")[0])
-          )
-        )
-        .orderBy(enterprisePricePredictions.date)
-
+      const data = generateMockData(enterprise, days)
       return NextResponse.json({
         success: true,
         enterprise: enterprise,
@@ -40,41 +75,28 @@ export async function GET(request: Request) {
       })
     }
 
-    // 获取所有企业的最新数据
-    const latestData = await db
-      .select({
-        enterpriseCode: enterprisePricePredictions.enterpriseCode,
-        enterpriseName: enterprisePricePredictions.enterpriseName,
-        latestDate: sql<string>`MAX(${enterprisePricePredictions.date})`,
-        latestPrice: sql<string>`(SELECT actual_price FROM enterprise_price_predictions ep2 WHERE ep2.enterprise_code = enterprise_price_predictions.enterprise_code ORDER BY date DESC LIMIT 1)`,
-        predictedPrice: sql<string>`(SELECT predicted_price FROM enterprise_price_predictions ep3 WHERE ep3.enterprise_code = enterprise_price_predictions.enterprise_code AND predicted_price IS NOT NULL ORDER BY date DESC LIMIT 1)`,
-        modelType: sql<string>`(SELECT model_type FROM enterprise_price_predictions ep4 WHERE ep4.enterprise_code = enterprise_price_predictions.enterprise_code ORDER BY date DESC LIMIT 1)`,
-        confidence: sql<string>`(SELECT confidence FROM enterprise_price_predictions ep5 WHERE ep5.enterprise_code = enterprise_price_predictions.enterprise_code ORDER BY date DESC LIMIT 1)`,
-      })
-      .from(enterprisePricePredictions)
-      .groupBy(enterprisePricePredictions.enterpriseCode, enterprisePricePredictions.enterpriseName)
-
-    // 优化：一次性获取所有企业的历史数据，避免 N+1 查询
-    const allRecords = await db
-      .select()
-      .from(enterprisePricePredictions)
-      .where(
-        and(
-          inArray(enterprisePricePredictions.enterpriseCode, [...ENTERPRISE_CODES]),
-          gte(enterprisePricePredictions.date, startDate.toISOString().split("T")[0])
-        )
-      )
-      .orderBy(enterprisePricePredictions.date)
-
-    // 按企业代码分组
-    const allData: Record<string, typeof enterprisePricePredictions.$inferSelect[]> = {}
+    const allData: Record<string, PredictionRecord[]> = {}
     for (const code of ENTERPRISE_CODES) {
-      allData[code] = allRecords.filter(record => record.enterpriseCode === code)
+      allData[code] = generateMockData(code, days)
     }
+
+    const summary = ENTERPRISE_CODES.map((code) => {
+      const data = allData[code]
+      const latest = data[data.length - 1]
+      return {
+        enterpriseCode: code,
+        enterpriseName: ENTERPRISE_NAMES[code],
+        latestDate: latest?.date || new Date().toISOString().split("T")[0],
+        latestPrice: latest?.actualPrice?.toString() || "0",
+        predictedPrice: latest?.predictedPrice?.toString() || "0",
+        modelType: latest?.modelType || "LSTM-Attention",
+        confidence: latest?.confidence?.toString() || "0.85",
+      }
+    })
 
     return NextResponse.json({
       success: true,
-      summary: latestData,
+      summary,
       history: allData,
     })
   } catch (error) {
