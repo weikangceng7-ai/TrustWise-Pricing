@@ -591,7 +591,7 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
             <Brain className="h-5 w-5" style={{ color: enterprise.color }} />
             <CardTitle className="text-lg text-slate-900 dark:text-white">价格预测趋势</CardTitle>
           </div>
-          <CardDescription>EEMD-LSTM 模型预测结果</CardDescription>
+          <CardDescription>LSTM 模型预测结果</CardDescription>
         </CardHeader>
         <CardContent>
           <EnterprisePredictionChart enterpriseCode={enterpriseCode} days={90} />
