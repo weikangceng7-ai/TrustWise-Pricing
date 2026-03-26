@@ -248,7 +248,7 @@ export default function DashboardPage() {
                 </button>
               </div>
             </div>
-            <div className="h-48 rounded-xl">
+            <div className="h-[280px] rounded-xl">
               <PriceChart timeRange={timeRange} />
             </div>
           </div>

@@ -80,6 +80,9 @@ const fallbackReports: PurchaseReport[] = [
 
 export async function getReports(filters?: ReportFilters): Promise<PurchaseReport[]> {
   try {
+    if (!db) {
+      throw new Error("Database not available")
+    }
     let query = db.select().from(purchaseReports)
     
     const conditions = []
@@ -151,12 +154,15 @@ export async function getReports(filters?: ReportFilters): Promise<PurchaseRepor
 
 export async function getReportById(id: number): Promise<PurchaseReport | null> {
   try {
+    if (!db) {
+      throw new Error("Database not available")
+    }
     const reports = await db
       .select()
       .from(purchaseReports)
       .where(eq(purchaseReports.id, id))
       .limit(1)
-    
+
     return reports[0] || null
   } catch (error) {
     console.error("获取报告详情失败，使用备用数据:", error)
@@ -166,6 +172,9 @@ export async function getReportById(id: number): Promise<PurchaseReport | null> 
 
 export async function getReportStats(): Promise<ReportStats> {
   try {
+    if (!db) {
+      throw new Error("Database not available")
+    }
     const allReports = await db.select().from(purchaseReports)
     
     const now = new Date()
@@ -243,6 +252,9 @@ export async function getReportStats(): Promise<ReportStats> {
 
 export async function createReport(report: Omit<NewPurchaseReport, "id" | "createdAt">): Promise<PurchaseReport> {
   try {
+    if (!db) {
+      throw new Error("Database not available")
+    }
     const [newReport] = await db
       .insert(purchaseReports)
       .values({
@@ -275,11 +287,14 @@ export async function createReport(report: Omit<NewPurchaseReport, "id" | "creat
 
 export async function deleteReport(id: number): Promise<boolean> {
   try {
+    if (!db) {
+      throw new Error("Database not available")
+    }
     const result = await db
       .delete(purchaseReports)
       .where(eq(purchaseReports.id, id))
       .returning()
-    
+
     return result.length > 0
   } catch (error) {
     console.error("删除报告失败:", error)
@@ -292,10 +307,13 @@ export async function deleteReport(id: number): Promise<boolean> {
 
 export async function generateWeeklyReport(): Promise<NewPurchaseReport | null> {
   try {
+    if (!db) {
+      throw new Error("Database not available")
+    }
     const now = new Date()
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     const dateStr = now.toISOString().split('T')[0]
-    
+
     const prices = await db
       .select()
       .from(sulfurPrices)
