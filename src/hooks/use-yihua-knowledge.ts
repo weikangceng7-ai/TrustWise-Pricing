@@ -8,7 +8,7 @@ interface Response {
 
 async function fetchYihua(): Promise<YihuaAnalytics> {
   const res = await fetch("/api/yihua/knowledge")
-  if (!res.ok) throw new Error("加载宜化知识库失败")
+  if (!res.ok) throw new Error("加载知识库失败")
   const j = (await res.json()) as Response
   if (!j.success || !j.data) throw new Error("数据无效")
   return j.data

@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import { EnterprisePredictionChart } from "./enterprise-prediction-chart"
 import { Neo4jKnowledgeGraph } from "./neo4j-knowledge-graph"
+import { ENTERPRISE_CONFIGS, getEnterpriseNameByCode, getEnterpriseColorByCode, calculateEnterpriseFactorWeights } from "@/services/enterprise-knowledge-config"
 import { InventoryVisualization } from "./inventory-visualization"
 
 // 类型定义
@@ -199,117 +200,52 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
     fetchEnterpriseData()
   }, [enterpriseCode])
 
-  // 默认企业数据（后备）
+  // 默认企业数据（后备）- 从集中配置生成
   function getDefaultEnterpriseData(code: string): EnterpriseData {
-    const defaults: Record<string, EnterpriseData> = {
-      yihua: {
-        code: "yihua",
-        name: "湖北宜化集团",
-        location: "湖北省宜昌市",
-        province: "湖北",
-        capacity: 120,
-        transportMode: "water",
-        mainProducts: ["磷酸一铵", "磷酸二铵", "尿素"],
-        customerRegions: ["华中", "华南", "西南"],
-        inventoryStrategy: "moderate",
-        description: "国内最大硫磺制酸企业之一，依托长江水运优势",
-        color: "#06b6d4",
-        factorWeights: [
-          { factorId: "international_price", factorName: "国际硫磺价格", category: "supply", weight: 24, trend: "up", reason: "国际采购为主，对价格敏感" },
-          { factorId: "fertilizer_demand", factorName: "化肥市场需求", category: "demand", weight: 23, trend: "stable", reason: "产能大，需求波动影响显著" },
-          { factorId: "environmental_policy", factorName: "环保政策", category: "external", weight: 14, trend: "up", reason: "标准环保要求" },
-          { factorId: "transport_cost", factorName: "国内运输成本", category: "internal", weight: 6, trend: "up", reason: "依托长江水运，运输成本较低" },
-          { factorId: "exchange_rate", factorName: "汇率波动", category: "external", weight: 9, trend: "stable", reason: "进口成本受汇率影响" },
-          { factorId: "inventory_level", factorName: "库存水平", category: "inventory", weight: 8, trend: "down", reason: "库存策略稳健" },
-        ],
-        inventory: {
-          currentStock: 8500,
-          maxCapacity: 15000,
-          safetyDays: 25,
-          avgConsumption: 320,
-          turnoverRate: 8,
-          lastPurchaseDate: "2026-03-15",
-          nextPurchaseDate: "2026-04-10",
-          supplierCount: 5,
-          portDistance: 50,
-        },
-      },
-      luxi: {
-        code: "luxi",
-        name: "鲁西化工集团",
-        location: "山东省聊城市",
-        province: "山东",
-        capacity: 95,
-        transportMode: "rail",
-        mainProducts: ["复合肥", "尿素", "甲醇"],
-        customerRegions: ["华北", "东北", "西北"],
-        inventoryStrategy: "conservative",
-        description: "华北地区主要化肥企业，依赖铁路运输",
-        color: "#8b5cf6",
-        factorWeights: [
-          { factorId: "international_price", factorName: "国际硫磺价格", category: "supply", weight: 22, trend: "up", reason: "国际采购为主" },
-          { factorId: "fertilizer_demand", factorName: "化肥市场需求", category: "demand", weight: 21, trend: "stable", reason: "区域需求稳定" },
-          { factorId: "environmental_policy", factorName: "环保政策", category: "external", weight: 18, trend: "up", reason: "山东省环保要求严格" },
-          { factorId: "transport_cost", factorName: "国内运输成本", category: "internal", weight: 12, trend: "up", reason: "依赖铁路运输，运输成本中等偏高" },
-          { factorId: "exchange_rate", factorName: "汇率波动", category: "external", weight: 10, trend: "stable", reason: "进口成本受汇率影响" },
-          { factorId: "inventory_level", factorName: "库存水平", category: "inventory", weight: 12, trend: "stable", reason: "库存策略保守，需更关注库存变化" },
-        ],
-        inventory: {
-          currentStock: 7800,
-          maxCapacity: 12000,
-          safetyDays: 35,
-          avgConsumption: 260,
-          turnoverRate: 6,
-          lastPurchaseDate: "2026-03-10",
-          nextPurchaseDate: "2026-04-05",
-          supplierCount: 4,
-          portDistance: 450,
-        },
-      },
-      jinzhengda: {
-        code: "jinzhengda",
-        name: "金正大生态工程",
-        location: "山东省临沂市",
-        province: "山东",
-        capacity: 80,
-        transportMode: "road",
-        mainProducts: ["复合肥", "缓控释肥", "水溶肥"],
-        customerRegions: ["华东", "华南", "出口"],
-        inventoryStrategy: "aggressive",
-        description: "专注于高端复合肥，出口占比高",
-        color: "#f59e0b",
-        factorWeights: [
-          { factorId: "international_price", factorName: "国际硫磺价格", category: "supply", weight: 20, trend: "up", reason: "国际采购为主" },
-          { factorId: "fertilizer_demand", factorName: "化肥市场需求", category: "demand", weight: 25, trend: "stable", reason: "内销为主" },
-          { factorId: "export_demand", factorName: "出口需求", category: "demand", weight: 14, trend: "up", reason: "出口业务占比高，出口需求影响大" },
-          { factorId: "environmental_policy", factorName: "环保政策", category: "external", weight: 18, trend: "up", reason: "山东省环保要求严格" },
-          { factorId: "transport_cost", factorName: "国内运输成本", category: "internal", weight: 14, trend: "up", reason: "以公路运输为主，运输成本较高" },
-          { factorId: "exchange_rate", factorName: "汇率波动", category: "external", weight: 11, trend: "stable", reason: "有出口业务，汇率双向影响" },
-          { factorId: "inventory_level", factorName: "库存水平", category: "inventory", weight: 5, trend: "down", reason: "库存周转快，库存压力相对较小" },
-        ],
-        inventory: {
-          currentStock: 4200,
-          maxCapacity: 8000,
-          safetyDays: 15,
-          avgConsumption: 280,
-          turnoverRate: 12,
-          lastPurchaseDate: "2026-03-20",
-          nextPurchaseDate: "2026-04-01",
-          supplierCount: 6,
-          portDistance: 200,
-        },
+    const config = ENTERPRISE_CONFIGS.find(e => e.code === code)
+    if (!config) {
+      // 返回第一个企业作为默认
+      return getDefaultEnterpriseData(ENTERPRISE_CONFIGS[0].code)
+    }
+
+    const factorWeights = calculateEnterpriseFactorWeights(config)
+
+    return {
+      code: config.code,
+      name: config.name,
+      location: config.location,
+      province: config.province,
+      capacity: config.capacity,
+      transportMode: config.transportMode,
+      mainProducts: config.mainProducts,
+      customerRegions: config.customerRegions,
+      inventoryStrategy: config.inventoryStrategy,
+      description: config.description,
+      color: getEnterpriseColorByCode(config.code),
+      factorWeights: factorWeights.map(f => ({
+        factorId: f.factorId,
+        factorName: f.factorName,
+        category: f.category,
+        weight: f.weight,
+        trend: f.trend,
+        reason: f.reason,
+      })),
+      inventory: {
+        currentStock: config.inventory.currentStock,
+        maxCapacity: config.inventory.maxCapacity,
+        safetyDays: config.inventory.safetyDays,
+        avgConsumption: config.inventory.avgConsumption,
+        turnoverRate: config.inventory.turnoverRate,
+        lastPurchaseDate: config.inventory.lastPurchaseDate,
+        nextPurchaseDate: config.inventory.nextPurchaseDate,
+        supplierCount: config.inventory.supplierCount,
+        portDistance: config.inventory.portDistance,
       },
     }
-    return defaults[code] || defaults.yihua
   }
 
   function getEnterpriseName(code: string): string {
-    const names: Record<string, string> = {
-      yihua: "湖北宜化集团",
-      luxi: "鲁西化工集团",
-      jinzhengda: "金正大生态工程",
-    }
-    return names[code] || code
+    return getEnterpriseNameByCode(code)
   }
 
   if (loading) {

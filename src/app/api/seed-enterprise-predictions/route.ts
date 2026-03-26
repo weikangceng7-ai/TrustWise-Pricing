@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { db, enterprisePricePredictions } from "@/db"
 import { desc, sql } from "drizzle-orm"
+import { ENTERPRISE_CONFIGS } from "@/services/enterprise-knowledge-config"
 
 // 安全检查：仅在开发环境或提供正确密钥时允许访问
 function isAuthorized(request: Request): boolean {
@@ -23,33 +24,14 @@ function isAuthorized(request: Request): boolean {
   return providedKey === expectedKey
 }
 
-// 企业配置信息
-const ENTERPRISES = [
-  {
-    name: "湖北宜化集团",
-    code: "yihua",
-    basePrice: 985,
-    volatility: 35,
-    trend: 0.3,
-    modelAccuracy: 94.2,
-  },
-  {
-    name: "鲁西化工集团",
-    code: "luxi",
-    basePrice: 972,
-    volatility: 28,
-    trend: 0.15,
-    modelAccuracy: 92.8,
-  },
-  {
-    name: "金正大生态工程",
-    code: "jinzhengda",
-    basePrice: 958,
-    volatility: 32,
-    trend: 0.25,
-    modelAccuracy: 93.5,
-  },
-]
+const ENTERPRISES = ENTERPRISE_CONFIGS.map((enterprise) => ({
+  name: enterprise.name,
+  code: enterprise.code,
+  basePrice: enterprise.priceConfig.basePrice,
+  volatility: enterprise.priceConfig.volatility,
+  trend: enterprise.priceConfig.trend,
+  modelAccuracy: enterprise.priceConfig.modelAccuracy,
+}))
 
 const MODEL_TYPES = ["EEMD-LSTM", "LSTM", "ARIMA-LSTM"]
 

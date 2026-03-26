@@ -17,6 +17,17 @@ export interface Notification {
   readAt: string | null
 }
 
+export interface PublicNews {
+  title: string
+  url: string
+  source: string
+  date: string
+  language: string
+  tone: number
+  category: string
+  label: string
+}
+
 export function useNotifications() {
   const queryClient = useQueryClient()
   const [userId, setUserId] = useState<string | null>(null)
@@ -33,6 +44,19 @@ export function useNotifications() {
         setUserId(null)
       })
   }, [])
+
+  // 公开新闻 - 无需登录即可获取
+  const { data: publicNewsData } = useQuery({
+    queryKey: ["public-news"],
+    queryFn: async () => {
+      const res = await fetch("/api/public-news")
+      return res.json()
+    },
+    refetchInterval: 300000, // 5分钟刷新一次
+    staleTime: 180000, // 3分钟内认为数据新鲜
+  })
+
+  const publicNews = (publicNewsData?.data || []) as PublicNews[]
 
   const { data: notificationsData, isLoading } = useQuery({
     queryKey: ["notifications", userId],
@@ -138,6 +162,7 @@ export function useNotifications() {
     unreadCount,
     isLoading,
     isLoggedIn: !!userId,
+    publicNews,
     markAsRead,
     markAllAsRead,
     deleteNotification,

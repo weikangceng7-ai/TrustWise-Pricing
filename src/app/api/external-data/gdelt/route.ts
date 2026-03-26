@@ -85,7 +85,8 @@ async function fetchGDELTTimeline(query: string) {
     const response = await fetch(url, {
       headers: {
         "User-Agent": "SulfurAgent/1.0"
-      }
+      },
+      next: { revalidate: 3600 } // 缓存1小时
     })
 
     if (!response.ok) {
@@ -94,7 +95,8 @@ async function fetchGDELTTimeline(query: string) {
 
     const data = await response.json()
     return parseTimelineData(data)
-  } catch {
+  } catch (error) {
+    console.error("获取GDELT时间线失败:", error)
     // 返回模拟数据
     return getMockTimelineData()
   }
@@ -108,7 +110,8 @@ async function fetchGDELTNews(query: string) {
     const response = await fetch(url, {
       headers: {
         "User-Agent": "SulfurAgent/1.0"
-      }
+      },
+      next: { revalidate: 3600 } // 缓存1小时
     })
 
     if (!response.ok) {
@@ -117,28 +120,48 @@ async function fetchGDELTNews(query: string) {
 
     const data = await response.json()
     return parseNewsData(data)
-  } catch {
+  } catch (error) {
+    console.error("获取GDELT新闻失败:", error)
     return getMockNewsData(query)
   }
 }
 
 async function getSulfurNewsSummary() {
-  // 获取硫磺相关的新闻摘要
-  const results = await Promise.all(
-    SULFUR_KEYWORDS.slice(0, 3).map(async (keyword) => {
-      const data = await fetchGDELTNews(keyword)
-      return {
-        keyword: keyword,
-        count: data.length,
-        articles: data.slice(0, 3)
-      }
-    })
-  )
+  try {
+    // 获取硫磺相关的新闻摘要
+    const results = await Promise.all(
+      SULFUR_KEYWORDS.slice(0, 3).map(async (keyword) => {
+        try {
+          const data = await fetchGDELTNews(keyword)
+          return {
+            keyword: keyword,
+            count: data.length,
+            articles: data.slice(0, 3)
+          }
+        } catch {
+          return {
+            keyword: keyword,
+            count: 0,
+            articles: []
+          }
+        }
+      })
+    )
 
-  return {
-    topics: results,
-    totalArticles: results.reduce((sum, r) => sum + r.count, 0),
-    lastUpdated: new Date().toISOString()
+    // 如果所有请求都失败，使用模拟数据
+    const hasRealData = results.some(r => r.count > 0)
+    if (!hasRealData) {
+      return getMockSummary()
+    }
+
+    return {
+      topics: results,
+      totalArticles: results.reduce((sum, r) => sum + r.count, 0),
+      lastUpdated: new Date().toISOString()
+    }
+  } catch (error) {
+    console.error("获取硫磺新闻摘要失败:", error)
+    return getMockSummary()
   }
 }
 
@@ -255,4 +278,93 @@ function getMockNewsData(query: string) {
   ]
 
   return mockArticles
+}
+
+/**
+ * 获取模拟的硫磺新闻摘要数据
+ */
+function getMockSummary() {
+  const now = new Date()
+  const topics = [
+    {
+      keyword: "sulfur",
+      count: 15,
+      articles: [
+        {
+          title: "全球硫磺市场供应紧张，价格持续上涨",
+          url: "https://example.com/sulfur/1",
+          source: "中国",
+          date: now.toISOString(),
+          language: "zh",
+          tone: 2.8
+        },
+        {
+          title: "Middle East sulfur exports increase amid rising demand",
+          url: "https://example.com/sulfur/2",
+          source: "US",
+          date: new Date(now.getTime() - 86400000).toISOString(),
+          language: "en",
+          tone: 1.5
+        },
+        {
+          title: "硫磺进口关税调整影响国内市场",
+          url: "https://example.com/sulfur/3",
+          source: "中国",
+          date: new Date(now.getTime() - 172800000).toISOString(),
+          language: "zh",
+          tone: -0.5
+        }
+      ]
+    },
+    {
+      keyword: "sulphur",
+      count: 12,
+      articles: [
+        {
+          title: "European sulphur market outlook remains positive",
+          url: "https://example.com/sulphur/1",
+          source: "UK",
+          date: now.toISOString(),
+          language: "en",
+          tone: 2.1
+        },
+        {
+          title: "印度硫磺需求增长推动亚洲市场",
+          url: "https://example.com/sulphur/2",
+          source: "印度",
+          date: new Date(now.getTime() - 86400000).toISOString(),
+          language: "zh",
+          tone: 1.8
+        }
+      ]
+    },
+    {
+      keyword: "硫磺",
+      count: 8,
+      articles: [
+        {
+          title: "磷肥企业硫磺采购策略分析",
+          url: "https://example.com/sulfur-cn/1",
+          source: "中国",
+          date: now.toISOString(),
+          language: "zh",
+          tone: 1.2
+        },
+        {
+          title: "港口硫磺库存周报：库存持续下降",
+          url: "https://example.com/sulfur-cn/2",
+          source: "中国",
+          date: new Date(now.getTime() - 86400000).toISOString(),
+          language: "zh",
+          tone: 0.5
+        }
+      ]
+    }
+  ]
+
+  return {
+    topics,
+    totalArticles: topics.reduce((sum, t) => sum + t.count, 0),
+    lastUpdated: now.toISOString()
+  }
 }

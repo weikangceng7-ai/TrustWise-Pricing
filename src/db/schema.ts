@@ -85,7 +85,7 @@ export const portInventory = pgTable("port_inventory", {
   createdAt: timestamp("created_at").defaultNow(),
 })
 
-// 宜化知识库条目（资料 / 图 / 文献 预处理后的元数据）
+// 知识库条目（资料 / 图 / 文献 预处理后的元数据）
 export const yihuaKnowledgeItems = pgTable(
   "yihua_knowledge_items",
   {
@@ -103,7 +103,7 @@ export const yihuaKnowledgeItems = pgTable(
   (t) => [uniqueIndex("yihua_knowledge_items_path_uidx").on(t.publicPath)],
 )
 
-// 宜化代码库条目（代码/笔记本的元数据，用于知识图谱展示）
+// 代码库条目（代码/笔记本的元数据，用于知识图谱展示）
 export const yihuaCodeItems = pgTable(
   "yihua_code_items",
   {

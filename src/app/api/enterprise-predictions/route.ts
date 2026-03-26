@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server"
-
-const ENTERPRISE_CODES = ["yihua", "luxi", "jinzhengda"] as const
-
-const ENTERPRISE_NAMES: Record<string, string> = {
-  yihua: "宜化集团",
-  luxi: "鲁西化工",
-  jinzhengda: "金正大",
-}
+import {
+  ENTERPRISE_CODES,
+  getEnterpriseNameByCode,
+  type EnterpriseCode,
+} from "@/services/enterprise-knowledge-config"
 
 interface PredictionRecord {
   id: number
@@ -42,7 +39,7 @@ function generateMockData(enterprise: string, days: number): PredictionRecord[] 
     data.push({
       id: i,
       enterpriseCode: enterprise,
-      enterpriseName: ENTERPRISE_NAMES[enterprise] || enterprise,
+      enterpriseName: getEnterpriseNameByCode(enterprise),
       date: dateStr,
       actualPrice: Number(actualPrice.toFixed(2)),
       predictedPrice: Number(predictedPrice.toFixed(2)),
@@ -85,7 +82,7 @@ export async function GET(request: Request) {
       const latest = data[data.length - 1]
       return {
         enterpriseCode: code,
-        enterpriseName: ENTERPRISE_NAMES[code],
+        enterpriseName: getEnterpriseNameByCode(code),
         latestDate: latest?.date || new Date().toISOString().split("T")[0],
         latestPrice: latest?.actualPrice?.toString() || "0",
         predictedPrice: latest?.predictedPrice?.toString() || "0",

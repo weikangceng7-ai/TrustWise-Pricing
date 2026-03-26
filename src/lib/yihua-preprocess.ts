@@ -1,5 +1,5 @@
 /**
- * 宜化知识库：从目录清单文件名做轻量预处理（年份、语言），供统计与检索。
+ * 知识库：从目录清单文件名做轻量预处理（年份、语言），供统计与检索。
  */
 
 export type YihuaSectionId = "materials" | "figures" | "literature"

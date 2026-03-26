@@ -14,6 +14,9 @@ import {
   FileText,
   Settings,
   Sparkles,
+  Globe,
+  MapPin,
+  ExternalLink,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -25,7 +28,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { useNotifications, type Notification } from "@/hooks/use-notifications"
+import { useNotifications, type Notification, type PublicNews } from "@/hooks/use-notifications"
 
 const typeConfig: Record<
   string,
@@ -174,6 +177,45 @@ function NotificationItem({
   )
 }
 
+function PublicNewsItem({ news }: { news: PublicNews }) {
+  const isInternational = news.category === "international"
+  const Icon = isInternational ? Globe : MapPin
+  const color = isInternational ? "text-cyan-500" : "text-amber-500"
+  const bgColor = isInternational ? "bg-cyan-500/10" : "bg-amber-500/10"
+
+  return (
+    <a
+      href={news.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group block p-3 rounded-lg transition-colors hover:bg-muted/50"
+    >
+      <div className="flex gap-3">
+        <div
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${bgColor}`}
+        >
+          <Icon className={`h-4 w-4 ${color}`} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className={`text-xs ${color}`}>{news.label}</span>
+            <span className="text-xs text-muted-foreground">
+              {isInternational ? "国际" : "国内"}
+            </span>
+          </div>
+          <p className="text-sm font-medium mt-0.5 line-clamp-2 group-hover:text-primary transition-colors">
+            {news.title}
+          </p>
+          <p className="text-xs text-muted-foreground/70 mt-1">
+            {formatTime(news.date)}
+          </p>
+        </div>
+        <ExternalLink className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary transition-colors self-center" />
+      </div>
+    </a>
+  )
+}
+
 export function NotificationPanel() {
   const [open, setOpen] = useState(false)
   const {
@@ -181,6 +223,7 @@ export function NotificationPanel() {
     unreadCount,
     isLoading,
     isLoggedIn,
+    publicNews,
     markAsRead,
     markAllAsRead,
     deleteNotification,
@@ -216,7 +259,7 @@ export function NotificationPanel() {
               <Bell className="h-5 w-5" />
               通知中心
             </SheetTitle>
-            {unreadCount > 0 && (
+            {isLoggedIn && unreadCount > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -231,32 +274,47 @@ export function NotificationPanel() {
           </div>
         </SheetHeader>
 
-        {!isLoggedIn ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-            <Bell className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground">登录后可查看通知</p>
-          </div>
-        ) : isLoading ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
-          </div>
-        ) : notifications.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-            <Sparkles className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground mb-4">暂无通知</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={createDemoNotifications}
-              disabled={isCreatingDemo}
-            >
-              创建演示通知
-            </Button>
-          </div>
-        ) : (
-          <>
-            <ScrollArea className="flex-1">
-              <div className="p-2">
+        <ScrollArea className="flex-1">
+          {/* 公开新闻 - 无论是否登录都显示 */}
+          {publicNews.length > 0 && (
+            <div className="p-2">
+              <div className="px-3 py-2 text-xs font-medium text-muted-foreground flex items-center gap-2">
+                <Newspaper className="h-3.5 w-3.5" />
+                时事速递
+              </div>
+              {publicNews.map((news, index) => (
+                <div key={news.url}>
+                  <PublicNewsItem news={news} />
+                  {index < publicNews.length - 1 && <Separator className="my-1" />}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 用户通知 - 仅登录后显示 */}
+          {isLoggedIn ? (
+            isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="flex flex-col items-center justify-center p-6 text-center">
+                <Sparkles className="h-10 w-10 text-muted-foreground/50 mb-3" />
+                <p className="text-sm text-muted-foreground mb-3">暂无个人通知</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={createDemoNotifications}
+                  disabled={isCreatingDemo}
+                >
+                  创建演示通知
+                </Button>
+              </div>
+            ) : (
+              <div className="p-2 border-t">
+                <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
+                  个人通知
+                </div>
                 {notifications.map((notification, index) => (
                   <div key={notification.id}>
                     <NotificationItem
@@ -270,13 +328,23 @@ export function NotificationPanel() {
                   </div>
                 ))}
               </div>
-            </ScrollArea>
-            <div className="p-3 border-t text-center">
-              <p className="text-xs text-muted-foreground">
-                共 {notifications.length} 条通知，{unreadCount} 条未读
-              </p>
-            </div>
-          </>
+            )
+          ) : (
+            !publicNews.length && (
+              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                <Bell className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                <p className="text-muted-foreground">登录后可查看个人通知</p>
+              </div>
+            )
+          )}
+        </ScrollArea>
+
+        {isLoggedIn && notifications.length > 0 && (
+          <div className="p-3 border-t text-center">
+            <p className="text-xs text-muted-foreground">
+              共 {notifications.length} 条通知，{unreadCount} 条未读
+            </p>
+          </div>
         )}
       </SheetContent>
     </Sheet>

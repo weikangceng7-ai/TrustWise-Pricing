@@ -2,6 +2,8 @@ import OpenAI from "openai"
 import { generateSystemPromptWithContext } from "@/lib/system-prompt"
 import { getPrices, getInventory } from "@/services/prices"
 import { generateKnowledgeGraphContext, formatGraphContextAsText } from "@/services/knowledge-graph-reasoning"
+import { getEnterpriseNameByCode } from "@/services/enterprise-knowledge-config"
+import { predictPrices, getPurchaseDecision, formatPredictionAsText, formatDecisionAsText } from "@/services/prediction"
 
 export const maxDuration = 60
 
@@ -41,6 +43,72 @@ function hasImageInMessages(messages: ChatMessage[]): boolean {
     }
     return false
   })
+}
+
+/**
+ * 检测用户问题是否需要价格预测
+ */
+function needsPrediction(userQuestion: string): { needed: boolean; type: 'predict' | 'decision' | 'trend' } {
+  const question = userQuestion.toLowerCase()
+
+  // 预测相关关键词
+  const predictKeywords = ['预测', '未来', '走势', '趋势预测', '价格预测', '接下来', '明天', '下周', '下个月']
+  const decisionKeywords = ['采购建议', '采购决策', '要不要买', '买多少', '采购时机', '库存建议']
+  const trendKeywords = ['趋势分析', '走势分析', '行情分析', '市场分析']
+
+  if (decisionKeywords.some(kw => question.includes(kw))) {
+    return { needed: true, type: 'decision' }
+  }
+  if (trendKeywords.some(kw => question.includes(kw))) {
+    return { needed: true, type: 'trend' }
+  }
+  if (predictKeywords.some(kw => question.includes(kw))) {
+    return { needed: true, type: 'predict' }
+  }
+
+  return { needed: false, type: 'predict' }
+}
+
+/**
+ * 获取预测上下文
+ */
+async function getPredictionContext(userQuestion: string): Promise<string> {
+  const predictionNeed = needsPrediction(userQuestion)
+
+  if (!predictionNeed.needed) {
+    return ""
+  }
+
+  try {
+    let predictionContext = "\n### 🔮 价格预测模型分析\n\n"
+
+    if (predictionNeed.type === 'decision') {
+      // 获取采购决策建议
+      const decision = await getPurchaseDecision({ days: 7 })
+      if (decision.success && decision.data) {
+        predictionContext += formatDecisionAsText(decision.data)
+      }
+    } else if (predictionNeed.type === 'trend') {
+      // 获取趋势分析
+      const prediction = await predictPrices(30)
+      if (prediction.success && prediction.data) {
+        predictionContext += formatPredictionAsText(prediction.data)
+      }
+    } else {
+      // 获取价格预测
+      const prediction = await predictPrices(7)
+      if (prediction.success && prediction.data) {
+        predictionContext += formatPredictionAsText(prediction.data)
+      }
+    }
+
+    predictionContext += "\n\n**注意**: 以上预测基于 Hybrid ARIMA + XGBoost 模型，仅供参考。实际决策请结合市场实际情况。"
+
+    return predictionContext
+  } catch (error) {
+    console.error("获取预测上下文失败:", error)
+    return ""
+  }
 }
 
 function generateImageAnalysisPrompt(): string {
@@ -101,12 +169,6 @@ function formatInventoryData(inventory: Awaited<ReturnType<typeof getInventory>>
   return headers + rows
 }
 
-const ENTERPRISE_NAMES: Record<string, string> = {
-  yihua: "湖北宜化集团",
-  luxi: "鲁西化工集团",
-  jinzhengda: "金正大生态工程",
-}
-
 export async function POST(req: Request) {
   try {
     const body = await req.json() as ChatRequest
@@ -124,6 +186,7 @@ export async function POST(req: Request) {
     let pricesContext = ""
     let inventoryContext = ""
     let knowledgeGraphContext = ""
+    let predictionContext = ""
 
     const lastUserMessage = [...messages].reverse().find(m => m.role === "user")
     const userQuestion = lastUserMessage
@@ -135,10 +198,12 @@ export async function POST(req: Request) {
       : ""
 
     try {
-      const [prices, inventory, graphContext] = await Promise.all([
+      // 并行获取所有上下文数据
+      const [prices, inventory, graphContext, prediction] = await Promise.all([
         getPrices(10),
         getInventory(5),
         generateKnowledgeGraphContext(userQuestion),
+        getPredictionContext(userQuestion), // 新增：获取预测上下文
       ])
 
       if (prices && prices.length > 0) {
@@ -152,6 +217,11 @@ export async function POST(req: Request) {
       if (graphContext && (graphContext.enterprises.length > 0 || graphContext.factors.length > 0)) {
         knowledgeGraphContext = formatGraphContextAsText(graphContext)
       }
+
+      // 预测上下文
+      if (prediction) {
+        predictionContext = prediction
+      }
     } catch (dataError) {
       console.error("Failed to fetch context data:", dataError)
     }
@@ -163,11 +233,12 @@ export async function POST(req: Request) {
       systemPrompt = generateImageAnalysisPrompt()
       model = "gpt-4-vision-preview"
     } else {
-      const enterpriseName = enterprise ? ENTERPRISE_NAMES[enterprise] || enterprise : undefined
+      const enterpriseName = enterprise ? getEnterpriseNameByCode(enterprise) : undefined
       systemPrompt = generateSystemPromptWithContext({
         prices: pricesContext || undefined,
         inventory: inventoryContext || undefined,
         knowledgeGraph: knowledgeGraphContext || undefined,
+        prediction: predictionContext || undefined, // 新增：预测上下文
         date: new Date().toLocaleDateString('zh-CN', {
           year: 'numeric',
           month: 'long',

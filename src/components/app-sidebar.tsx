@@ -13,6 +13,7 @@ import {
   ChevronDown,
 } from "lucide-react"
 import { useState } from "react"
+import { ENTERPRISE_CONFIGS } from "@/services/enterprise-knowledge-config"
 
 import {
   Sidebar,
@@ -97,30 +98,14 @@ const navItems = [
   },
 ]
 
-// 企业导航配置
-const enterpriseItems = [
-  {
-    title: "湖北宜化集团",
-    url: "/enterprise/yihua",
-    code: "yihua",
-    description: "硫磺产能约120万吨/年",
-    color: "cyan",
-  },
-  {
-    title: "鲁西化工集团",
-    url: "/enterprise/luxi",
-    code: "luxi",
-    description: "山东大型化工企业",
-    color: "violet",
-  },
-  {
-    title: "金正大生态工程",
-    url: "/enterprise/jinzhengda",
-    code: "jinzhengda",
-    description: "化肥行业龙头",
-    color: "amber",
-  },
-]
+// 企业导航配置（从集中配置生成）
+const enterpriseItems = ENTERPRISE_CONFIGS.map((enterprise) => ({
+  title: enterprise.name,
+  url: `/enterprise/${enterprise.code}`,
+  code: enterprise.code,
+  description: enterprise.shortDescription,
+  color: enterprise.tailwindColor,
+}))
 
 export function AppSidebar() {
   const pathname = usePathname()

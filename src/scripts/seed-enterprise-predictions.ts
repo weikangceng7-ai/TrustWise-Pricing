@@ -1,42 +1,23 @@
 /**
  * 企业硫磺价格预测模拟数据生成脚本
- *
- * 三家企业：
- * 1. 宜化集团 (yihua) - 湖北宜化集团，主要硫磺生产企业
- * 2. 鲁西化工 (luxi) - 山东鲁西化工，大型化工企业
- * 3. 金正大 (jinzhengda) - 金正大生态工程集团，化肥企业
  */
 
 import { db, enterprisePricePredictions } from "@/db"
 import { desc } from "drizzle-orm"
+import { ENTERPRISE_CODES, getEnterpriseNameByCode } from "@/services/enterprise-knowledge-config"
 
-// 企业配置信息
-const ENTERPRISES = [
-  {
-    name: "湖北宜化集团",
-    code: "yihua",
-    basePrice: 985, // 基准价格
-    volatility: 35, // 价格波动幅度
-    trend: 0.3, // 价格趋势 (正数为上涨)
-    modelAccuracy: 94.2, // 模型准确率
-  },
-  {
-    name: "鲁西化工集团",
-    code: "luxi",
-    basePrice: 972,
-    volatility: 28,
-    trend: 0.15,
-    modelAccuracy: 92.8,
-  },
-  {
-    name: "金正大生态工程",
-    code: "jinzhengda",
-    basePrice: 958,
-    volatility: 32,
-    trend: 0.25,
-    modelAccuracy: 93.5,
-  },
-]
+// 企业配置信息（价格相关配置）
+const ENTERPRISE_PRICE_CONFIG: Record<string, { basePrice: number; volatility: number; trend: number; modelAccuracy: number }> = {
+  yihua: { basePrice: 985, volatility: 35, trend: 0.3, modelAccuracy: 94.2 },
+  luxi: { basePrice: 972, volatility: 28, trend: 0.15, modelAccuracy: 92.8 },
+  jinzhengda: { basePrice: 958, volatility: 32, trend: 0.25, modelAccuracy: 93.5 },
+}
+
+const ENTERPRISES = ENTERPRISE_CODES.map((code) => ({
+  name: getEnterpriseNameByCode(code),
+  code,
+  ...ENTERPRISE_PRICE_CONFIG[code],
+}))
 
 // 模型类型
 const MODEL_TYPES = ["EEMD-LSTM", "LSTM", "ARIMA-LSTM"]
