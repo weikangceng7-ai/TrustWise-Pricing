@@ -1,5 +1,12 @@
 import { runCypher, withTransaction, checkNeo4jConnection } from "@/lib/neo4j"
 import type { ManagedTransaction } from "neo4j-driver"
+import {
+  ENTERPRISE_CONFIGS,
+  FACTOR_DEFINITIONS,
+  FACTOR_RELATIONS,
+  calculateEnterpriseFactorWeights,
+  type EnterpriseFactorWeight,
+} from "./enterprise-knowledge-config"
 
 // 企业价格知识图谱服务
 
@@ -106,7 +113,7 @@ export async function createFactorRelation(
 }
 
 /**
- * 批量导入企业知识图谱
+ * 批量导入企业知识图谱（差异化权重）
  */
 export async function seedEnterpriseKnowledgeGraph(): Promise<{
   success: boolean
@@ -115,117 +122,128 @@ export async function seedEnterpriseKnowledgeGraph(): Promise<{
     factors: number
     relations: number
   }
+  details: {
+    enterpriseWeights: Record<string, Array<{ factor: string; weight: number; reason: string }>>
+  }
 }> {
   const connection = await checkNeo4jConnection()
   if (!connection.connected) {
     return {
       success: false,
       stats: { enterprises: 0, factors: 0, relations: 0 },
+      details: { enterpriseWeights: {} },
     }
   }
 
   let enterprises = 0
   let factors = 0
   let relations = 0
-
-  // 企业数据
-  const enterpriseData: EnterpriseNode[] = [
-    { code: "yihua", name: "湖北宜化集团", location: "湖北省宜昌市", capacity: 120, color: "#06b6d4" },
-    { code: "luxi", name: "鲁西化工集团", location: "山东省聊城市", capacity: 95, color: "#8b5cf6" },
-    { code: "jinzhengda", name: "金正大生态工程", location: "山东省临沂市", capacity: 80, color: "#f59e0b" },
-  ]
-
-  // 因子数据
-  const factorData: FactorNode[] = [
-    { id: "international_price", name: "国际硫磺价格", category: "external", weight: 28, trend: "up" },
-    { id: "fertilizer_demand", name: "化肥市场需求", category: "demand", weight: 22, trend: "stable" },
-    { id: "transport_cost", name: "运输成本", category: "supply", weight: 18, trend: "up" },
-    { id: "environmental_policy", name: "环保政策", category: "external", weight: 15, trend: "down" },
-    { id: "exchange_rate", name: "汇率波动", category: "external", weight: 10, trend: "stable" },
-    { id: "inventory_level", name: "库存水平", category: "internal", weight: 7, trend: "down" },
-  ]
-
-  // 企业特定因子权重
-  const enterpriseFactors: Record<string, Array<{ factorId: string; weight: number }>> = {
-    yihua: [
-      { factorId: "international_price", weight: 28 },
-      { factorId: "fertilizer_demand", weight: 22 },
-      { factorId: "transport_cost", weight: 18 },
-      { factorId: "environmental_policy", weight: 15 },
-      { factorId: "exchange_rate", weight: 10 },
-      { factorId: "inventory_level", weight: 7 },
-    ],
-    luxi: [
-      { factorId: "international_price", weight: 25 },
-      { factorId: "fertilizer_demand", weight: 23 },
-      { factorId: "transport_cost", weight: 20 },
-      { factorId: "environmental_policy", weight: 12 },
-      { factorId: "exchange_rate", weight: 12 },
-      { factorId: "inventory_level", weight: 8 },
-    ],
-    jinzhengda: [
-      { factorId: "fertilizer_demand", weight: 30 },
-      { factorId: "international_price", weight: 20 },
-      { factorId: "transport_cost", weight: 15 },
-      { factorId: "environmental_policy", weight: 18 },
-      { factorId: "exchange_rate", weight: 10 },
-      { factorId: "inventory_level", weight: 7 },
-    ],
-  }
-
-  // 因子间关系
-  const factorRelations = [
-    { source: "international_price", target: "transport_cost", weight: 0.7 },
-    { source: "exchange_rate", target: "international_price", weight: 0.8 },
-    { source: "environmental_policy", target: "fertilizer_demand", weight: 0.5 },
-    { source: "inventory_level", target: "fertilizer_demand", weight: 0.6 },
-  ]
+  const enterpriseWeightsDetails: Record<string, Array<{ factor: string; weight: number; reason: string }>> = {}
 
   await withTransaction(async (tx: ManagedTransaction) => {
-    // 创建企业节点
-    for (const enterprise of enterpriseData) {
+    // 1. 创建企业节点（带完整属性）
+    for (const enterprise of ENTERPRISE_CONFIGS) {
       await tx.run(
         `MERGE (e:Enterprise {code: $code})
-         SET e.name = $name, e.location = $location, e.capacity = $capacity, e.color = $color
+         SET e.name = $name,
+             e.location = $location,
+             e.province = $province,
+             e.capacity = $capacity,
+             e.transportMode = $transportMode,
+             e.mainProducts = $mainProducts,
+             e.customerRegions = $customerRegions,
+             e.inventoryStrategy = $inventoryStrategy,
+             e.description = $description,
+             e.color = $color,
+             e.updatedAt = datetime()
          RETURN e`,
-        enterprise
+        {
+          code: enterprise.code,
+          name: enterprise.name,
+          location: enterprise.location,
+          province: enterprise.province,
+          capacity: enterprise.capacity,
+          transportMode: enterprise.transportMode,
+          mainProducts: enterprise.mainProducts,
+          customerRegions: enterprise.customerRegions,
+          inventoryStrategy: enterprise.inventoryStrategy,
+          description: enterprise.description,
+          color: enterprise.code === "yihua" ? "#06b6d4" : enterprise.code === "luxi" ? "#8b5cf6" : "#f59e0b",
+        }
       )
       enterprises++
     }
 
-    // 创建因子节点
-    for (const factor of factorData) {
+    // 2. 创建因子节点（带完整属性）
+    for (const factor of FACTOR_DEFINITIONS) {
       await tx.run(
         `MERGE (f:Factor {id: $id})
-         SET f.name = $name, f.category = $category, f.weight = $weight, f.trend = $trend
+         SET f.name = $name,
+             f.category = $category,
+             f.subCategory = $subCategory,
+             f.description = $description,
+             f.baseWeight = $baseWeight,
+             f.trend = $trend,
+             f.volatility = $volatility,
+             f.updatedAt = datetime()
          RETURN f`,
-        factor
+        {
+          id: factor.id,
+          name: factor.name,
+          category: factor.category,
+          subCategory: factor.subCategory || null,
+          description: factor.description,
+          baseWeight: factor.baseWeight,
+          trend: factor.trend,
+          volatility: factor.volatility,
+        }
       )
       factors++
     }
 
-    // 创建企业-因子关系
-    for (const [enterpriseCode, factorsList] of Object.entries(enterpriseFactors)) {
-      for (const { factorId, weight } of factorsList) {
+    // 3. 创建企业-因子关系（差异化权重）
+    for (const enterprise of ENTERPRISE_CONFIGS) {
+      const weights = calculateEnterpriseFactorWeights(enterprise)
+      enterpriseWeightsDetails[enterprise.code] = []
+
+      for (const item of weights) {
         await tx.run(
           `MATCH (e:Enterprise {code: $enterpriseCode})
            MATCH (f:Factor {id: $factorId})
            MERGE (e)-[r:HAS_FACTOR]->(f)
-           SET r.weight = $weight`,
-          { enterpriseCode, factorId, weight }
+           SET r.weight = $weight,
+               r.reason = $reason`,
+          {
+            enterpriseCode: enterprise.code,
+            factorId: item.factorId,
+            weight: item.weight,
+            reason: item.reason,
+          }
         )
         relations++
+
+        enterpriseWeightsDetails[enterprise.code].push({
+          factor: item.factorName,
+          weight: item.weight,
+          reason: item.reason,
+        })
       }
     }
 
-    // 创建因子间关系
-    for (const rel of factorRelations) {
+    // 4. 创建因子间关系
+    for (const rel of FACTOR_RELATIONS) {
       await tx.run(
         `MATCH (s:Factor {id: $source})
          MATCH (t:Factor {id: $target})
          MERGE (s)-[r:INFLUENCES]->(t)
-         SET r.weight = $weight`,
-        rel
+         SET r.weight = $weight,
+             r.description = $description`,
+        {
+          source: rel.source,
+          target: rel.target,
+          weight: rel.weight,
+          description: rel.description,
+        }
       )
       relations++
     }
@@ -234,6 +252,7 @@ export async function seedEnterpriseKnowledgeGraph(): Promise<{
   return {
     success: true,
     stats: { enterprises, factors, relations },
+    details: { enterpriseWeights: enterpriseWeightsDetails },
   }
 }
 
@@ -242,74 +261,114 @@ export async function seedEnterpriseKnowledgeGraph(): Promise<{
  */
 export async function getEnterpriseKnowledgeGraph(enterpriseCode: string): Promise<{
   nodes: Array<{ id: string; label: string; type: string; properties: Record<string, unknown> }>
-  links: Array<{ source: string; target: string; type: string; weight?: number }>
+  links: Array<{ source: string; target: string; type: string; weight?: number; reason?: string }>
 }> {
   const connection = await checkNeo4jConnection()
   if (!connection.connected) {
     return { nodes: [], links: [] }
   }
 
+  // 查询企业和因子数据
   const query = `
     MATCH (e:Enterprise {code: $enterpriseCode})
     OPTIONAL MATCH (e)-[r1:HAS_FACTOR]->(f:Factor)
     OPTIONAL MATCH (f)-[r2:INFLUENCES]->(related:Factor)
-    RETURN e, f, r1, related, r2
+    RETURN e.code as eCode, e.name as eName, e.location as eLocation, e.province as eProvince,
+           e.capacity as eCapacity, e.transportMode as eTransportMode, e.mainProducts as eMainProducts,
+           e.customerRegions as eCustomerRegions, e.inventoryStrategy as eInventoryStrategy,
+           e.description as eDescription, e.color as eColor,
+           f.id as fId, f.name as fName, f.category as fCategory, f.subCategory as fSubCategory,
+           f.trend as fTrend, f.description as fDescription, f.baseWeight as fBaseWeight,
+           r1.weight as r1Weight, r1.reason as r1Reason,
+           related.id as rId, related.name as rName, related.category as rCategory, related.trend as rTrend,
+           r2.weight as r2Weight, r2.description as r2Description
   `
 
   const results = await runCypher(query, { enterpriseCode })
 
   const nodes: Map<string, { id: string; label: string; type: string; properties: Record<string, unknown> }> = new Map()
-  const links: Array<{ source: string; target: string; type: string; weight?: number }> = []
+  const links: Array<{ source: string; target: string; type: string; weight?: number; reason?: string }> = []
 
-  // 企业节点
-  nodes.set(enterpriseCode, {
-    id: enterpriseCode,
-    label: enterpriseCode === "yihua" ? "湖北宜化集团" : enterpriseCode === "luxi" ? "鲁西化工集团" : "金正大生态工程",
-    type: "Enterprise",
-    properties: {},
-  })
+  // 从第一个结果构建企业节点
+  if (results.length > 0) {
+    const firstRow = results[0]
+    nodes.set(enterpriseCode, {
+      id: enterpriseCode,
+      label: (firstRow.eName as string) || getEnterpriseName(enterpriseCode),
+      type: "Enterprise",
+      properties: {
+        location: firstRow.eLocation,
+        province: firstRow.eProvince,
+        capacity: firstRow.eCapacity,
+        transportMode: firstRow.eTransportMode,
+        mainProducts: firstRow.eMainProducts,
+        customerRegions: firstRow.eCustomerRegions,
+        inventoryStrategy: firstRow.eInventoryStrategy,
+        description: firstRow.eDescription,
+      },
+    })
+  } else {
+    // 如果没有结果，创建默认企业节点
+    nodes.set(enterpriseCode, {
+      id: enterpriseCode,
+      label: getEnterpriseName(enterpriseCode),
+      type: "Enterprise",
+      properties: {},
+    })
+  }
 
   for (const row of results) {
     // 因子节点
-    const f = row.f as { id?: string; name?: string; category?: string; weight?: number; trend?: string } | undefined
-    const r1 = row.r1 as { weight?: number } | undefined
-    const related = row.related as { id?: string; name?: string; category?: string; weight?: number; trend?: string } | undefined
-    const r2 = row.r2 as { weight?: number } | undefined
+    const fId = row.fId as string | undefined
+    const fName = row.fName as string | undefined
+    const fCategory = row.fCategory as string | undefined
+    const fTrend = row.fTrend as string | undefined
 
-    if (f && f.id && !nodes.has(f.id)) {
-      nodes.set(f.id, {
-        id: f.id,
-        label: f.name || f.id,
+    if (fId && !nodes.has(fId)) {
+      nodes.set(fId, {
+        id: fId,
+        label: fName || fId,
         type: "Factor",
-        properties: f as Record<string, unknown>,
+        properties: {
+          category: fCategory,
+          subCategory: row.fSubCategory,
+          trend: fTrend,
+          description: row.fDescription,
+          baseWeight: row.fBaseWeight,
+        },
       })
     }
 
-    // 企业-因子关系
-    if (r1 && f && f.id) {
+    // 企业-因子关系（包含 reason）
+    if (row.r1Weight !== null && row.r1Weight !== undefined && fId) {
       links.push({
         source: enterpriseCode,
-        target: f.id,
+        target: fId,
         type: "HAS_FACTOR",
-        weight: r1.weight,
+        weight: row.r1Weight as number,
+        reason: row.r1Reason as string | undefined,
       })
     }
 
     // 因子间关系
-    if (related && related.id && r2 && f && f.id) {
-      if (!nodes.has(related.id)) {
-        nodes.set(related.id, {
-          id: related.id,
-          label: related.name || related.id,
+    const rId = row.rId as string | undefined
+    if (rId && row.r2Weight !== null && row.r2Weight !== undefined && fId) {
+      if (!nodes.has(rId)) {
+        nodes.set(rId, {
+          id: rId,
+          label: (row.rName as string) || rId,
           type: "Factor",
-          properties: related as Record<string, unknown>,
+          properties: {
+            category: row.rCategory,
+            trend: row.rTrend,
+          },
         })
       }
       links.push({
-        source: f.id,
-        target: related.id,
+        source: fId,
+        target: rId,
         type: "INFLUENCES",
-        weight: r2.weight,
+        weight: row.r2Weight as number,
       })
     }
   }
@@ -318,4 +377,13 @@ export async function getEnterpriseKnowledgeGraph(enterpriseCode: string): Promi
     nodes: Array.from(nodes.values()),
     links,
   }
+}
+
+function getEnterpriseName(code: string): string {
+  const names: Record<string, string> = {
+    yihua: "湖北宜化集团",
+    luxi: "鲁西化工集团",
+    jinzhengda: "金正大生态工程",
+  }
+  return names[code] || code
 }

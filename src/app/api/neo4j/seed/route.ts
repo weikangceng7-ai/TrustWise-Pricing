@@ -31,6 +31,7 @@ export async function GET() {
       ? `Successfully seeded knowledge graph: ${result.stats.enterprises} enterprises, ${result.stats.factors} factors, ${result.stats.relations} relations`
       : "Failed to seed knowledge graph",
     stats: result.stats,
+    details: result.details,
     neo4jVersion: status.version,
   })
 }
