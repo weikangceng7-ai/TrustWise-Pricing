@@ -23,6 +23,7 @@ import {
   ChevronRight,
   Image as ImageIcon,
   X,
+  Building2,
 } from "lucide-react"
 import { useChatWithHistory, type ChatMessage, type Conversation } from "@/hooks/use-chat-with-history"
 import { generateChatReport } from "@/lib/report-generator"
@@ -374,6 +375,7 @@ export default function AgentChatPage() {
   const [userId, setUserId] = useState<string | undefined>()
   const [copiedId, setCopiedId] = useState<string | undefined>()
   const [showAuthDialog, setShowAuthDialog] = useState(false)
+  const [selectedEnterprise, setSelectedEnterprise] = useState<string>("yihua")
 
   const {
     messages,
@@ -385,7 +387,7 @@ export default function AgentChatPage() {
     clearMessages,
     loadConversation,
     deleteConversation,
-  } = useChatWithHistory({ userId })
+  } = useChatWithHistory({ userId, enterprise: selectedEnterprise })
 
   const [inputValue, setInputValue] = useState("")
   const [uploadedImages, setUploadedImages] = useState<string[]>([])
@@ -554,7 +556,20 @@ export default function AgentChatPage() {
               </p>
             </div>
           </div>
-          <div className="flex gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* 企业选择器 */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-500/10 dark:to-blue-500/10 border border-cyan-200/50 dark:border-cyan-500/30">
+              <Building2 className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+              <select
+                value={selectedEnterprise}
+                onChange={(e) => setSelectedEnterprise(e.target.value)}
+                className="bg-transparent text-sm text-cyan-700 dark:text-cyan-300 font-medium outline-none cursor-pointer"
+              >
+                <option value="yihua" className="bg-white dark:bg-slate-800">湖北宜化集团</option>
+                <option value="luxi" className="bg-white dark:bg-slate-800">鲁西化工集团</option>
+                <option value="jinzhengda" className="bg-white dark:bg-slate-800">金正大生态工程</option>
+              </select>
+            </div>
             <Button
               variant="outline"
               size="sm"

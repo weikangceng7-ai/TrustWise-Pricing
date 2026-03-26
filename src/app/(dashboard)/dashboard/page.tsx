@@ -18,68 +18,46 @@ interface Report {
   riskLevel: string | null
 }
 
-const mockReports: Report[] = [
-  {
-    id: 1,
-    title: "2026年3月第三周硫磺采购分析报告",
-    reportDate: "2026-03-17",
-    summary: "本周硫磺市场呈现震荡上行态势，国内硫磺均价报1185元/吨，较上周上涨2.3%。",
-    recommendation: "适当备库",
-    priceTrend: "小幅上涨",
-    riskLevel: "中等",
-  },
-  {
-    id: 2,
-    title: "2026年3月第二周硫磺采购分析报告",
-    reportDate: "2026-03-10",
-    summary: "本周硫磺价格小幅回调，市场观望情绪浓厚。国内硫磺均价报1158元/吨。",
-    recommendation: "观望",
-    priceTrend: "小幅下跌",
-    riskLevel: "低",
-  },
-  {
-    id: 3,
-    title: "2026年3月第一周硫磺采购分析报告",
-    reportDate: "2026-03-03",
-    summary: "本周硫磺市场整体稳定，价格波动较小。国内硫磺均价报1172元/吨。",
-    recommendation: "按需采购",
-    priceTrend: "稳定",
-    riskLevel: "低",
-  },
-  {
-    id: 4,
-    title: "2026年2月供应商综合评估报告",
-    reportDate: "2026-02-20",
-    summary: "本报告对主要硫磺供应商进行了综合评估，涵盖价格竞争力、供货稳定性等维度。",
-    recommendation: "按需采购",
-    priceTrend: "稳定",
-    riskLevel: "低",
-  },
-]
-
 function ReportCarousel() {
+  const [reports, setReports] = useState<Report[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!isAutoPlaying) return
+    async function fetchReports() {
+      try {
+        const res = await fetch("/api/reports")
+        const data = await res.json()
+        if (data.success && data.data) {
+          setReports(data.data.slice(0, 5))
+        }
+      } catch (error) {
+        console.error("获取报告数据失败:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchReports()
+  }, [])
+
+  useEffect(() => {
+    if (!isAutoPlaying || reports.length === 0) return
     const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % mockReports.length)
+      setCurrentIndex((prev) => (prev + 1) % reports.length)
     }, 4000)
     return () => clearInterval(timer)
-  }, [isAutoPlaying])
+  }, [isAutoPlaying, reports.length])
 
   const goToPrev = () => {
     setIsAutoPlaying(false)
-    setCurrentIndex((prev) => (prev - 1 + mockReports.length) % mockReports.length)
+    setCurrentIndex((prev) => (prev - 1 + reports.length) % reports.length)
   }
 
   const goToNext = () => {
     setIsAutoPlaying(false)
-    setCurrentIndex((prev) => (prev + 1) % mockReports.length)
+    setCurrentIndex((prev) => (prev + 1) % reports.length)
   }
-
-  const currentReport = mockReports[currentIndex]
 
   const getTrendColor = (trend: string | null) => {
     if (!trend) return "text-slate-500"
@@ -93,6 +71,22 @@ function ReportCarousel() {
     if (risk === "中等") return "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
     return "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
   }
+
+  if (loading) {
+    return (
+      <div className="bg-gradient-to-r from-cyan-500/10 via-violet-500/10 to-cyan-500/10 dark:from-cyan-500/5 dark:via-violet-500/5 dark:to-cyan-500/5 backdrop-blur-sm rounded-2xl p-4 border border-cyan-200/50 dark:border-cyan-500/20 mb-6">
+        <div className="flex items-center justify-center h-16">
+          <div className="animate-pulse text-slate-400 text-sm">加载中...</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (reports.length === 0) {
+    return null
+  }
+
+  const currentReport = reports[currentIndex]
 
   return (
     <div className="bg-gradient-to-r from-cyan-500/10 via-violet-500/10 to-cyan-500/10 dark:from-cyan-500/5 dark:via-violet-500/5 dark:to-cyan-500/5 backdrop-blur-sm rounded-2xl p-4 border border-cyan-200/50 dark:border-cyan-500/20 mb-6">
@@ -133,7 +127,7 @@ function ReportCarousel() {
             <ChevronLeft className="h-4 w-4 text-slate-600 dark:text-slate-400" />
           </button>
           <div className="flex gap-1">
-            {mockReports.map((_, idx) => (
+            {reports.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => {
