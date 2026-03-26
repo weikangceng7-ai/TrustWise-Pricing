@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import { EnterprisePredictionChart } from "./enterprise-prediction-chart"
 import { Neo4jKnowledgeGraph } from "./neo4j-knowledge-graph"
+import { InventoryVisualization } from "./inventory-visualization"
 
 // 类型定义
 interface FactorWeight {
@@ -37,6 +38,18 @@ interface FactorWeight {
   weight: number
   trend: string
   reason: string
+}
+
+interface InventoryInfo {
+  currentStock: number
+  maxCapacity: number
+  safetyDays: number
+  avgConsumption: number
+  turnoverRate: number
+  lastPurchaseDate: string
+  nextPurchaseDate: string
+  supplierCount: number
+  portDistance: number
 }
 
 interface EnterpriseData {
@@ -52,6 +65,7 @@ interface EnterpriseData {
   description: string
   color: string
   factorWeights: FactorWeight[]
+  inventory?: InventoryInfo
 }
 
 interface EnterpriseDetailProps {
@@ -208,6 +222,17 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
           { factorId: "exchange_rate", factorName: "汇率波动", category: "external", weight: 9, trend: "stable", reason: "进口成本受汇率影响" },
           { factorId: "inventory_level", factorName: "库存水平", category: "inventory", weight: 8, trend: "down", reason: "库存策略稳健" },
         ],
+        inventory: {
+          currentStock: 8500,
+          maxCapacity: 15000,
+          safetyDays: 25,
+          avgConsumption: 320,
+          turnoverRate: 8,
+          lastPurchaseDate: "2026-03-15",
+          nextPurchaseDate: "2026-04-10",
+          supplierCount: 5,
+          portDistance: 50,
+        },
       },
       luxi: {
         code: "luxi",
@@ -229,6 +254,17 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
           { factorId: "exchange_rate", factorName: "汇率波动", category: "external", weight: 10, trend: "stable", reason: "进口成本受汇率影响" },
           { factorId: "inventory_level", factorName: "库存水平", category: "inventory", weight: 12, trend: "stable", reason: "库存策略保守，需更关注库存变化" },
         ],
+        inventory: {
+          currentStock: 7800,
+          maxCapacity: 12000,
+          safetyDays: 35,
+          avgConsumption: 260,
+          turnoverRate: 6,
+          lastPurchaseDate: "2026-03-10",
+          nextPurchaseDate: "2026-04-05",
+          supplierCount: 4,
+          portDistance: 450,
+        },
       },
       jinzhengda: {
         code: "jinzhengda",
@@ -251,6 +287,17 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
           { factorId: "exchange_rate", factorName: "汇率波动", category: "external", weight: 11, trend: "stable", reason: "有出口业务，汇率双向影响" },
           { factorId: "inventory_level", factorName: "库存水平", category: "inventory", weight: 5, trend: "down", reason: "库存周转快，库存压力相对较小" },
         ],
+        inventory: {
+          currentStock: 4200,
+          maxCapacity: 8000,
+          safetyDays: 15,
+          avgConsumption: 280,
+          turnoverRate: 12,
+          lastPurchaseDate: "2026-03-20",
+          nextPurchaseDate: "2026-04-01",
+          supplierCount: 6,
+          portDistance: 200,
+        },
       },
     }
     return defaults[code] || defaults.yihua
@@ -527,6 +574,15 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* 库存可视化 */}
+      {enterprise.inventory && (
+        <InventoryVisualization
+          inventory={enterprise.inventory}
+          inventoryStrategy={enterprise.inventoryStrategy}
+          enterpriseColor={enterprise.color}
+        />
+      )}
 
       {/* 价格预测图表 */}
       <Card className="bg-white/80 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">

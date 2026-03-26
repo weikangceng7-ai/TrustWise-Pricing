@@ -22,6 +22,18 @@ export interface EnterpriseConfig {
   customerRegions: string[]
   inventoryStrategy: "aggressive" | "moderate" | "conservative"
   description: string
+  // 库存详细信息
+  inventory: {
+    currentStock: number // 当前库存（吨）
+    maxCapacity: number // 最大仓储能力（吨）
+    safetyDays: number // 安全库存天数
+    avgConsumption: number // 日均消耗量（吨/天）
+    turnoverRate: number // 年周转次数
+    lastPurchaseDate: string // 上次采购日期
+    nextPurchaseDate: string // 预计下次采购日期
+    supplierCount: number // 供应商数量
+    portDistance: number // 距离最近港口距离（公里）
+  }
 }
 
 export const ENTERPRISE_CONFIGS: EnterpriseConfig[] = [
@@ -36,6 +48,17 @@ export const ENTERPRISE_CONFIGS: EnterpriseConfig[] = [
     customerRegions: ["华中", "华南", "西南"],
     inventoryStrategy: "moderate",
     description: "国内最大硫磺制酸企业之一，依托长江水运优势，运输成本较低",
+    inventory: {
+      currentStock: 8500,
+      maxCapacity: 15000,
+      safetyDays: 25,
+      avgConsumption: 320,
+      turnoverRate: 8,
+      lastPurchaseDate: "2026-03-15",
+      nextPurchaseDate: "2026-04-10",
+      supplierCount: 5,
+      portDistance: 50, // 宜昌港
+    },
   },
   {
     code: "luxi",
@@ -48,6 +71,17 @@ export const ENTERPRISE_CONFIGS: EnterpriseConfig[] = [
     customerRegions: ["华北", "东北", "西北"],
     inventoryStrategy: "conservative",
     description: "华北地区主要化肥企业，依赖铁路运输，库存策略偏保守",
+    inventory: {
+      currentStock: 7800,
+      maxCapacity: 12000,
+      safetyDays: 35, // 保守策略，安全库存天数高
+      avgConsumption: 260,
+      turnoverRate: 6,
+      lastPurchaseDate: "2026-03-10",
+      nextPurchaseDate: "2026-04-05",
+      supplierCount: 4,
+      portDistance: 450, // 青岛港
+    },
   },
   {
     code: "jinzhengda",
@@ -60,6 +94,17 @@ export const ENTERPRISE_CONFIGS: EnterpriseConfig[] = [
     customerRegions: ["华东", "华南", "出口"],
     inventoryStrategy: "aggressive",
     description: "专注于高端复合肥，出口占比高，库存周转快",
+    inventory: {
+      currentStock: 4200,
+      maxCapacity: 8000,
+      safetyDays: 15, // 激进策略，安全库存天数低
+      avgConsumption: 280,
+      turnoverRate: 12, // 高周转
+      lastPurchaseDate: "2026-03-20",
+      nextPurchaseDate: "2026-04-01",
+      supplierCount: 6,
+      portDistance: 200, // 日照港
+    },
   },
 ]
 
