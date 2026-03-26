@@ -392,7 +392,7 @@ export function YihuaCodeKnowledgeGraph() {
       allNodes.push({ id: c.id, name: c.name, type: "core", description: c.description })
     })
 
-    KNOWLEDGE_DATA.dataSources.forEach(d => {
+    KNOWLEDGE_DATA.dataSources.forEach((d: { id: string; name: string; description: string; category?: string }) => {
       allNodes.push({ id: d.id, name: d.name, type: "dataSource", description: d.description, category: d.category })
     })
 
