@@ -6,6 +6,53 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { RefreshCw, Database, AlertTriangle, CheckCircle, Network, TrendingUp, TrendingDown, Activity } from "lucide-react"
 
+// 太阳系动画样式
+const solarSystemStyles = `
+  @keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0); }
+    25% { transform: translate(2px, -3px); }
+    50% { transform: translate(-1px, 2px); }
+    75% { transform: translate(-2px, -1px); }
+  }
+
+  @keyframes orbit {
+    0% { transform: rotate(0deg) translateX(var(--orbit-radius, 0px)) rotate(0deg); }
+    100% { transform: rotate(360deg) translateX(var(--orbit-radius, 0px)) rotate(-360deg); }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+  }
+
+  @keyframes shimmer {
+    0% { stroke-dashoffset: 20; }
+    100% { stroke-dashoffset: 0; }
+  }
+
+  .node-rotate {
+    animation: rotate 20s linear infinite;
+    transform-origin: center center;
+  }
+
+  .node-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .orbit-path {
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+
+  .connection-line {
+    animation: shimmer 2s linear infinite;
+  }
+`
+
 interface GraphNode {
   id: string
   label: string
@@ -49,9 +96,9 @@ const FACTOR_COLORS: Record<string, { primary: string; gradient: string }> = {
   internal: { primary: "#10b981", gradient: "from-emerald-500 to-emerald-600" },
 }
 
-// 节点位置计算 - 力导向布局简化版
+// 节点位置计算 - 太阳系轨道布局
 function calculateNodePositions(nodes: GraphNode[], links: GraphLink[], width: number, height: number) {
-  const positions: Record<string, { x: number; y: number; z: number }> = {}
+  const positions: Record<string, { x: number; y: number; z: number; orbitRadius: number; angle: number }> = {}
 
   // 找到企业节点
   const enterpriseNode = nodes.find(n => n.type === "Enterprise")
@@ -59,30 +106,32 @@ function calculateNodePositions(nodes: GraphNode[], links: GraphLink[], width: n
 
   // 企业节点在中心
   if (enterpriseNode) {
-    positions[enterpriseNode.id] = { x: width / 2, y: height / 2, z: 0 }
+    positions[enterpriseNode.id] = { x: width / 2, y: height / 2, z: 0, orbitRadius: 0, angle: 0 }
   }
 
-  // 因子节点围绕企业节点排列
+  // 因子节点围绕企业节点排列 - 太阳系轨道式
   const factorCount = factorNodes.length
-  const radius = Math.min(width, height) * 0.35
+  const baseRadius = Math.min(width, height) * 0.32
 
   factorNodes.forEach((node, index) => {
-    // 根据权重计算角度偏移
+    // 根据权重计算轨道半径
     const link = links.find(l => l.target === node.id && l.source === enterpriseNode?.id)
     const weight = link?.weight || 10
-    const angleOffset = weight * 0.02 // 权重影响角度
 
+    // 权重越大，轨道越近（中心企业影响力越强）
+    const orbitRadius = baseRadius - (weight * 1.5) + Math.random() * 10
+
+    // 均匀分布角度，添加小幅随机偏移
     const baseAngle = (index / factorCount) * 2 * Math.PI - Math.PI / 2
-    const angle = baseAngle + angleOffset
+    const angle = baseAngle + (Math.random() - 0.5) * 0.3
 
-    // 添加一些随机扰动
-    const randomOffset = Math.sin(index * 1.5) * 15
-    const r = radius + randomOffset
-
+    // 轨道位置
     positions[node.id] = {
-      x: width / 2 + r * Math.cos(angle),
-      y: height / 2 + r * Math.sin(angle),
-      z: Math.cos(angle * 2) * 20, // Z轴深度感
+      x: width / 2 + orbitRadius * Math.cos(angle),
+      y: height / 2 + orbitRadius * Math.sin(angle),
+      z: Math.sin(angle * 2) * 15, // Z轴深度感
+      orbitRadius: Math.max(60, orbitRadius), // 保存轨道半径用于动画
+      angle: angle,
     }
   })
 
@@ -218,6 +267,8 @@ export function Neo4jKnowledgeGraph({ enterpriseCode }: { enterpriseCode: string
 
       {/* 3D 风格图谱可视化 */}
       <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-slate-700 overflow-hidden shadow-2xl">
+        {/* 注入动画样式 */}
+        <style>{solarSystemStyles}</style>
         <CardContent className="p-0">
           {isLoading ? (
             <div className="h-[450px] flex items-center justify-center">
@@ -257,97 +308,99 @@ export function Neo4jKnowledgeGraph({ enterpriseCode }: { enterpriseCode: string
               {/* SVG 图层 */}
               <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} className="relative">
                 <defs>
-                  {/* 节点渐变 */}
+                  {/* 节点渐变 - 球体效果 */}
                   {Object.entries({ ...FACTOR_COLORS, enterprise: { primary: enterpriseColor.primary } }).map(([key, color]) => (
-                    <radialGradient key={key} id={`nodeGradient-${key}`} cx="30%" cy="30%" r="70%">
-                      <stop offset="0%" stopColor={key === 'enterprise' ? enterpriseColor.primary : color.primary} stopOpacity="1" />
-                      <stop offset="100%" stopColor={key === 'enterprise' ? enterpriseColor.secondary : color.primary} stopOpacity="0.8" />
+                    <radialGradient key={key} id={`nodeGradient-${key}`} cx="35%" cy="35%" r="65%">
+                      <stop offset="0%" stopColor="#ffffff" stopOpacity="0.4" />
+                      <stop offset="30%" stopColor={key === 'enterprise' ? enterpriseColor.primary : color.primary} stopOpacity="1" />
+                      <stop offset="100%" stopColor={key === 'enterprise' ? enterpriseColor.secondary : color.primary} stopOpacity="0.9" />
                     </radialGradient>
                   ))}
 
-                  {/* 发光效果 */}
-                  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                  {/* 发光效果 - 柔和光晕 */}
+                  <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+                    <feGaussianBlur stdDeviation="2" result="coloredBlur" />
                     <feMerge>
                       <feMergeNode in="coloredBlur" />
                       <feMergeNode in="SourceGraphic" />
                     </feMerge>
                   </filter>
 
-                  {/* 阴影效果 */}
-                  <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="2" dy="4" stdDeviation="3" floodColor="rgba(0,0,0,0.3)" />
+                  {/* 外发光效果 */}
+                  <filter id="outerGlow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="4" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
                   </filter>
 
-                  {/* 线条渐变 */}
+                  {/* 线条渐变 - 淡雅 */}
                   <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor={enterpriseColor.primary} stopOpacity="0.6" />
-                    <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.8" />
-                    <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.6" />
+                    <stop offset="0%" stopColor={enterpriseColor.primary} stopOpacity="0.3" />
+                    <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.3" />
                   </linearGradient>
-
-                  {/* 箭头标记 */}
-                  <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                    <polygon points="0 0, 10 3.5, 0 7" fill={enterpriseColor.primary} opacity="0.6" />
-                  </marker>
                 </defs>
 
-                {/* 连接线 - 贝塞尔曲线 */}
+                {/* 轨道路径 - 虚线圆 */}
+                <g className="orbits">
+                  {graph && positions[graph.nodes.find(n => n.type === "Enterprise")?.id || ''] && (() => {
+                    const enterprisePos = positions[graph.nodes.find(n => n.type === "Enterprise")?.id || '']
+                    if (!enterprisePos) return null
+
+                    // 获取所有轨道半径
+                    const orbitRadii = new Set<number>()
+                    graph.nodes.filter(n => n.type === "Factor").forEach(node => {
+                      const pos = positions[node.id]
+                      if (pos) orbitRadii.add(Math.round(pos.orbitRadius / 20) * 20)
+                    })
+
+                    return Array.from(orbitRadii).map((radius, i) => (
+                      <circle
+                        key={`orbit-${i}`}
+                        cx={enterprisePos.x}
+                        cy={enterprisePos.y}
+                        r={radius}
+                        fill="none"
+                        stroke={enterpriseColor.primary}
+                        strokeWidth="0.5"
+                        strokeOpacity="0.08"
+                        strokeDasharray="4 6"
+                        className="orbit-path"
+                      />
+                    ))
+                  })()}
+                </g>
+
+                {/* 连接线 - 细虚线 */}
                 <g className="links">
                   {graph.links.map((link, index) => {
                     const sourcePos = positions[link.source]
                     const targetPos = positions[link.target]
                     if (!sourcePos || !targetPos) return null
 
-                    // 计算贝塞尔曲线控制点
-                    const midX = (sourcePos.x + targetPos.x) / 2
-                    const midY = (sourcePos.y + targetPos.y) / 2
-                    const dx = targetPos.x - sourcePos.x
-                    const dy = targetPos.y - sourcePos.y
-                    const dist = Math.sqrt(dx * dx + dy * dy)
-
-                    // 曲线偏移
-                    const offset = Math.min(dist * 0.2, 30)
-                    const controlX = midX - dy * offset / dist
-                    const controlY = midY + dx * offset / dist
-
-                    const pathD = `M ${sourcePos.x} ${sourcePos.y} Q ${controlX} ${controlY} ${targetPos.x} ${targetPos.y}`
-
+                    // 直线连接
                     const isHighlighted = hoveredNode === link.source || hoveredNode === link.target
                     const linkWeight = link.weight || 10
-                    const strokeWidth = Math.max(1.5, linkWeight / 15)
 
                     return (
-                      <g key={index}>
-                        {/* 发光线条 */}
-                        <path
-                          d={pathD}
-                          fill="none"
-                          stroke={enterpriseColor.primary}
-                          strokeWidth={strokeWidth + 4}
-                          strokeOpacity={isHighlighted ? 0.3 : 0.1}
-                          filter="url(#glow)"
-                          className="transition-all duration-300"
-                        />
-                        {/* 主线条 */}
-                        <path
-                          d={pathD}
-                          fill="none"
-                          stroke={isHighlighted ? enterpriseColor.primary : "url(#lineGradient)"}
-                          strokeWidth={strokeWidth}
-                          strokeOpacity={isHighlighted ? 0.9 : 0.5}
-                          strokeDasharray={link.type === "INFLUENCES" ? "6 3" : "none"}
-                          markerEnd={link.type === "INFLUENCES" ? "url(#arrowhead)" : undefined}
-                          className="transition-all duration-300"
-                        />
-                      </g>
+                      <line
+                        key={index}
+                        x1={sourcePos.x}
+                        y1={sourcePos.y}
+                        x2={targetPos.x}
+                        y2={targetPos.y}
+                        stroke={isHighlighted ? enterpriseColor.primary : "url(#lineGradient)"}
+                        strokeWidth={isHighlighted ? "1" : "0.5"}
+                        strokeOpacity={isHighlighted ? 0.8 : 0.25}
+                        strokeDasharray="3 5"
+                        className={isHighlighted ? "" : "connection-line"}
+                      />
                     )
                   })}
                 </g>
 
-                {/* 节点 */}
+                {/* 节点 - 太阳系星球风格 */}
                 <g className="nodes">
-                  {graph.nodes.map((node) => {
+                  {graph.nodes.map((node, index) => {
                     const pos = positions[node.id]
                     if (!pos) return null
 
@@ -358,7 +411,7 @@ export function Neo4jKnowledgeGraph({ enterpriseCode }: { enterpriseCode: string
                     // 获取节点权重
                     const link = graph.links.find(l => l.target === node.id && l.source !== node.id)
                     const weight = link?.weight || 10
-                    const nodeRadius = isEnterprise ? 35 : Math.max(18, 15 + weight * 0.4)
+                    const nodeRadius = isEnterprise ? 28 : Math.max(14, 12 + weight * 0.3)
 
                     const isHovered = hoveredNode === node.id
 
@@ -367,6 +420,9 @@ export function Neo4jKnowledgeGraph({ enterpriseCode }: { enterpriseCode: string
                     const TrendIcon = trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : Activity
                     const trendColor = trend === "up" ? "#ef4444" : trend === "down" ? "#10b981" : "#6b7280"
 
+                    // 动画延迟
+                    const animDelay = index * 0.3
+
                     return (
                       <g
                         key={node.id}
@@ -374,89 +430,98 @@ export function Neo4jKnowledgeGraph({ enterpriseCode }: { enterpriseCode: string
                         onMouseEnter={() => setHoveredNode(node.id)}
                         onMouseLeave={() => setHoveredNode(null)}
                         className="cursor-pointer"
-                        style={{ filter: isHovered ? 'url(#glow)' : 'url(#shadow)' }}
+                        style={{
+                          filter: isHovered ? 'url(#outerGlow)' : 'none',
+                        }}
                       >
-                        {/* 外圈光晕 */}
+                        {/* 外层光晕 - 柔和 */}
                         <circle
-                          r={nodeRadius + 8}
-                          fill={isEnterprise ? enterpriseColor.glow : `${factorColor.primary}20`}
-                          opacity={isHovered ? 0.6 : 0.2}
-                          className="transition-opacity duration-300"
+                          r={nodeRadius + 6}
+                          fill={isEnterprise ? enterpriseColor.glow : `${factorColor.primary}15`}
+                          opacity={isHovered ? 0.5 : 0.2}
+                          className="transition-opacity duration-500"
                         />
 
-                        {/* 主圆形节点 */}
-                        <circle
-                          r={nodeRadius}
-                          fill={isEnterprise ? `url(#nodeGradient-enterprise)` : `url(#nodeGradient-${category})`}
-                          stroke={isEnterprise ? enterpriseColor.primary : factorColor.primary}
-                          strokeWidth={isEnterprise ? 3 : 2}
-                          className="transition-all duration-300"
-                        />
+                        {/* 球体主体 */}
+                        <g className={isEnterprise ? "" : "node-float"} style={{ animationDelay: `${animDelay}s` }}>
+                          <circle
+                            r={nodeRadius}
+                            fill={isEnterprise ? `url(#nodeGradient-enterprise)` : `url(#nodeGradient-${category})`}
+                            stroke={isEnterprise ? enterpriseColor.primary : factorColor.primary}
+                            strokeWidth={isEnterprise ? 1.5 : 1}
+                            strokeOpacity={0.6}
+                            className="transition-all duration-300"
+                          />
 
-                        {/* 内部渐变高光 */}
-                        <circle
-                          r={nodeRadius * 0.6}
-                          cx={-nodeRadius * 0.2}
-                          cy={-nodeRadius * 0.2}
-                          fill="white"
-                          opacity={0.15}
-                        />
+                          {/* 球体高光 */}
+                          <ellipse
+                            rx={nodeRadius * 0.5}
+                            ry={nodeRadius * 0.3}
+                            cx={-nodeRadius * 0.25}
+                            cy={-nodeRadius * 0.3}
+                            fill="white"
+                            opacity={0.25}
+                          />
+
+                          {/* 内部纹理环 */}
+                          {isEnterprise && (
+                            <>
+                              <circle r={nodeRadius * 0.7} fill="none" stroke="white" strokeWidth="0.5" strokeOpacity="0.15" />
+                              <circle r={nodeRadius * 0.4} fill="none" stroke="white" strokeWidth="0.5" strokeOpacity="0.1" />
+                            </>
+                          )}
+                        </g>
 
                         {/* 节点文本 */}
                         <text
                           textAnchor="middle"
-                          dy={isEnterprise ? -5 : 0}
+                          dy={isEnterprise ? -3 : 1}
                           fill="white"
-                          fontSize={isEnterprise ? 11 : 9}
+                          fontSize={isEnterprise ? 10 : 8}
                           fontWeight={isEnterprise ? "bold" : "500"}
                           className="pointer-events-none select-none"
-                          style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+                          style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}
                         >
-                          {isEnterprise ? node.label : node.label.length > 6 ? node.label.slice(0, 5) + '...' : node.label}
+                          {isEnterprise ? node.label : node.label.length > 5 ? node.label.slice(0, 4) + '..' : node.label}
                         </text>
 
                         {/* 权重显示 */}
                         {!isEnterprise && link && (
                           <text
                             textAnchor="middle"
-                            dy={12}
+                            dy={10}
                             fill="white"
-                            fontSize={8}
-                            opacity={0.8}
+                            fontSize={7}
+                            opacity={0.7}
                             className="pointer-events-none"
                           >
                             {weight}%
                           </text>
                         )}
 
-                        {/* 企业节点额外信息 */}
+                        {/* 企业节点产能 */}
                         {isEnterprise && (
                           <text
                             textAnchor="middle"
-                            dy={10}
+                            dy={9}
                             fill="white"
-                            fontSize={8}
-                            opacity={0.7}
+                            fontSize={7}
+                            opacity={0.6}
                             className="pointer-events-none"
                           >
-                            {String(node.properties?.capacity || 100)}万吨/年
+                            {String(node.properties?.capacity || 100)}万吨
                           </text>
                         )}
 
-                        {/* 趋势指示器 */}
+                        {/* 趋势指示器 - 小圆点 */}
                         {!isEnterprise && trend && (
-                          <g transform={`translate(${nodeRadius * 0.7}, ${-nodeRadius * 0.7})`}>
-                            <circle r={6} fill={trendColor} opacity={0.2} />
-                            <TrendIcon
-                              x={-4}
-                              y={-4}
-                              width={8}
-                              height={8}
-                              stroke={trendColor}
-                              strokeWidth={2}
-                              fill="none"
-                            />
-                          </g>
+                          <circle
+                            cx={nodeRadius * 0.6}
+                            cy={-nodeRadius * 0.6}
+                            r={3}
+                            fill={trendColor}
+                            opacity={0.8}
+                          />
                         )}
                       </g>
                     )
