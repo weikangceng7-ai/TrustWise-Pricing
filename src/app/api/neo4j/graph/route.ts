@@ -7,5 +7,9 @@ export async function GET(request: Request) {
 
   const graph = await getEnterpriseKnowledgeGraph(enterprise)
 
-  return NextResponse.json(graph)
+  return NextResponse.json({
+    ...graph,
+    enterprise: enterprise,
+    timestamp: new Date().toISOString(),
+  })
 }
