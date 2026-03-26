@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { TrendingUp, Package, DollarSign, BarChart3, AlertTriangle, ChevronRight, MessageCircle, FileText, Settings, ArrowRight, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react"
 import { PriceChart, TimeRange } from "@/components/price-chart"
 import { EnterprisePredictionOverview } from "@/components/enterprise-prediction-chart"
+import { SupplyDemandAnalysis } from "@/components/supply-demand-analysis"
 import Link from "next/link"
 import { getBackgroundImage } from "@/config/images"
 
@@ -161,7 +162,7 @@ function ReportCarousel() {
 }
 
 export default function DashboardPage() {
-  const [timeRange, setTimeRange] = useState<TimeRange>("month")
+  const [timeRange, setTimeRange] = useState<TimeRange>("day")
   const bgImage = getBackgroundImage("dashboardBackground")
 
   return (
@@ -206,9 +207,9 @@ export default function DashboardPage() {
         {/* 采购报告轮播 */}
         <ReportCarousel />
 
-        {/* 上方两个功能板块 - 左右布局 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {/* 左上：价格走势 */}
+        {/* 上方两个功能板块 - 上下布局，价格走势在上 */}
+        <div className="space-y-4 mb-6">
+          {/* 价格走势 */}
           <div className="bg-white/80 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-slate-200 dark:border-white/10 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all duration-300 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -253,68 +254,8 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 右上：供需分析 */}
-          <div className="bg-white/80 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-slate-200 dark:border-white/10 hover:border-violet-400 dark:hover:border-violet-500/30 transition-all duration-300 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <Package className="h-5 w-5 text-violet-600 dark:text-violet-400" />
-              <h3 className="text-slate-900 dark:text-white font-semibold">供需分析</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {/* 当前价格 */}
-              <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3 border border-slate-200 dark:border-white/5">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-slate-500 dark:text-slate-400">当前价格</span>
-                  <DollarSign className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-xl font-bold text-slate-900 dark:text-white">950</span>
-                  <span className="text-xs text-slate-500 dark:text-slate-500">元/吨</span>
-                </div>
-                <div className="flex items-center gap-1 mt-1">
-                  <TrendingUp className="h-3 w-3 text-rose-500 dark:text-rose-400" />
-                  <span className="text-xs text-rose-500 dark:text-rose-400">+3.2%</span>
-                </div>
-              </div>
-
-              {/* 港口库存 */}
-              <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3 border border-slate-200 dark:border-white/5">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-slate-500 dark:text-slate-400">港口库存</span>
-                  <Package className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-xl font-bold text-slate-900 dark:text-white">12.5</span>
-                  <span className="text-xs text-slate-500 dark:text-slate-500">万吨</span>
-                </div>
-                <div className="flex items-center gap-1 mt-1">
-                  <TrendingUp className="h-3 w-3 text-emerald-500 dark:text-emerald-400 rotate-180" />
-                  <span className="text-xs text-emerald-500 dark:text-emerald-400">-5.2%</span>
-                </div>
-              </div>
-
-              {/* 供给评估 */}
-              <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3 border border-slate-200 dark:border-white/5">
-                <span className="text-xs text-slate-500 dark:text-slate-400">供给评估</span>
-                <div className="mt-2 flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full w-3/4 bg-linear-to-r from-cyan-500 to-blue-500 rounded-full" />
-                  </div>
-                  <span className="text-xs text-cyan-600 dark:text-cyan-400">充足</span>
-                </div>
-              </div>
-
-              {/* 需求评估 */}
-              <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3 border border-slate-200 dark:border-white/5">
-                <span className="text-xs text-slate-500 dark:text-slate-400">需求评估</span>
-                <div className="mt-2 flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full w-2/3 bg-linear-to-r from-violet-500 to-purple-500 rounded-full" />
-                  </div>
-                  <span className="text-xs text-violet-600 dark:text-violet-400">旺盛</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* 供需分析 */}
+          <SupplyDemandAnalysis />
         </div>
 
         {/* 中间：价格知识图谱 - 主要区域 */}

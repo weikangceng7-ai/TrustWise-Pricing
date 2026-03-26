@@ -496,6 +496,7 @@ export default function AgentChatPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [showHistory, setShowHistory] = useState(true)
+  const [showArchitecture, setShowArchitecture] = useState(false)
 
   // 处理图片上传
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -785,9 +786,18 @@ export default function AgentChatPage() {
               </div>
             </CardHeader>
 
-            {/* 系统架构轮播 - 放在聊天区域内顶部 */}
+            {/* 系统架构轮播 - 可折叠 */}
             <div className="border-b border-slate-200 dark:border-slate-700/50 shrink-0">
-              <ThreePhaseArchitectureCarousel className="rounded-none border-0" autoPlay={true} interval={5000} />
+              <button
+                onClick={() => setShowArchitecture(!showArchitecture)}
+                className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+              >
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-300">系统架构</span>
+                <ChevronRight className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${showArchitecture ? 'rotate-90' : ''}`} />
+              </button>
+              {showArchitecture && (
+                <ThreePhaseArchitectureCarousel className="rounded-none border-0 border-t border-slate-200 dark:border-slate-700/50" autoPlay={true} interval={5000} />
+              )}
             </div>
 
             {/* 消息滚动区域 */}

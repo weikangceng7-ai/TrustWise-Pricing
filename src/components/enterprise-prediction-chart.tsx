@@ -93,7 +93,7 @@ export function EnterprisePredictionChart({ enterpriseCode, days = 60 }: Enterpr
     const changePercent = ((change / firstPrice) * 100).toFixed(2)
 
     const lastItem = chartData[chartData.length - 1]
-    const modelType = lastItem?.modelType || "EEMD-LSTM"
+    const modelType = lastItem?.modelType || "LSTM"
     const confidence = lastItem?.confidence || 0
 
     return {
@@ -284,7 +284,7 @@ export function EnterprisePredictionOverview({ className }: { className?: string
         <BarChart3 className="h-5 w-5 text-cyan-400" />
         <h2 className="text-xl font-semibold text-slate-100">企业硫磺价格预测</h2>
         <Badge variant="outline" className="bg-cyan-900/30 border-cyan-700 text-cyan-300">
-          EEMD-LSTM 模型
+          LSTM 模型
         </Badge>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

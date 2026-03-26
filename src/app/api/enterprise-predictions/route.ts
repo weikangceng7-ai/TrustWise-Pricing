@@ -43,7 +43,7 @@ function generateMockData(enterprise: string, days: number): PredictionRecord[] 
       date: dateStr,
       actualPrice: Number(actualPrice.toFixed(2)),
       predictedPrice: Number(predictedPrice.toFixed(2)),
-      modelType: "LSTM-Attention",
+      modelType: "LSTM",
       confidence: Number((0.85 + Math.random() * 0.1).toFixed(2)),
       factors: {
         supply: 0.35 + Math.random() * 0.1,
