@@ -21,13 +21,8 @@ const KNOWLEDGE_DATA = {
     { id: "sulfur-price", name: "硫磺价格", description: "核心预测目标，受供需、成本、政策等多因素影响" },
   ],
 
-  // 数据源（新增）
-  dataSources: [
-    { id: "akshare", name: "AkShare", category: "market", description: "开源财经数据接口，提供大宗商品、期货、汇率等实时数据" },
-    { id: "fred", name: "FRED", category: "macro", description: "美联储经济数据，提供全球经济指标、利率、通胀等历史数据" },
-    { id: "gdelt", name: "GDELT", category: "news", description: "全球事件、情感和位置数据库，实时监测全球新闻事件" },
-    { id: "longzhong", name: "隆众资讯", category: "industry", description: "硫磺行业专业数据源，提供价格、库存、供需数据" },
-  ],
+  // 数据源（隐藏）
+  dataSources: [],
 
   // 市场资讯库
   marketNews: [
@@ -76,15 +71,6 @@ const KNOWLEDGE_DATA = {
 
   // 关系定义
   relations: [
-    // 数据源提供数据
-    { source: "akshare", target: "crude-oil", type: "提供", weight: 0.95 },
-    { source: "akshare", target: "usd-cny", type: "提供", weight: 0.95 },
-    { source: "akshare", target: "fertilizer", type: "提供", weight: 0.9 },
-    { source: "fred", target: "macro-factor", type: "提供", weight: 0.85 },
-    { source: "gdelt", target: "news-event", type: "提供", weight: 0.8 },
-    { source: "longzhong", target: "sulfur-price", type: "提供", weight: 1.0 },
-    { source: "longzhong", target: "inventory", type: "提供", weight: 0.95 },
-
     // 核心关系：各因素影响硫磺价格
     { source: "supply-factor", target: "sulfur-price", type: "影响", weight: 0.9 },
     { source: "demand-factor", target: "sulfur-price", type: "影响", weight: 0.85 },
@@ -714,13 +700,6 @@ export function YihuaCodeKnowledgeGraph() {
               </div>
               <div className="mt-1 text-xl font-semibold tabular-nums">{KNOWLEDGE_DATA.core.length}</div>
             </div>
-            <div className="rounded-lg border bg-linear-to-br from-cyan-50 to-cyan-100/50 dark:from-cyan-950/30 dark:to-cyan-900/20 p-3">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Database className="h-3 w-3" />
-                数据源
-              </div>
-              <div className="mt-1 text-xl font-semibold tabular-nums">{KNOWLEDGE_DATA.dataSources.length}</div>
-            </div>
             <div className="rounded-lg border bg-linear-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 p-3">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Newspaper className="h-3 w-3" />
@@ -766,13 +745,6 @@ export function YihuaCodeKnowledgeGraph() {
               onClick={() => setFilterType("core")}
             >
               核心实体
-            </Button>
-            <Button
-              variant={filterType === "dataSource" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilterType("dataSource")}
-            >
-              数据源
             </Button>
             <Button
               variant={filterType === "market" ? "default" : "outline"}
@@ -1036,10 +1008,6 @@ export function YihuaCodeKnowledgeGraph() {
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-full bg-red-500" />
               核心实体
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-cyan-500" />
-              数据源
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-full bg-blue-500" />

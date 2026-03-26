@@ -1,12 +1,165 @@
 "use client"
 
-import { useState } from "react"
-import { TrendingUp, Package, DollarSign, BarChart3, AlertTriangle, ChevronRight, MessageCircle, FileText, Settings } from "lucide-react"
+import { useState, useEffect } from "react"
+import { TrendingUp, Package, DollarSign, BarChart3, AlertTriangle, ChevronRight, MessageCircle, FileText, Settings, ArrowRight, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react"
 import { PriceChart, TimeRange } from "@/components/price-chart"
 import { ThreePhaseArchitecture } from "@/components/three-phase-architecture"
 import { EnterprisePredictionOverview } from "@/components/enterprise-prediction-chart"
 import Link from "next/link"
 import { getBackgroundImage } from "@/config/images"
+
+interface Report {
+  id: number
+  title: string
+  reportDate: string
+  summary: string
+  recommendation: string | null
+  priceTrend: string | null
+  riskLevel: string | null
+}
+
+function ReportCarousel() {
+  const [reports, setReports] = useState<Report[]>([])
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchReports() {
+      try {
+        const res = await fetch("/api/reports")
+        const data = await res.json()
+        if (data.success && data.data) {
+          setReports(data.data.slice(0, 5))
+        }
+      } catch (error) {
+        console.error("获取报告数据失败:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchReports()
+  }, [])
+
+  useEffect(() => {
+    if (!isAutoPlaying || reports.length === 0) return
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % reports.length)
+    }, 4000)
+    return () => clearInterval(timer)
+  }, [isAutoPlaying, reports.length])
+
+  const goToPrev = () => {
+    setIsAutoPlaying(false)
+    setCurrentIndex((prev) => (prev - 1 + reports.length) % reports.length)
+  }
+
+  const goToNext = () => {
+    setIsAutoPlaying(false)
+    setCurrentIndex((prev) => (prev + 1) % reports.length)
+  }
+
+  const getTrendColor = (trend: string | null) => {
+    if (!trend) return "text-slate-500"
+    if (trend.includes("上涨")) return "text-rose-500"
+    if (trend.includes("下跌")) return "text-emerald-500"
+    return "text-slate-500"
+  }
+
+  const getRiskColor = (risk: string | null) => {
+    if (risk === "高") return "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300"
+    if (risk === "中等") return "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
+    return "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-gradient-to-r from-cyan-500/10 via-violet-500/10 to-cyan-500/10 dark:from-cyan-500/5 dark:via-violet-500/5 dark:to-cyan-500/5 backdrop-blur-sm rounded-2xl p-4 border border-cyan-200/50 dark:border-cyan-500/20 mb-6">
+        <div className="flex items-center justify-center h-16">
+          <div className="animate-pulse text-slate-400 text-sm">加载中...</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (reports.length === 0) {
+    return null
+  }
+
+  const currentReport = reports[currentIndex]
+
+  return (
+    <div className="bg-gradient-to-r from-cyan-500/10 via-violet-500/10 to-cyan-500/10 dark:from-cyan-500/5 dark:via-violet-500/5 dark:to-cyan-500/5 backdrop-blur-sm rounded-2xl p-4 border border-cyan-200/50 dark:border-cyan-500/20 mb-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="shrink-0 w-10 h-10 rounded-xl bg-cyan-100 dark:bg-cyan-500/20 flex items-center justify-center">
+            <FileText className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                {currentReport.title}
+              </h3>
+              <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${getRiskColor(currentReport.riskLevel)}`}>
+                {currentReport.riskLevel || "低"}风险
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
+              {currentReport.summary}
+            </p>
+            <div className="flex items-center gap-3 mt-1">
+              <span className="text-xs text-slate-500 dark:text-slate-500">{currentReport.reportDate}</span>
+              <span className={`text-xs ${getTrendColor(currentReport.priceTrend)}`}>
+                {currentReport.priceTrend || "稳定"}
+              </span>
+              <span className="text-xs text-cyan-600 dark:text-cyan-400">
+                {currentReport.recommendation}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2 shrink-0 ml-4">
+          <button
+            onClick={goToPrev}
+            className="p-1.5 rounded-lg bg-white/50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+          </button>
+          <div className="flex gap-1">
+            {reports.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  setIsAutoPlaying(false)
+                  setCurrentIndex(idx)
+                }}
+                className={`w-1.5 h-1.5 rounded-full transition-all ${
+                  idx === currentIndex
+                    ? "bg-cyan-500 w-3"
+                    : "bg-slate-300 dark:bg-slate-600"
+                }`}
+              />
+            ))}
+          </div>
+          <button
+            onClick={goToNext}
+            className="p-1.5 rounded-lg bg-white/50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition-colors"
+          >
+            <ChevronRightIcon className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+          </button>
+          <Link
+            href="/reports"
+            className="ml-2 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white text-xs font-medium flex items-center gap-1 transition-colors"
+          >
+            查看全部
+            <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function DashboardPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>("month")
@@ -50,6 +203,9 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">价格知识图谱</h1>
           <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">硫磺市场价格分析与知识关系可视化</p>
         </div>
+
+        {/* 采购报告轮播 */}
+        <ReportCarousel />
 
         {/* 上方两个功能板块 - 左右布局 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

@@ -35,6 +35,7 @@ export interface Conversation {
 interface UseChatWithHistoryOptions {
   userId?: string
   conversationId?: string
+  enterprise?: string
 }
 
 
@@ -254,6 +255,7 @@ export function useChatWithHistory(options: UseChatWithHistoryOptions = {}) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: [...formattedMessages, currentMsg],
+          enterprise: options.enterprise,
         }),
         signal: abortControllerRef.current.signal,
       })
@@ -352,6 +354,7 @@ export function useChatWithHistory(options: UseChatWithHistoryOptions = {}) {
           messages: messages
             .filter((m) => m.id !== "welcome" && m.id !== messageId)
             .map((m) => ({ role: m.role, content: m.content })),
+          enterprise: options.enterprise,
         }),
         signal: abortControllerRef.current.signal,
       })

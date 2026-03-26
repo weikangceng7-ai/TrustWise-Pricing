@@ -29,6 +29,11 @@ interface ChatMessage {
   content: MessageContent
 }
 
+interface ChatRequest {
+  messages: ChatMessage[]
+  enterprise?: string
+}
+
 function hasImageInMessages(messages: ChatMessage[]): boolean {
   return messages.some((msg) => {
     if (Array.isArray(msg.content)) {
@@ -96,9 +101,16 @@ function formatInventoryData(inventory: Awaited<ReturnType<typeof getInventory>>
   return headers + rows
 }
 
+const ENTERPRISE_NAMES: Record<string, string> = {
+  yihua: "湖北宜化集团",
+  luxi: "鲁西化工集团",
+  jinzhengda: "金正大生态工程",
+}
+
 export async function POST(req: Request) {
   try {
-    const { messages } = await req.json() as { messages: ChatMessage[] }
+    const body = await req.json() as ChatRequest
+    const { messages, enterprise } = body
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "请提供有效的消息" }), {
@@ -113,7 +125,6 @@ export async function POST(req: Request) {
     let inventoryContext = ""
     let knowledgeGraphContext = ""
 
-    // 获取用户最后一条消息用于知识图谱查询
     const lastUserMessage = [...messages].reverse().find(m => m.role === "user")
     const userQuestion = lastUserMessage
       ? (typeof lastUserMessage.content === "string"
@@ -138,7 +149,6 @@ export async function POST(req: Request) {
         inventoryContext = formatInventoryData(inventory)
       }
 
-      // 格式化知识图谱上下文
       if (graphContext && (graphContext.enterprises.length > 0 || graphContext.factors.length > 0)) {
         knowledgeGraphContext = formatGraphContextAsText(graphContext)
       }
@@ -153,6 +163,7 @@ export async function POST(req: Request) {
       systemPrompt = generateImageAnalysisPrompt()
       model = "gpt-4-vision-preview"
     } else {
+      const enterpriseName = enterprise ? ENTERPRISE_NAMES[enterprise] || enterprise : undefined
       systemPrompt = generateSystemPromptWithContext({
         prices: pricesContext || undefined,
         inventory: inventoryContext || undefined,
@@ -163,6 +174,7 @@ export async function POST(req: Request) {
           day: 'numeric',
           weekday: 'long'
         }),
+        enterprise: enterpriseName,
       })
       model = "deepseek-v3-0324"
     }
