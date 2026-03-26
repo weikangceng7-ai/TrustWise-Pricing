@@ -119,21 +119,21 @@ const KNOWLEDGE_DATA = {
     { source: "sulfur-price", target: "risk-warning", type: "监测", weight: 0.9 },
   ],
 
-  // 价格影响权重
+  // 价格影响权重 (总和100%)
   factorWeights: [
-    { factor: "供应端因素", weight: 0.9, trend: "up" },
-    { factor: "需求端因素", weight: 0.85, trend: "stable" },
-    { factor: "原油价格", weight: 0.82, trend: "up" },
-    { factor: "成本因素", weight: 0.8, trend: "up" },
-    { factor: "磷肥市场", weight: 0.78, trend: "stable" },
-    { factor: "国际市场", weight: 0.75, trend: "down" },
-    { factor: "港口库存", weight: 0.7, trend: "stable" },
-    { factor: "天然气价格", weight: 0.68, trend: "up" },
-    { factor: "美元汇率", weight: 0.65, trend: "down" },
-    { factor: "海运运费", weight: 0.6, trend: "stable" },
-    { factor: "宏观因素", weight: 0.55, trend: "up" },
-    { factor: "季节性规律", weight: 0.5, trend: "stable" },
-    { factor: "市场资讯", weight: 0.4, trend: "down" },
+    { factor: "供应端因素", weight: 0.15, trend: "up" },
+    { factor: "需求端因素", weight: 0.14, trend: "stable" },
+    { factor: "原油价格", weight: 0.12, trend: "up" },
+    { factor: "成本因素", weight: 0.11, trend: "up" },
+    { factor: "磷肥市场", weight: 0.10, trend: "stable" },
+    { factor: "国际市场", weight: 0.09, trend: "down" },
+    { factor: "港口库存", weight: 0.08, trend: "stable" },
+    { factor: "天然气价格", weight: 0.06, trend: "up" },
+    { factor: "美元汇率", weight: 0.05, trend: "down" },
+    { factor: "海运运费", weight: 0.04, trend: "stable" },
+    { factor: "宏观因素", weight: 0.03, trend: "up" },
+    { factor: "季节性规律", weight: 0.02, trend: "stable" },
+    { factor: "市场资讯", weight: 0.01, trend: "down" },
   ],
 
   // 数据源说明 - 与 API route 保持同步
@@ -1118,7 +1118,7 @@ export function YihuaCodeKnowledgeGraph() {
                     <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
                       <div
                         className="h-full bg-linear-to-r from-blue-500 to-purple-500 rounded-full"
-                        style={{ width: `${f.weight * 100}%` }}
+                        style={{ width: `${(f.weight / 0.15) * 100}%` }}
                       />
                     </div>
                     <div className="text-xs text-muted-foreground w-10 text-right">
@@ -1397,7 +1397,7 @@ function getStaticNodeInfo(
       return [
         { label: '最近采购', value: '2024年1月，均价 950 元/吨' },
         { label: '采购量', value: '月均约 5000 吨' },
-        { label: '主要供应商', value: '沙特阿美、中化' },
+        { label: '主要供应商', value: '华能化工、恒盛贸易' },
         { label: '采购策略', value: '分批采购，控制库存风险', highlight: true },
       ]
     case 'price-judgment':
@@ -1416,7 +1416,7 @@ function getStaticNodeInfo(
       ]
     case 'supplier-relation':
       return [
-        { label: '主要供应商', value: '沙特阿美、中化、中海油' },
+        { label: '主要供应商', value: '华能化工、恒盛贸易、天源国际' },
         { label: '合作年限', value: '5-10 年长期合作' },
         { label: '付款条件', value: '信用证 30-60 天' },
         { label: '合作状态', value: '关系稳定，优先供货保障', highlight: true },

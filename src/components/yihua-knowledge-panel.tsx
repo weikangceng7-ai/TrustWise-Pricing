@@ -38,7 +38,7 @@ export function YihuaKnowledgePanel() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>宜化知识库</CardTitle>
+          <CardTitle>知识库</CardTitle>
           <CardDescription>无法加载知识库统计，请稍后重试。</CardDescription>
         </CardHeader>
       </Card>
@@ -53,7 +53,7 @@ export function YihuaKnowledgePanel() {
     <Card>
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <CardTitle className="text-lg">宜化知识库</CardTitle>
+          <CardTitle className="text-lg">知识库</CardTitle>
           <span className="text-xs text-muted-foreground">
             来源：{source === "database" ? "数据库" : "本地清单"}
             {data.generatedAt ? ` · ${new Date(data.generatedAt).toLocaleDateString("zh-CN")}` : ""}

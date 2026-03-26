@@ -5,6 +5,7 @@ import {
   FACTOR_DEFINITIONS,
   FACTOR_RELATIONS,
   calculateEnterpriseFactorWeights,
+  getEnterpriseNameByCode,
   type EnterpriseFactorWeight,
 } from "./enterprise-knowledge-config"
 
@@ -380,109 +381,36 @@ export async function getEnterpriseKnowledgeGraph(enterpriseCode: string): Promi
 }
 
 function getEnterpriseName(code: string): string {
-  const names: Record<string, string> = {
-    yihua: "湖北宜化集团",
-    luxi: "鲁西化工集团",
-    jinzhengda: "金正大生态工程",
-  }
-  return names[code] || code
+  return getEnterpriseNameByCode(code)
 }
 
 function getDefaultEnterpriseGraph(enterpriseCode: string): {
   nodes: Array<{ id: string; label: string; type: string; properties: Record<string, unknown> }>
   links: Array<{ source: string; target: string; type: string; weight?: number; reason?: string }>
 } {
-  const enterpriseConfig: Record<string, {
-    name: string
-    location: string
-    province: string
-    capacity: number
-    transportMode: string
-    mainProducts: string[]
-    customerRegions: string[]
-    inventoryStrategy: string
-    description: string
-  }> = {
-    yihua: {
-      name: "湖北宜化集团",
-      location: "湖北省宜昌市",
-      province: "湖北",
-      capacity: 120,
-      transportMode: "water",
-      mainProducts: ["磷酸一铵", "磷酸二铵", "尿素"],
-      customerRegions: ["华中", "华南", "西南"],
-      inventoryStrategy: "moderate",
-      description: "国内最大硫磺制酸企业之一，依托长江水运优势",
-    },
-    luxi: {
-      name: "鲁西化工集团",
-      location: "山东省聊城市",
-      province: "山东",
-      capacity: 95,
-      transportMode: "rail",
-      mainProducts: ["复合肥", "尿素", "甲醇"],
-      customerRegions: ["华北", "东北", "西北"],
-      inventoryStrategy: "conservative",
-      description: "华北地区主要化肥企业，依赖铁路运输",
-    },
-    jinzhengda: {
-      name: "金正大生态工程",
-      location: "山东省临沂市",
-      province: "山东",
-      capacity: 80,
-      transportMode: "road",
-      mainProducts: ["复合肥", "缓控释肥", "水溶肥"],
-      customerRegions: ["华东", "华南", "出口"],
-      inventoryStrategy: "aggressive",
-      description: "专注于高端复合肥，出口占比高",
-    },
+  // 从集中配置获取企业信息
+  const enterpriseConfig = ENTERPRISE_CONFIGS.find(e => e.code === enterpriseCode)
+  if (!enterpriseConfig) {
+    return { nodes: [], links: [] }
   }
 
-  const factorWeights: Record<string, Array<{ id: string; name: string; category: string; weight: number; trend: string; reason: string }>> = {
-    yihua: [
-      { id: "international_price", name: "国际硫磺价格", category: "supply", weight: 24, trend: "up", reason: "国际采购为主，对价格敏感" },
-      { id: "fertilizer_demand", name: "化肥市场需求", category: "demand", weight: 23, trend: "stable", reason: "产能大，需求波动影响显著" },
-      { id: "environmental_policy", name: "环保政策", category: "external", weight: 14, trend: "up", reason: "标准环保要求" },
-      { id: "transport_cost", name: "国内运输成本", category: "internal", weight: 6, trend: "up", reason: "依托长江水运，运输成本较低" },
-      { id: "exchange_rate", name: "汇率波动", category: "external", weight: 9, trend: "stable", reason: "进口成本受汇率影响" },
-      { id: "inventory_level", name: "库存水平", category: "inventory", weight: 8, trend: "down", reason: "库存策略稳健" },
-    ],
-    luxi: [
-      { id: "international_price", name: "国际硫磺价格", category: "supply", weight: 22, trend: "up", reason: "国际采购为主" },
-      { id: "fertilizer_demand", name: "化肥市场需求", category: "demand", weight: 21, trend: "stable", reason: "区域需求稳定" },
-      { id: "environmental_policy", name: "环保政策", category: "external", weight: 18, trend: "up", reason: "山东省环保要求严格" },
-      { id: "transport_cost", name: "国内运输成本", category: "internal", weight: 12, trend: "up", reason: "依赖铁路运输，运输成本中等偏高" },
-      { id: "exchange_rate", name: "汇率波动", category: "external", weight: 10, trend: "stable", reason: "进口成本受汇率影响" },
-      { id: "inventory_level", name: "库存水平", category: "inventory", weight: 12, trend: "stable", reason: "库存策略保守，需更关注库存变化" },
-    ],
-    jinzhengda: [
-      { id: "international_price", name: "国际硫磺价格", category: "supply", weight: 20, trend: "up", reason: "国际采购为主" },
-      { id: "fertilizer_demand", name: "化肥市场需求", category: "demand", weight: 25, trend: "stable", reason: "内销为主" },
-      { id: "export_demand", name: "出口需求", category: "demand", weight: 14, trend: "up", reason: "出口业务占比高，出口需求影响大" },
-      { id: "environmental_policy", name: "环保政策", category: "external", weight: 18, trend: "up", reason: "山东省环保要求严格" },
-      { id: "transport_cost", name: "国内运输成本", category: "internal", weight: 14, trend: "up", reason: "以公路运输为主，运输成本较高" },
-      { id: "exchange_rate", name: "汇率波动", category: "external", weight: 11, trend: "stable", reason: "有出口业务，汇率双向影响" },
-      { id: "inventory_level", name: "库存水平", category: "inventory", weight: 5, trend: "down", reason: "库存周转快，库存压力相对较小" },
-    ],
-  }
-
-  const config = enterpriseConfig[enterpriseCode] || enterpriseConfig.yihua
-  const weights = factorWeights[enterpriseCode] || factorWeights.yihua
+  // 获取差异化因子权重
+  const weights = calculateEnterpriseFactorWeights(enterpriseConfig)
 
   const nodes: Array<{ id: string; label: string; type: string; properties: Record<string, unknown> }> = [
     {
       id: enterpriseCode,
-      label: config.name,
+      label: enterpriseConfig.name,
       type: "Enterprise",
       properties: {
-        location: config.location,
-        province: config.province,
-        capacity: config.capacity,
-        transportMode: config.transportMode,
-        mainProducts: config.mainProducts,
-        customerRegions: config.customerRegions,
-        inventoryStrategy: config.inventoryStrategy,
-        description: config.description,
+        location: enterpriseConfig.location,
+        province: enterpriseConfig.province,
+        capacity: enterpriseConfig.capacity,
+        transportMode: enterpriseConfig.transportMode,
+        mainProducts: enterpriseConfig.mainProducts,
+        customerRegions: enterpriseConfig.customerRegions,
+        inventoryStrategy: enterpriseConfig.inventoryStrategy,
+        description: enterpriseConfig.description,
       },
     },
   ]
@@ -491,8 +419,8 @@ function getDefaultEnterpriseGraph(enterpriseCode: string): {
 
   for (const factor of weights) {
     nodes.push({
-      id: factor.id,
-      label: factor.name,
+      id: factor.factorId,
+      label: factor.factorName,
       type: "Factor",
       properties: {
         category: factor.category,
@@ -501,7 +429,7 @@ function getDefaultEnterpriseGraph(enterpriseCode: string): {
     })
     links.push({
       source: enterpriseCode,
-      target: factor.id,
+      target: factor.factorId,
       type: "HAS_FACTOR",
       weight: factor.weight,
       reason: factor.reason,

@@ -17,25 +17,11 @@ import { useTheme } from "@/components/theme-provider"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { TrendingUp, TrendingDown, Minus, Brain, Target, BarChart3 } from "lucide-react"
-
-// 企业配置
-const ENTERPRISE_CONFIG = {
-  yihua: {
-    name: "湖北宜化集团",
-    color: "#06b6d4", // cyan
-    description: "国内领先的硫磺生产企业，产能约120万吨/年",
-  },
-  luxi: {
-    name: "鲁西化工集团",
-    color: "#8b5cf6", // violet
-    description: "山东大型化工企业，硫磺制酸产能居前",
-  },
-  jinzhengda: {
-    name: "金正大生态工程",
-    color: "#f59e0b", // amber
-    description: "化肥行业龙头，硫磺需求稳定",
-  },
-}
+import {
+  ENTERPRISE_CONFIGS,
+  ENTERPRISE_COLORS,
+  type EnterpriseCode,
+} from "@/services/enterprise-knowledge-config"
 
 interface PredictionData {
   id: number
@@ -51,7 +37,7 @@ interface PredictionData {
 }
 
 interface EnterprisePredictionChartProps {
-  enterpriseCode: "yihua" | "luxi" | "jinzhengda"
+  enterpriseCode: EnterpriseCode
   days?: number
 }
 
@@ -61,7 +47,8 @@ export function EnterprisePredictionChart({ enterpriseCode, days = 60 }: Enterpr
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  const config = ENTERPRISE_CONFIG[enterpriseCode]
+  const config = ENTERPRISE_CONFIGS.find(e => e.code === enterpriseCode)!
+  const enterpriseColor = ENTERPRISE_COLORS[enterpriseCode]
 
   useEffect(() => {
     async function fetchData() {
@@ -168,7 +155,7 @@ export function EnterprisePredictionChart({ enterpriseCode, days = 60 }: Enterpr
             <CardTitle className="text-lg text-slate-100 flex items-center gap-2">
               <span
                 className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: config.color }}
+                style={{ backgroundColor: enterpriseColor }}
               />
               {config.name}
             </CardTitle>
@@ -241,24 +228,24 @@ export function EnterprisePredictionChart({ enterpriseCode, days = 60 }: Enterpr
               type="monotone"
               dataKey="upperBound"
               stroke="none"
-              fill={config.color}
+              fill={enterpriseColor}
               fillOpacity={0.1}
             />
             {/* 实际价格线 */}
             <Line
               type="monotone"
               dataKey="actualPrice"
-              stroke={config.color}
+              stroke={enterpriseColor}
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, fill: config.color }}
+              activeDot={{ r: 4, fill: enterpriseColor }}
               name="实际价格"
             />
             {/* 预测价格线 */}
             <Line
               type="monotone"
               dataKey="predictedPrice"
-              stroke={config.color}
+              stroke={enterpriseColor}
               strokeWidth={2}
               strokeDasharray="5 5"
               dot={false}

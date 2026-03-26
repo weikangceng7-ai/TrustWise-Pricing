@@ -9,6 +9,32 @@
  * 基于以上三点，生成差异化的影响因子权重
  */
 
+// ==================== 企业常量与类型 ====================
+
+/** 企业代码常量 - 单一数据源 */
+export const ENTERPRISE_CODES = ["yihua", "luxi", "jinzhengda"] as const
+
+/** 企业代码类型 */
+export type EnterpriseCode = typeof ENTERPRISE_CODES[number]
+
+/** 企业颜色配置 */
+export const ENTERPRISE_COLORS: Record<EnterpriseCode, string> = {
+  yihua: "#06b6d4",    // cyan
+  luxi: "#8b5cf6",     // violet
+  jinzhengda: "#f59e0b", // amber
+}
+
+/** 根据企业代码获取企业名称 */
+export function getEnterpriseNameByCode(code: string): string {
+  const config = ENTERPRISE_CONFIGS.find(e => e.code === code)
+  return config?.name || code
+}
+
+/** 根据企业代码获取企业颜色 */
+export function getEnterpriseColorByCode(code: string): string {
+  return ENTERPRISE_COLORS[code as EnterpriseCode] || "#06b6d4"
+}
+
 // ==================== 企业基础信息 ====================
 
 export interface EnterpriseConfig {
@@ -22,6 +48,16 @@ export interface EnterpriseConfig {
   customerRegions: string[]
   inventoryStrategy: "aggressive" | "moderate" | "conservative"
   description: string
+  // UI 显示配置
+  tailwindColor: string // Tailwind 颜色名 (cyan, violet, amber)
+  shortDescription: string // 简短描述用于侧边栏
+  // 价格预测配置
+  priceConfig: {
+    basePrice: number // 基准价格
+    volatility: number // 波动幅度
+    trend: number // 趋势
+    modelAccuracy: number // 模型准确率
+  }
   // 库存详细信息
   inventory: {
     currentStock: number // 当前库存（吨）
@@ -39,15 +75,18 @@ export interface EnterpriseConfig {
 export const ENTERPRISE_CONFIGS: EnterpriseConfig[] = [
   {
     code: "yihua",
-    name: "湖北宜化集团",
-    location: "湖北省宜昌市",
-    province: "湖北",
+    name: "HX集团",
+    location: "华中地区",
+    province: "华中",
     capacity: 120,
     transportMode: "water",
     mainProducts: ["磷酸一铵", "磷酸二铵", "尿素"],
     customerRegions: ["华中", "华南", "西南"],
     inventoryStrategy: "moderate",
-    description: "国内最大硫磺制酸企业之一，依托长江水运优势，运输成本较低",
+    description: "国内最大硫磺制酸企业之一，依托水运优势，运输成本较低",
+    tailwindColor: "cyan",
+    shortDescription: "硫磺产能约120万吨/年",
+    priceConfig: { basePrice: 985, volatility: 35, trend: 0.3, modelAccuracy: 94.2 },
     inventory: {
       currentStock: 8500,
       maxCapacity: 15000,
@@ -57,20 +96,23 @@ export const ENTERPRISE_CONFIGS: EnterpriseConfig[] = [
       lastPurchaseDate: "2026-03-15",
       nextPurchaseDate: "2026-04-10",
       supplierCount: 5,
-      portDistance: 50, // 宜昌港
+      portDistance: 50, // 华中港口
     },
   },
   {
     code: "luxi",
-    name: "鲁西化工集团",
-    location: "山东省聊城市",
-    province: "山东",
+    name: "HY集团",
+    location: "华北地区",
+    province: "华北",
     capacity: 95,
     transportMode: "rail",
     mainProducts: ["复合肥", "尿素", "甲醇"],
     customerRegions: ["华北", "东北", "西北"],
     inventoryStrategy: "conservative",
     description: "华北地区主要化肥企业，依赖铁路运输，库存策略偏保守",
+    tailwindColor: "violet",
+    shortDescription: "华北地区大型化工企业",
+    priceConfig: { basePrice: 972, volatility: 28, trend: 0.15, modelAccuracy: 92.8 },
     inventory: {
       currentStock: 7800,
       maxCapacity: 12000,
@@ -80,20 +122,23 @@ export const ENTERPRISE_CONFIGS: EnterpriseConfig[] = [
       lastPurchaseDate: "2026-03-10",
       nextPurchaseDate: "2026-04-05",
       supplierCount: 4,
-      portDistance: 450, // 青岛港
+      portDistance: 450, // 华北港口
     },
   },
   {
     code: "jinzhengda",
-    name: "金正大生态工程",
-    location: "山东省临沂市",
-    province: "山东",
+    name: "TC集团",
+    location: "华东地区",
+    province: "华东",
     capacity: 80,
     transportMode: "road",
     mainProducts: ["复合肥", "缓控释肥", "水溶肥"],
     customerRegions: ["华东", "华南", "出口"],
     inventoryStrategy: "aggressive",
     description: "专注于高端复合肥，出口占比高，库存周转快",
+    tailwindColor: "amber",
+    shortDescription: "化肥行业龙头",
+    priceConfig: { basePrice: 958, volatility: 32, trend: 0.25, modelAccuracy: 93.5 },
     inventory: {
       currentStock: 4200,
       maxCapacity: 8000,
@@ -342,7 +387,7 @@ export function calculateEnterpriseFactorWeights(
     if (factor.id === "transport_cost") {
       if (enterprise.transportMode === "water") {
         adjustedWeight = factor.baseWeight - 4 // 水运成本最低
-        reason = `${enterprise.name}依托长江水运，国内运输成本较低`
+        reason = `${enterprise.name}依托水运优势，国内运输成本较低`
       } else if (enterprise.transportMode === "rail") {
         adjustedWeight = factor.baseWeight + 2 // 铁路运输中等
         reason = `${enterprise.name}依赖铁路运输，运输成本中等偏高`
@@ -420,9 +465,9 @@ export function calculateEnterpriseFactorWeights(
 
     // 8. 环保政策对不同地区企业影响不同
     if (factor.id === "environmental_policy") {
-      if (enterprise.province === "山东") {
+      if (enterprise.province === "华北" || enterprise.province === "华东") {
         adjustedWeight = factor.baseWeight + 4
-        reason = "山东省环保要求严格，政策影响较大"
+        reason = "华北、华东地区环保要求严格，政策影响较大"
       } else {
         reason = "标准环保要求"
       }

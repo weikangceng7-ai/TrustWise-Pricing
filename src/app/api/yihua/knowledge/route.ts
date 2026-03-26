@@ -8,7 +8,7 @@ export async function GET() {
   } catch (e) {
     console.error("yihua knowledge analytics:", e)
     return NextResponse.json(
-      { success: false, error: "获取宜化知识库分析失败" },
+      { success: false, error: "获取知识库分析失败" },
       { status: 500 },
     )
   }

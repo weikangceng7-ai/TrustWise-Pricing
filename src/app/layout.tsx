@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/components/query-provider";
+import { AppProviders } from "@/components/app-providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,7 +38,9 @@ export default function RootLayout({
           storageKey="sulfur-ui-theme"
         >
           <QueryProvider>
-            {children}
+            <AppProviders>
+              {children}
+            </AppProviders>
           </QueryProvider>
         </ThemeProvider>
       </body>

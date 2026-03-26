@@ -1,4 +1,5 @@
 import { runCypher, checkNeo4jConnection } from "@/lib/neo4j"
+import { ENTERPRISE_CONFIGS } from "./enterprise-knowledge-config"
 
 /**
  * 知识图谱推理服务
@@ -60,9 +61,8 @@ const KEYWORD_MAPPING: Record<string, string[]> = {
   policy: ["environmental_policy", "政策", "环保", "法规"],
   exchange: ["exchange_rate", "汇率", "人民币", "美元"],
   inventory: ["inventory_level", "库存", "备货"],
-  yihua: ["yihua", "宜化", "湖北宜化"],
-  luxi: ["luxi", "鲁西", "鲁西化工"],
-  jinzhengda: ["jinzhengda", "金正大"],
+  // 企业关键词从配置动态生成
+  ...Object.fromEntries(ENTERPRISE_CONFIGS.map(e => [e.code, [e.code, e.name.replace(/集团|科技/g, "")]])),
 }
 
 /**
@@ -233,12 +233,10 @@ export async function generateKnowledgeGraphContext(question: string): Promise<G
     }
   }
 
-  for (const factorId of factorIds) {
-    const factor = await getFactorWithRelations(factorId)
-    if (factor) {
-      context.factors.push(factor)
-    }
-  }
+  // 并行获取相关因子
+  const factorPromises = Array.from(factorIds).map(factorId => getFactorWithRelations(factorId))
+  const factorResults = await Promise.all(factorPromises)
+  context.factors.push(...factorResults.filter(Boolean) as FactorInfo[])
 
   // 获取供应链路径
   const enterpriseKeywords = keywords.filter(k => ["yihua", "luxi", "jinzhengda"].includes(k))
@@ -249,16 +247,15 @@ export async function generateKnowledgeGraphContext(question: string): Promise<G
   }
 
   if (enterpriseKeywords.length > 0) {
-    for (const key of enterpriseKeywords) {
-      const paths = await getSupplyChainPaths(enterpriseMapping[key])
-      context.supplyChains.push(...paths)
-    }
+    // 并行获取所有企业的供应链路径
+    const pathPromises = enterpriseKeywords.map(key => getSupplyChainPaths(enterpriseMapping[key]))
+    const pathResults = await Promise.all(pathPromises)
+    context.supplyChains.push(...pathResults.flat())
   } else {
-    // 默认返回所有企业的路径
-    for (const enterprise of enterprises.slice(0, 2)) {
-      const paths = await getSupplyChainPaths(enterprise.code)
-      context.supplyChains.push(...paths)
-    }
+    // 默认返回前两家企业的路径
+    const pathPromises = enterprises.slice(0, 2).map(e => getSupplyChainPaths(e.code))
+    const pathResults = await Promise.all(pathPromises)
+    context.supplyChains.push(...pathResults.flat())
   }
 
   // 生成洞察

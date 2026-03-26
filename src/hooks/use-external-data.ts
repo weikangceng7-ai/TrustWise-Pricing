@@ -38,14 +38,18 @@ async function fetchAkShareData(type: AkShareType): Promise<AkShareResponse> {
 
 // AkShare 的 React Query Hook：
 // - queryKey 用于缓存隔离，不同 type 会分别缓存
-// - staleTime: 数据 2 小时内视为"新鲜"
-// - refetchInterval: 每 2 小时自动刷新一次
+// - staleTime: 数据 2 小时内视为"新鲜"（汇率数据 30 分钟）
+// - refetchInterval: 每 2 小时自动刷新一次（汇率 30 分钟）
 export function useAkShareData(type: AkShareType) {
+  // 汇率数据更新更频繁
+  const isExchangeRate = type === "usdcny"
+  const cacheTime = isExchangeRate ? 30 * 60 * 1000 : 2 * 60 * 60 * 1000
+
   return useQuery({
     queryKey: ["akshare", type],
     queryFn: () => fetchAkShareData(type),
-    staleTime: 2 * 60 * 60 * 1000, // 2小时缓存
-    refetchInterval: 2 * 60 * 60 * 1000, // 2小时自动刷新
+    staleTime: cacheTime,
+    refetchInterval: cacheTime,
   })
 }
 

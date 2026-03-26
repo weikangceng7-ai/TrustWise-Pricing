@@ -23,17 +23,117 @@ import {
   ChevronRight,
   Image as ImageIcon,
   X,
-  Building2,
 } from "lucide-react"
 import { ThreePhaseArchitectureCarousel } from "@/components/three-phase-architecture-carousel"
-import { useChatWithHistory, type ChatMessage, type Conversation } from "@/hooks/use-chat-with-history"
+import { useChatContext, type ChatMessage, type Conversation } from "@/contexts/chat-context"
 import { generateChatReport } from "@/lib/report-generator"
 import { AuthDialog } from "@/components/auth-dialog"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 
-// Prose styling for markdown content
-const proseClassName = "prose prose-sm prose-zinc dark:prose-invert max-w-none prose-headings:text-foreground prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 prose-table:my-2 prose-th:bg-muted prose-th:p-2 prose-td:p-2 prose-th:border prose-td:border prose-border-border prose-strong:text-foreground prose-code:bg-muted-foreground/10 prose-code:px-1 prose-code:rounded"
+// 自定义 Markdown 组件 - 增强表格和可视化效果
+const markdownComponents = {
+  // 表格容器 - 添加滚动和阴影
+  table: ({ children }: { children?: React.ReactNode }) => (
+    <div className="overflow-x-auto my-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+      <table className="w-full text-sm">{children}</table>
+    </div>
+  ),
+  // 表头 - 渐变背景
+  thead: ({ children }: { children?: React.ReactNode }) => (
+    <thead className="bg-gradient-to-r from-cyan-50 via-blue-50 to-violet-50 dark:from-slate-800 dark:via-slate-700 dark:to-slate-800">
+      {children}
+    </thead>
+  ),
+  // 表头单元格
+  th: ({ children }: { children?: React.ReactNode }) => (
+    <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-600 whitespace-nowrap">
+      {children}
+    </th>
+  ),
+  // 表格行 - 斑马纹效果
+  tr: ({ children }: { children?: React.ReactNode }) => (
+    <tr className="border-b border-slate-100 dark:border-slate-800 last:border-b-0 hover:bg-cyan-50/50 dark:hover:bg-cyan-900/10 transition-colors">
+      {children}
+    </tr>
+  ),
+  // 表格单元格
+  td: ({ children }: { children?: React.ReactNode }) => (
+    <td className="px-4 py-2.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+      {children}
+    </td>
+  ),
+  // 标题 - 增强样式
+  h2: ({ children }: { children?: React.ReactNode }) => (
+    <h2 className="text-lg font-bold mt-4 mb-3 pb-2 border-b-2 border-cyan-200 dark:border-cyan-800 text-slate-800 dark:text-white flex items-center gap-2">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }: { children?: React.ReactNode }) => (
+    <h3 className="text-base font-semibold mt-3 mb-2 text-slate-700 dark:text-slate-200 flex items-center gap-2">
+      {children}
+    </h3>
+  ),
+  // 段落
+  p: ({ children }: { children?: React.ReactNode }) => (
+    <p className="my-2 leading-relaxed">{children}</p>
+  ),
+  // 列表
+  ul: ({ children }: { children?: React.ReactNode }) => (
+    <ul className="my-2 ml-4 list-disc space-y-1">{children}</ul>
+  ),
+  ol: ({ children }: { children?: React.ReactNode }) => (
+    <ol className="my-2 ml-4 list-decimal space-y-1">{children}</ol>
+  ),
+  // 行内代码
+  code: ({ className, children, ...props }: { className?: string; children?: React.ReactNode }) => {
+    const isInline = !className
+    if (isInline) {
+      return (
+        <code className="bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 px-1.5 py-0.5 rounded text-xs font-medium" {...props}>
+          {children}
+        </code>
+      )
+    }
+    return (
+      <code className={className} {...props}>
+        {children}
+      </code>
+    )
+  },
+  // 分隔线
+  hr: () => (
+    <hr className="my-4 border-slate-200 dark:border-slate-700" />
+  ),
+  // 引用块
+  blockquote: ({ children }: { children?: React.ReactNode }) => (
+    <blockquote className="border-l-4 border-cyan-500 bg-cyan-50/50 dark:bg-cyan-900/20 pl-4 py-2 my-3 rounded-r-lg">
+      {children}
+    </blockquote>
+  ),
+  // 粗体
+  strong: ({ children }: { children?: React.ReactNode }) => (
+    <strong className="font-semibold text-slate-900 dark:text-white">{children}</strong>
+  ),
+}
+
+// Prose styling for markdown content - enhanced table styling
+const proseClassName = `prose prose-sm prose-zinc dark:prose-invert max-w-none
+  prose-headings:text-foreground prose-headings:font-semibold
+  prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5
+  prose-table:my-3 prose-table:text-sm prose-table:w-full
+  prose-thead:bg-gradient-to-r prose-thead:from-slate-100 prose-thead:to-slate-50
+  dark:prose-thead:from-slate-700 dark:prose-thead:to-slate-800
+  prose-th:p-2.5 prose-th:text-left prose-th:font-semibold prose-th:text-slate-700 dark:prose-th:text-slate-200
+  prose-th:border prose-th:border-slate-200 dark:prose-th:border-slate-600
+  prose-td:p-2.5 prose-td:text-slate-600 dark:prose-td:text-slate-300
+  prose-td:border prose-td:border-slate-200 dark:prose-td:border-slate-700
+  prose-tr:hover:bg-slate-50 dark:prose-tr:hover:bg-slate-800/50
+  prose-border-slate-200 dark:prose-border-slate-700
+  prose-strong:text-foreground prose-strong:font-semibold
+  prose-code:bg-cyan-100 dark:prose-code:bg-cyan-900/30 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-cyan-700 dark:prose-code:text-cyan-300 prose-code:before:content-none prose-code:after:content-none
+  prose-hr:border-slate-200 dark:prose-hr:border-slate-700
+  prose-blockquote:border-l-cyan-500 prose-blockquote:bg-cyan-50/50 dark:prose-blockquote:bg-cyan-900/20 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-lg`
 
 // Time format options - stable reference
 const timeFormatOptions: Intl.DateTimeFormatOptions = { hour: "2-digit", minute: "2-digit" }
@@ -203,7 +303,7 @@ const MessageBubble = memo(function MessageBubble({
             </div>
           ) : (
             <div className={proseClassName}>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                 {message.content}
               </ReactMarkdown>
             </div>
@@ -376,8 +476,8 @@ export default function AgentChatPage() {
   const [userId, setUserId] = useState<string | undefined>()
   const [copiedId, setCopiedId] = useState<string | undefined>()
   const [showAuthDialog, setShowAuthDialog] = useState(false)
-  const [selectedEnterprise, setSelectedEnterprise] = useState<string>("yihua")
 
+  // 使用全局聊天上下文
   const {
     messages,
     isLoading,
@@ -388,7 +488,8 @@ export default function AgentChatPage() {
     clearMessages,
     loadConversation,
     deleteConversation,
-  } = useChatWithHistory({ userId, enterprise: selectedEnterprise })
+    setIsFloatingChatOpen,
+  } = useChatContext()
 
   const [inputValue, setInputValue] = useState("")
   const [uploadedImages, setUploadedImages] = useState<string[]>([])
@@ -436,10 +537,19 @@ export default function AgentChatPage() {
       })
   }, [])
 
-  // 自动滚动到底部
+  // 在 agent-chat 页面时，关闭浮动聊天窗口
+  useEffect(() => {
+    setIsFloatingChatOpen(false)
+  }, [setIsFloatingChatOpen])
+
+  // 自动滚动到底部（仅当用户在底部附近时）
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 150
+      if (isNearBottom) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+      }
     }
   }, [messages])
 
@@ -558,19 +668,6 @@ export default function AgentChatPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* 企业选择器 */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-500/10 dark:to-blue-500/10 border border-cyan-200/50 dark:border-cyan-500/30">
-              <Building2 className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-              <select
-                value={selectedEnterprise}
-                onChange={(e) => setSelectedEnterprise(e.target.value)}
-                className="bg-transparent text-sm text-cyan-700 dark:text-cyan-300 font-medium outline-none cursor-pointer"
-              >
-                <option value="yihua" className="bg-white dark:bg-slate-800">湖北宜化集团</option>
-                <option value="luxi" className="bg-white dark:bg-slate-800">鲁西化工集团</option>
-                <option value="jinzhengda" className="bg-white dark:bg-slate-800">金正大生态工程</option>
-              </select>
-            </div>
             <Button
               variant="outline"
               size="sm"
