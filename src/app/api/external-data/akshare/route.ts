@@ -7,8 +7,8 @@ import { NextResponse } from "next/server"
  *
  * 数据来源:
  * - 汇率: Frankfurter API (欧洲央行数据)
- * - 原油: FRED API / 备用数据源
- * - BDI: Investment.com API
+ * - 原油: FRED API (美联储经济数据)
+ * - BDI: 模拟数据
  * - 新闻: GDELT API
  */
 
@@ -24,17 +24,17 @@ export async function GET(request: Request) {
       return await fetchRealtimeExchangeRate()
     }
 
-    // WTI 原油使用实时 API
+    // WTI 原油使用 FRED API
     if (type === "oil") {
       return await fetchRealtimeOilPrice()
     }
 
-    // 布伦特原油使用实时 API
+    // 布伦特原油使用 FRED API
     if (type === "brent") {
       return await fetchRealtimeBrentPrice()
     }
 
-    // BDI 指数使用实时 API
+    // BDI 指数使用模拟数据
     if (type === "bdi") {
       return await fetchRealtimeBDI()
     }
@@ -175,8 +175,8 @@ async function fetchRealtimeOilPrice() {
     // 如果有 FRED API Key，使用真实数据
     if (apiKey) {
       const response = await fetch(
-        `https://api.stlouisfed.org/fred/series/observations?series_id=DCOILWTICO&api_key=${apiKey}&file_type=json&observation_start=2024-01-01`,
-        { next: { revalidate: 3600 } }
+        `https://api.stlouisfed.org/fred/series/observations?series_id=DCOILWTICO&api_key=${apiKey}&file_type=json&observation_start=2025-01-01`,
+        { next: { revalidate: 3600 } } // 缓存1小时
       )
 
       if (response.ok) {
@@ -184,8 +184,9 @@ async function fetchRealtimeOilPrice() {
         const observations = data.observations || []
 
         if (observations.length > 0) {
-          // 取最近30天数据
-          const recentData = observations.slice(-30).filter((o: { value: string }) => o.value !== ".")
+          // 取最近30天数据，过滤掉无效值
+          const validData = observations.filter((o: { value: string }) => o.value !== "." && o.value !== "NaN")
+          const recentData = validData.slice(-30)
 
           if (recentData.length >= 2) {
             const latest = recentData[recentData.length - 1]
@@ -197,7 +198,7 @@ async function fetchRealtimeOilPrice() {
 
             const history = recentData.map((o: { date: string; value: string }, i: number, arr: { date: string; value: string }[]) => {
               const val = parseFloat(o.value)
-              const prevVal = i > 0 ? parseFloat(arr[i-1].value) : val
+              const prevVal = i > 0 ? parseFloat(arr[i - 1].value) : val
               return {
                 date: o.date,
                 value: val,
@@ -222,21 +223,11 @@ async function fetchRealtimeOilPrice() {
                 history
               },
               timestamp: new Date().toISOString(),
-              note: "实时数据 - FRED 官方数据"
+              note: "实时数据 - 美联储经济数据(FRED)官方数据"
             })
           }
         }
       }
-    }
-
-    // 使用备用 API: Oil Price API
-    const backupResponse = await fetch("https://api.oilprice.com/v1/prices", {
-      headers: { "Accept": "application/json" }
-    })
-
-    if (backupResponse.ok) {
-      const data = await backupResponse.json()
-      // 处理备用 API 数据
     }
 
     // 降级到模拟数据
@@ -264,39 +255,90 @@ async function fetchRealtimeOilPrice() {
 }
 
 /**
- * 获取实时布伦特原油价格
+ * 获取实时布伦特原油价格 - 使用 FRED API
  */
 async function fetchRealtimeBrentPrice() {
-  try {
-    // 布伦特原油通常比 WTI 高 3-5 美元
-    const wtiData = await fetchRealtimeOilPriceInternal()
-    const brentPremium = 3 + Math.random() * 2 // 3-5 美元溢价
+  const apiKey = process.env.FRED_API_KEY
 
+  try {
+    // 如果有 FRED API Key，使用真实数据
+    if (apiKey) {
+      const response = await fetch(
+        `https://api.stlouisfed.org/fred/series/observations?series_id=DCOILBRENTEU&api_key=${apiKey}&file_type=json&observation_start=2025-01-01`,
+        { next: { revalidate: 3600 } } // 缓存1小时
+      )
+
+      if (response.ok) {
+        const data = await response.json()
+        const observations = data.observations || []
+
+        if (observations.length > 0) {
+          // 取最近30天数据，过滤掉无效值
+          const validData = observations.filter((o: { value: string }) => o.value !== "." && o.value !== "NaN")
+          const recentData = validData.slice(-30)
+
+          if (recentData.length >= 2) {
+            const latest = recentData[recentData.length - 1]
+            const previous = recentData[recentData.length - 2]
+            const currentValue = parseFloat(latest.value)
+            const previousValue = parseFloat(previous.value)
+            const change = currentValue - previousValue
+            const changePercent = (change / previousValue) * 100
+
+            const history = recentData.map((o: { date: string; value: string }, i: number, arr: { date: string; value: string }[]) => {
+              const val = parseFloat(o.value)
+              const prevVal = i > 0 ? parseFloat(arr[i - 1].value) : val
+              return {
+                date: o.date,
+                value: val,
+                change: Number((val - prevVal).toFixed(2)),
+                changePercent: Number((((val - prevVal) / prevVal) * 100).toFixed(2))
+              }
+            })
+
+            return NextResponse.json({
+              success: true,
+              source: "FRED API",
+              type: "brent",
+              data: {
+                name: "布伦特原油现货",
+                unit: "美元/桶",
+                latest: {
+                  date: latest.date,
+                  value: currentValue,
+                  change: Number(change.toFixed(2)),
+                  changePercent: Number(changePercent.toFixed(2))
+                },
+                history
+              },
+              timestamp: new Date().toISOString(),
+              note: "实时数据 - 美联储经济数据(FRED)官方数据"
+            })
+          }
+        }
+      }
+    }
+
+    // 降级到模拟数据
     const mockData = getMockData("brent")
     return NextResponse.json({
       success: true,
       source: "FRED (模拟)",
       type: "brent",
-      data: {
-        ...mockData,
-        latest: {
-          ...mockData.latest,
-          value: Number((wtiData?.latest?.value || 75) + brentPremium).toFixed(2)
-        }
-      },
+      data: mockData,
       timestamp: new Date().toISOString(),
-      note: "基于WTI价格估算"
+      note: apiKey ? "API调用失败，使用模拟数据" : "未配置FRED_API_KEY，使用模拟数据"
     })
   } catch (error) {
     console.error("获取布伦特原油价格失败:", error)
     const mockData = getMockData("brent")
     return NextResponse.json({
       success: true,
-      source: "AkShare (模拟)",
+      source: "FRED (模拟)",
       type: "brent",
       data: mockData,
       timestamp: new Date().toISOString(),
-      note: "使用模拟数据"
+      note: "实时API不可用，使用模拟数据"
     })
   }
 }
@@ -369,14 +411,6 @@ async function fetchRealtimeBDI() {
       note: "使用模拟数据"
     })
   }
-}
-
-/**
- * 内部函数：获取 WTI 油价数据
- */
-async function fetchRealtimeOilPriceInternal() {
-  const mockData = getMockData("oil")
-  return mockData
 }
 
 function getMockData(type: string) {
