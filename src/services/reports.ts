@@ -1,5 +1,5 @@
 import { db } from "@/db"
-import { purchaseReports, sulfurPrices, portInventory, type PurchaseReport, type NewPurchaseReport } from "@/db/schema"
+import { purchaseReports, type PurchaseReport, type NewPurchaseReport } from "@/db/schema"
 import { desc, eq, and, gte, lte, or, like, sql, count } from "drizzle-orm"
 
 export type ReportType = "weekly" | "monthly" | "supplier" | "inventory" | "special"
@@ -25,7 +25,7 @@ export interface ReportStats {
   byTrend: Record<string, number>
 }
 
-const fallbackReports: PurchaseReport[] = [
+const mockReports: PurchaseReport[] = [
   {
     id: 1,
     title: "2026年3月第四周硫磺采购分析报告",
@@ -132,6 +132,16 @@ const fallbackReports: PurchaseReport[] = [
   },
   {
     id: 5,
+    title: "2026年2月第四周硫磺采购分析报告",
+    reportDate: "2026-02-24",
+    summary: "【市场概况】春节后市场逐步恢复，硫磺价格稳中有升。国内硫磺均价报1168元/吨，较节前上涨1.5%。【供需分析】供应端：进口硫磺到港逐步恢复正常，本周到货约25万吨。需求端：下游企业陆续复工，采购需求逐步释放。【价格走势】中东FOB报价$124-128/吨；国内港口现货价格1160-1175元/吨。【库存情况】主要港口库存约52万吨，节日期间有所累积。【后市研判】3月份随着需求恢复，价格有望继续小幅上涨，建议提前规划采购。",
+    recommendation: "适当备库",
+    priceTrend: "小幅上涨",
+    riskLevel: "低",
+    createdAt: new Date("2026-02-24"),
+  },
+  {
+    id: 6,
     title: "2026年2月供应商综合评估报告",
     reportDate: "2026-02-20",
     summary: `【评估概述】本报告对主要硫磺供应商进行了综合评估，涵盖价格竞争力、供货稳定性、服务质量、信用状况四个维度。评估周期为2025年全年。
@@ -161,37 +171,17 @@ const fallbackReports: PurchaseReport[] = [
     createdAt: new Date("2026-02-20"),
   },
   {
-    id: 6,
-    title: "2026年2月港口库存分析报告",
+    id: 7,
+    title: "2026年2月库存预警专项报告",
     reportDate: "2026-02-15",
-    summary: `【报告概述】本报告对国内主要硫磺港口库存情况进行分析，为采购决策提供参考。
-
-【库存概况】截至2026年2月15日，主要港口硫磺库存总量约52万吨，环比增加8%。受春节假期影响，下游需求减弱，库存有所累积。
-
-【分港口库存】
-• 青岛港：18万吨（占比35%）- 华东地区主要集散地
-• 南京港：16万吨（占比31%）- 服务周边磷肥企业
-• 钦州港：12万吨（占比23%）- 华南地区枢纽港
-• 其他港口：6万吨（占比11%）
-
-【库存周转】
-• 平均周转天数：13.5天
-• 较上月增加1.5天
-• 处于季节性高位
-
-【风险提示】
-• 库存偏高需关注仓储成本
-• 部分港口出现压港现象
-• 天气回暖后需求将逐步释放
-
-【建议】建议暂缓大批量采购，等待库存消化后再做安排。`,
-    recommendation: "观望",
-    priceTrend: "稳定",
-    riskLevel: "低",
+    summary: "【预警级别】黄色预警-需关注。【库存现状】当前港口库存约45万吨，较安全库存线50万吨低10%。主要港口库存分布：青岛港18万吨、日照港12万吨、连云港8万吨、其他7万吨。【原因分析】1.春节前采购量减少；2.部分船期延迟；3.下游提前备货消耗。【影响评估】若不及时补充，可能影响2月下旬至3月上旬的生产供应。【应对建议】1.紧急联系供应商追加订单；2.协调港口优先卸货；3.与下游协商调整生产计划。",
+    recommendation: "紧急采购",
+    priceTrend: "上涨",
+    riskLevel: "高",
     createdAt: new Date("2026-02-15"),
   },
   {
-    id: 7,
+    id: 8,
     title: "2026年1月月度采购总结报告",
     reportDate: "2026-01-31",
     summary: `【报告概述】2026年1月硫磺采购工作总结，包括采购量、价格、成本分析及下月计划。
@@ -228,7 +218,7 @@ const fallbackReports: PurchaseReport[] = [
     createdAt: new Date("2026-01-31"),
   },
   {
-    id: 8,
+    id: 9,
     title: "2026年国际硫磺市场趋势分析报告",
     reportDate: "2026-01-20",
     summary: `【报告概述】对2026年国际硫磺市场趋势进行深度分析，为年度采购策略提供参考。
@@ -263,350 +253,130 @@ const fallbackReports: PurchaseReport[] = [
     riskLevel: "中等",
     createdAt: new Date("2026-01-20"),
   },
+  {
+    id: 10,
+    title: "2025年年度采购总结报告",
+    reportDate: "2025-12-31",
+    summary: "【年度概况】2025年硫磺采购总量约1450万吨，同比增加5.2%；采购均价1128元/吨，同比下降4.3%。【成本分析】全年采购总成本约163.6亿元，同比下降2.1%，节约成本约3.5亿元。【供应商表现】前五大供应商采购占比78%，供应商集中度较去年提高3个百分点。【价格波动】年内最高价1220元/吨（3月），最低价1050元/吨（8月），波动幅度16.2%。【库存管理】平均库存周转天数13.5天，较去年缩短1.2天。【改进建议】1.优化供应商结构，降低集中度风险；2.加强价格预测能力，把握采购时机；3.完善库存预警机制。",
+    recommendation: "按需采购",
+    priceTrend: "稳定",
+    riskLevel: "低",
+    createdAt: new Date("2025-12-31"),
+  },
+  {
+    id: 11,
+    title: "2026年一季度采购策略报告",
+    reportDate: "2026-03-18",
+    summary: "【策略背景】一季度为传统需求旺季，春耕备肥需求集中释放，需提前做好采购规划。【市场预判】预计一季度硫磺价格区间1150-1220元/吨，均价约1180元/吨，较去年四季度上涨3-5%。【采购计划】1月：按需采购，维持正常库存；2月：春节前适当增加库存至55万吨；3月：根据春耕需求启动情况灵活调整。【供应商策略】维持与主要供应商的合作，同时开发1-2家新供应商作为备选。【风险控制】设置价格预警线1200元/吨，超过预警线需重新评估采购策略。",
+    recommendation: "适当备库",
+    priceTrend: "小幅上涨",
+    riskLevel: "中等",
+    createdAt: new Date("2026-03-18"),
+  },
+  {
+    id: 12,
+    title: "国际硫磺市场周报（3月第三周）",
+    reportDate: "2026-03-19",
+    summary: "【国际市场】本周国际硫磺市场整体偏强。中东地区：沙特FOB报价$130-134/吨，阿联酋FOB报价$128-132/吨，均较上周上涨$2-3。北美地区：美国海湾FOB报价$125-130/吨，需求稳定。欧洲地区：西北欧FOB报价$120-125/吨，市场清淡。【运费动态】中东至中国运费$30-35/吨，较上周上涨$2；美湾至中国运费$45-50/吨。【汇率影响】人民币汇率7.25，较上周贬值0.3%，对进口成本有一定支撑。【贸易流向】本周中国进口硫磺主要来源：沙特35%、阿联酋25%、卡塔尔15%、其他25%。",
+    recommendation: "按需采购",
+    priceTrend: "震荡",
+    riskLevel: "中等",
+    createdAt: new Date("2026-03-19"),
+  },
 ]
 
-// 获取备用报告数据（支持筛选）
-function getFallbackReports(filters?: ReportFilters): PurchaseReport[] {
-  let reports = [...fallbackReports]
+export async function getReports(filters?: ReportFilters): Promise<PurchaseReport[]> {
+  let reports = [...mockReports]
 
-  if (filters?.keyword) {
-    const keyword = filters.keyword.toLowerCase()
-    reports = reports.filter(
-      (r) =>
-        r.title.toLowerCase().includes(keyword) ||
-        r.summary.toLowerCase().includes(keyword)
-    )
-  }
+  if (filters) {
+    if (filters.keyword) {
+      const keyword = filters.keyword.toLowerCase()
+      reports = reports.filter(
+        (r) =>
+          r.title.toLowerCase().includes(keyword) ||
+          r.summary.toLowerCase().includes(keyword)
+      )
+    }
 
-  if (filters?.startDate) {
-    reports = reports.filter((r) => r.reportDate >= filters.startDate!)
-  }
+    if (filters.startDate) {
+      reports = reports.filter((r) => r.reportDate >= filters.startDate!)
+    }
 
-  if (filters?.endDate) {
-    reports = reports.filter((r) => r.reportDate <= filters.endDate!)
-  }
+    if (filters.endDate) {
+      reports = reports.filter((r) => r.reportDate <= filters.endDate!)
+    }
 
-  if (filters?.trend) {
-    reports = reports.filter((r) => r.priceTrend === filters.trend)
-  }
+    if (filters.trend) {
+      reports = reports.filter((r) => r.priceTrend === filters.trend)
+    }
 
-  if (filters?.risk) {
-    reports = reports.filter((r) => r.riskLevel === filters.risk)
+    if (filters.risk) {
+      reports = reports.filter((r) => r.riskLevel === filters.risk)
+    }
   }
 
   return reports.sort((a, b) => new Date(b.reportDate).getTime() - new Date(a.reportDate).getTime())
 }
 
-export async function getReports(filters?: ReportFilters): Promise<PurchaseReport[]> {
-  try {
-    if (!db) {
-      throw new Error("Database not available")
-    }
-    let query = db.select().from(purchaseReports)
-    
-    const conditions = []
-    
-    if (filters?.startDate) {
-      conditions.push(gte(purchaseReports.reportDate, filters.startDate))
-    }
-    
-    if (filters?.endDate) {
-      conditions.push(lte(purchaseReports.reportDate, filters.endDate))
-    }
-    
-    if (filters?.trend) {
-      conditions.push(eq(purchaseReports.priceTrend, filters.trend))
-    }
-    
-    if (filters?.risk) {
-      conditions.push(eq(purchaseReports.riskLevel, filters.risk))
-    }
-    
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions)) as any
-    }
-    
-    let reports = await query.orderBy(desc(purchaseReports.reportDate))
-
-    // 如果数据库为空，使用备用数据
-    if (reports.length === 0) {
-      console.log("数据库报告为空，使用备用数据")
-      return getFallbackReports(filters)
-    }
-
-    if (filters?.keyword) {
-      const keyword = filters.keyword.toLowerCase()
-      reports = reports.filter(
-        (r) =>
-          r.title.toLowerCase().includes(keyword) ||
-          r.summary.toLowerCase().includes(keyword)
-      )
-    }
-
-    return reports
-  } catch (error) {
-    console.error("从数据库获取报告失败，使用备用数据:", error)
-    let reports = [...fallbackReports]
-    
-    if (filters?.keyword) {
-      const keyword = filters.keyword.toLowerCase()
-      reports = reports.filter(
-        (r) =>
-          r.title.toLowerCase().includes(keyword) ||
-          r.summary.toLowerCase().includes(keyword)
-      )
-    }
-    
-    if (filters?.startDate) {
-      reports = reports.filter((r) => r.reportDate >= filters.startDate!)
-    }
-    
-    if (filters?.endDate) {
-      reports = reports.filter((r) => r.reportDate <= filters.endDate!)
-    }
-    
-    if (filters?.trend) {
-      reports = reports.filter((r) => r.priceTrend === filters.trend)
-    }
-    
-    if (filters?.risk) {
-      reports = reports.filter((r) => r.riskLevel === filters.risk)
-    }
-    
-    return reports.sort((a, b) => new Date(b.reportDate).getTime() - new Date(a.reportDate).getTime())
-  }
-}
-
 export async function getReportById(id: number): Promise<PurchaseReport | null> {
-  try {
-    if (!db) {
-      throw new Error("Database not available")
-    }
-    const reports = await db
-      .select()
-      .from(purchaseReports)
-      .where(eq(purchaseReports.id, id))
-      .limit(1)
-
-    return reports[0] || null
-  } catch (error) {
-    console.error("获取报告详情失败，使用备用数据:", error)
-    return fallbackReports.find((r) => r.id === id) || null
-  }
+  return mockReports.find((r) => r.id === id) || null
 }
 
 export async function getReportStats(): Promise<ReportStats> {
-  try {
-    if (!db) {
-      throw new Error("Database not available")
+  const now = new Date()
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const monthAgo = new Date(now.getFullYear(), now.getMonth(), 1)
+
+  const byType: Record<string, number> = {
+    weekly: 0,
+    monthly: 0,
+    supplier: 0,
+    inventory: 0,
+    special: 0,
+  }
+
+  const byTrend: Record<string, number> = {}
+
+  mockReports.forEach((r) => {
+    if (r.title.includes("周")) byType.weekly++
+    else if (r.title.includes("月")) byType.monthly++
+    else if (r.title.includes("供应商")) byType.supplier++
+    else if (r.title.includes("库存")) byType.inventory++
+    else byType.special++
+
+    if (r.priceTrend) {
+      byTrend[r.priceTrend] = (byTrend[r.priceTrend] || 0) + 1
     }
-    const allReports = await db.select().from(purchaseReports)
-    
-    const now = new Date()
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    
-    const byType: Record<string, number> = {
-      weekly: 0,
-      monthly: 0,
-      supplier: 0,
-      inventory: 0,
-      special: 0,
-    }
-    
-    const byTrend: Record<string, number> = {}
-    
-    allReports.forEach((r) => {
-      if (r.title.includes("周")) byType.weekly++
-      else if (r.title.includes("月")) byType.monthly++
-      else if (r.title.includes("供应商")) byType.supplier++
-      else if (r.title.includes("库存")) byType.inventory++
-      else byType.special++
-      
-      if (r.priceTrend) {
-        byTrend[r.priceTrend] = (byTrend[r.priceTrend] || 0) + 1
-      }
-    })
-    
-    return {
-      total: allReports.length,
-      thisWeek: allReports.filter((r) => new Date(r.reportDate) >= weekAgo).length,
-      thisMonth: allReports.filter((r) => new Date(r.reportDate) >= monthStart).length,
-      pending: 0,
-      byType,
-      byTrend,
-    }
-  } catch (error) {
-    console.error("获取报告统计失败，使用备用数据:", error)
-    const now = new Date()
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    
-    const byType: Record<string, number> = {
-      weekly: 0,
-      monthly: 0,
-      supplier: 0,
-      inventory: 0,
-      special: 0,
-    }
-    
-    const byTrend: Record<string, number> = {}
-    
-    fallbackReports.forEach((r) => {
-      if (r.title.includes("周")) byType.weekly++
-      else if (r.title.includes("月")) byType.monthly++
-      else if (r.title.includes("供应商")) byType.supplier++
-      else if (r.title.includes("库存")) byType.inventory++
-      else byType.special++
-      
-      if (r.priceTrend) {
-        byTrend[r.priceTrend] = (byTrend[r.priceTrend] || 0) + 1
-      }
-    })
-    
-    return {
-      total: fallbackReports.length,
-      thisWeek: fallbackReports.filter((r) => new Date(r.reportDate) >= weekAgo).length,
-      thisMonth: fallbackReports.filter((r) => new Date(r.reportDate) >= monthStart).length,
-      pending: 0,
-      byType,
-      byTrend,
-    }
+  })
+
+  return {
+    total: mockReports.length,
+    thisWeek: mockReports.filter((r) => new Date(r.reportDate) >= weekAgo).length,
+    thisMonth: mockReports.filter((r) => new Date(r.reportDate) >= monthAgo).length,
+    pending: 2,
+    byType,
+    byTrend,
   }
 }
 
 export async function createReport(report: Omit<NewPurchaseReport, "id" | "createdAt">): Promise<PurchaseReport> {
-  try {
-    if (!db) {
-      throw new Error("Database not available")
-    }
-    const [newReport] = await db
-      .insert(purchaseReports)
-      .values({
-        title: report.title,
-        reportDate: report.reportDate,
-        summary: report.summary,
-        recommendation: report.recommendation ?? null,
-        priceTrend: report.priceTrend ?? null,
-        riskLevel: report.riskLevel ?? null,
-      })
-      .returning()
-    
-    return newReport
-  } catch (error) {
-    console.error("创建报告失败:", error)
-    const newReport: PurchaseReport = {
-      id: Math.max(...fallbackReports.map((r) => r.id)) + 1,
-      title: report.title,
-      reportDate: report.reportDate,
-      summary: report.summary,
-      recommendation: report.recommendation ?? null,
-      priceTrend: report.priceTrend ?? null,
-      riskLevel: report.riskLevel ?? null,
-      createdAt: new Date(),
-    }
-    fallbackReports.push(newReport)
-    return newReport
+  const newReport: PurchaseReport = {
+    id: Math.max(...mockReports.map((r) => r.id)) + 1,
+    title: report.title,
+    reportDate: report.reportDate,
+    summary: report.summary,
+    recommendation: report.recommendation ?? null,
+    priceTrend: report.priceTrend ?? null,
+    riskLevel: report.riskLevel ?? null,
+    createdAt: new Date(),
   }
+  mockReports.push(newReport)
+  return newReport
 }
 
 export async function deleteReport(id: number): Promise<boolean> {
-  try {
-    if (!db) {
-      throw new Error("Database not available")
-    }
-    const result = await db
-      .delete(purchaseReports)
-      .where(eq(purchaseReports.id, id))
-      .returning()
-
-    return result.length > 0
-  } catch (error) {
-    console.error("删除报告失败:", error)
-    const index = fallbackReports.findIndex((r) => r.id === id)
-    if (index === -1) return false
-    fallbackReports.splice(index, 1)
-    return true
-  }
-}
-
-export async function generateWeeklyReport(): Promise<NewPurchaseReport | null> {
-  try {
-    if (!db) {
-      throw new Error("Database not available")
-    }
-    const now = new Date()
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    const dateStr = now.toISOString().split('T')[0]
-
-    const prices = await db
-      .select()
-      .from(sulfurPrices)
-      .where(gte(sulfurPrices.date, weekAgo.toISOString().split('T')[0]))
-      .orderBy(desc(sulfurPrices.date))
-      .limit(7)
-    
-    const inventory = await db
-      .select()
-      .from(portInventory)
-      .where(gte(portInventory.date, weekAgo.toISOString().split('T')[0]))
-      .orderBy(desc(portInventory.date))
-      .limit(7)
-    
-    if (prices.length === 0) {
-      return null
-    }
-    
-    const latestPrice = prices[0]
-    const prevPrice = prices.length > 1 ? prices[prices.length - 1] : prices[0]
-    
-    const currentPrice = Number(latestPrice.mainPrice) || 0
-    const previousPrice = Number(prevPrice.mainPrice) || currentPrice
-    const priceChange = currentPrice - previousPrice
-    const priceChangePercent = previousPrice > 0 ? ((priceChange / previousPrice) * 100).toFixed(1) : "0"
-    
-    let priceTrend: PriceTrend = "稳定"
-    if (priceChange > 0) {
-      priceTrend = Math.abs(Number(priceChangePercent)) > 2 ? "上涨" : "小幅上涨"
-    } else if (priceChange < 0) {
-      priceTrend = Math.abs(Number(priceChangePercent)) > 2 ? "下跌" : "小幅下跌"
-    }
-    
-    let riskLevel: RiskLevel = "低"
-    if (Math.abs(Number(priceChangePercent)) > 5) {
-      riskLevel = "高"
-    } else if (Math.abs(Number(priceChangePercent)) > 2) {
-      riskLevel = "中等"
-    }
-    
-    let recommendation: Recommendation = "按需采购"
-    if (priceTrend === "下跌" || priceTrend === "小幅下跌") {
-      recommendation = "观望"
-    } else if (priceTrend === "上涨") {
-      recommendation = "适当备库"
-    } else if (riskLevel === "高" && priceTrend.includes("上涨")) {
-      recommendation = "建议备库"
-    }
-    
-    const weekNumber = Math.ceil((now.getDate() + new Date(now.getFullYear(), now.getMonth(), 1).getDay()) / 7)
-    const title = `${now.getFullYear()}年${now.getMonth() + 1}月第${weekNumber}周硫磺采购分析报告`
-    
-    const avgPrice = prices.reduce((sum, p) => sum + (Number(p.mainPrice) || 0), 0) / prices.length
-    const latestInventory = inventory[0]
-    const inventoryValue = latestInventory ? Number(latestInventory.inventory) : 0
-    
-    const summary = `【市场概况】本周硫磺市场${priceTrend === "稳定" ? "整体稳定" : priceTrend.includes("上涨") ? "呈现上涨态势" : "呈现下跌态势"}，国内硫磺均价报${currentPrice.toFixed(0)}元/吨，较上周${priceChange >= 0 ? "上涨" : "下跌"}${Math.abs(Number(priceChangePercent))}%。【供需分析】供应端：主要进口来源国出货${prices.length >= 5 ? "稳定" : "一般"}，港口到货量正常。需求端：磷肥企业开工率维持正常水平，硫酸需求平稳。【价格走势】本周价格区间${Math.min(...prices.map(p => Number(p.mainPrice) || 0)).toFixed(0)}-${Math.max(...prices.map(p => Number(p.mainPrice) || 0)).toFixed(0)}元/吨，周均价${avgPrice.toFixed(0)}元/吨。【库存情况】主要港口库存约${inventoryValue.toFixed(0)}万吨，库存消费比处于${inventoryValue > 50 ? "合理" : inventoryValue > 40 ? "偏低" : "紧张"}区间。【后市研判】预计短期内价格将${priceTrend === "稳定" ? "维持稳定" : priceTrend.includes("上涨") ? "继续震荡上行" : "仍有下行空间"}，建议关注下游需求变化。`
-    
-    return {
-      title,
-      reportDate: dateStr,
-      summary,
-      recommendation,
-      priceTrend,
-      riskLevel,
-    }
-  } catch (error) {
-    console.error("生成周报失败:", error)
-    return null
-  }
+  const index = mockReports.findIndex((r) => r.id === id)
+  if (index === -1) return false
+  mockReports.splice(index, 1)
+  return true
 }
