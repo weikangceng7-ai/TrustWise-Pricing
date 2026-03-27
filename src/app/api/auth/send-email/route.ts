@@ -27,9 +27,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "验证码已发送到您的邮箱",
-      // 开发环境提示
-      ...(process.env.NODE_ENV === "development" && {
-        devMessage: "请查看控制台获取验证码",
+      // 开发环境返回验证码
+      ...(process.env.NODE_ENV === "development" && result.devCode && {
+        devCode: result.devCode,
+        devMessage: "开发环境测试验证码",
       }),
     })
   } catch (error) {

@@ -80,7 +80,7 @@ export function verifyEmailCode(email: string, inputCode: string): { valid: bool
 /**
  * 发送邮箱验证码
  */
-export async function sendEmailVerificationCode(email: string): Promise<{ success: boolean; error?: string }> {
+export async function sendEmailVerificationCode(email: string): Promise<{ success: boolean; error?: string; devCode?: string }> {
   const code = generateEmailVerificationCode()
   storeEmailVerificationCode(email, code)
 
@@ -109,17 +109,29 @@ export async function sendEmailVerificationCode(email: string): Promise<{ succes
       })
 
       console.log(`[EMAIL] 验证码邮件已发送: ${email} -> ${code}`)
+      // 开发环境返回验证码
+      if (process.env.NODE_ENV === "development") {
+        return { success: true, devCode: code }
+      }
       return { success: true }
     } catch (error) {
       console.error("[EMAIL] 发送失败:", error)
       // 发送失败也输出到控制台，方便测试
       console.log(`[EMAIL] 验证码 (发送失败，备用): ${email} -> ${code}`)
+      // 开发环境返回验证码
+      if (process.env.NODE_ENV === "development") {
+        return { success: true, devCode: code }
+      }
       return { success: true }
     }
   }
 
   // 没有 API Key，输出到控制台
   console.log(`[EMAIL] 验证码已生成: ${email} -> ${code}`)
+  // 开发环境返回验证码
+  if (process.env.NODE_ENV === "development") {
+    return { success: true, devCode: code }
+  }
   return { success: true }
 }
 
