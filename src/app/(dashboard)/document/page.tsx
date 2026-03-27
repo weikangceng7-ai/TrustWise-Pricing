@@ -404,7 +404,7 @@ export default function DocumentPage() {
           <h2>6.1 采购决策支持</h2>
           <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 my-4">
             <p><strong>场景</strong>：企业A采购经理需要决定本周采购量</p>
-            <p><strong>操作</strong>：选择企业A，询问"当前硫磺市场趋势如何？"</p>
+            <p><strong>操作</strong>：选择企业A，询问&ldquo;当前硫磺市场趋势如何？&rdquo;</p>
             <p><strong>输出</strong>：</p>
             <ul className="ml-4">
               <li>第一板块：宏观市场价格走势、供需分析、预测趋势</li>
@@ -415,7 +415,7 @@ export default function DocumentPage() {
           <h2>6.2 价格预测分析</h2>
           <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 my-4">
             <p><strong>场景</strong>：预测未来一周硫磺价格走势</p>
-            <p><strong>操作</strong>：询问"预测未来一周硫磺价格走势"</p>
+            <p><strong>操作</strong>：询问&ldquo;预测未来一周硫磺价格走势&rdquo;</p>
             <p><strong>输出</strong>：</p>
             <ul className="ml-4">
               <li>ARIMA/LSTM/Prophet模型预测结果</li>
@@ -446,14 +446,14 @@ export default function DocumentPage() {
           <h2>6.5 报告生成</h2>
           <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 my-4">
             <p><strong>场景</strong>：需要提交周度采购报告</p>
-            <p><strong>操作</strong>：请求"生成采购决策分析报告"</p>
+            <p><strong>操作</strong>：请求&ldquo;生成采购决策分析报告&rdquo;</p>
             <p><strong>输出</strong>：结构化报告（宏观+企业双板块），可导出PDF/Word</p>
           </div>
 
           <h2>6.6 图片分析</h2>
           <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 my-4">
             <p><strong>场景</strong>：收到供应商报价单图片</p>
-            <p><strong>操作</strong>：上传图片并询问"分析这张报价单"</p>
+            <p><strong>操作</strong>：上传图片并询问&ldquo;分析这张报价单&rdquo;</p>
             <p><strong>输出</strong>：报价内容识别、价格对比、采购建议</p>
           </div>
 
@@ -563,7 +563,7 @@ export default function DocumentPage() {
 
           <h1>八、总结与展望</h1>
           <p>
-            本系统整合大语言模型、实时数据分析、知识图谱、价格预测算法，构建"宏观分析+企业定制"双引擎决策架构，实现智能对话、数据洞察、价格预测、决策支持、报告自动化、自适应学习六大核心能力。
+            本系统整合大语言模型、实时数据分析、知识图谱、价格预测算法，构建&ldquo;宏观分析+企业定制&rdquo;双引擎决策架构，实现智能对话、数据洞察、价格预测、决策支持、报告自动化、自适应学习六大核心能力。
           </p>
           
           <h2>核心创新</h2>

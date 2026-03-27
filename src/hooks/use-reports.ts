@@ -28,7 +28,7 @@ export function useReports() {
   const queryClient = useQueryClient()
   const [filters, setFilters] = useState<ReportFilters>({})
 
-  const { data: reportsData, isLoading: isLoadingReports } = useQuery({
+  const { data: reportsData, isLoading: isLoadingReports, refetch: refetchReports } = useQuery({
     queryKey: ["reports", filters],
     queryFn: async () => {
       const params = new URLSearchParams()
@@ -43,7 +43,7 @@ export function useReports() {
     },
   })
 
-  const { data: statsData } = useQuery({
+  const { data: statsData, refetch: refetchStats } = useQuery({
     queryKey: ["reports", "stats"],
     queryFn: async () => {
       const res = await fetch("/api/reports?stats=true")
@@ -64,6 +64,10 @@ export function useReports() {
 
   const hasActiveFilters = Object.values(filters).some((v) => v !== undefined && v !== "")
 
+  const refresh = useCallback(async () => {
+    await Promise.all([refetchReports(), refetchStats()])
+  }, [refetchReports, refetchStats])
+
   return {
     reports,
     stats,
@@ -72,5 +76,6 @@ export function useReports() {
     updateFilters,
     clearFilters,
     hasActiveFilters,
+    refresh,
   }
 }

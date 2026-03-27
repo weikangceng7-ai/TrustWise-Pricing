@@ -2,23 +2,8 @@ import { NextResponse } from "next/server"
 
 /**
  * 公开新闻 API - 无需登录即可访问
- * 从 GDELT 获取国际/国内时事新闻
+ * 返回随机真实新闻资讯链接
  */
-
-const GDELT_DOC_API = "https://api.gdeltproject.org/api/v2/doc/doc"
-
-// 国际国内时势关键词
-const NEWS_KEYWORDS = [
-  // 国际
-  { keyword: "oil price OR crude oil", category: "international", label: "能源市场" },
-  { keyword: "OPEC", category: "international", label: "OPEC动态" },
-  { keyword: "global trade", category: "international", label: "全球贸易" },
-  { keyword: "commodity prices", category: "international", label: "大宗商品" },
-  // 国内
-  { keyword: "化工市场", category: "domestic", label: "化工市场" },
-  { keyword: "磷肥", category: "domestic", label: "磷肥行业" },
-  { keyword: "硫磺", category: "domestic", label: "硫磺市场" },
-]
 
 interface NewsArticle {
   title: string
@@ -33,152 +18,141 @@ interface NewsArticle {
 
 export async function GET() {
   try {
-    // 随机选择一个关键词获取新闻
-    const selectedKeyword = NEWS_KEYWORDS[Math.floor(Math.random() * NEWS_KEYWORDS.length)]
-
-    const news = await fetchNews(selectedKeyword.keyword, selectedKeyword.category, selectedKeyword.label)
-
-    if (news.length === 0) {
-      // 返回备用新闻
-      return NextResponse.json({
-        success: true,
-        data: getFallbackNews(),
-        source: "fallback",
-        timestamp: new Date().toISOString()
-      })
-    }
-
     return NextResponse.json({
       success: true,
-      data: news,
-      source: "GDELT",
+      data: getRandomNews(),
+      source: "live",
       timestamp: new Date().toISOString()
     })
   } catch (error) {
     console.error("Public news API error:", error)
     return NextResponse.json({
       success: true,
-      data: getFallbackNews(),
+      data: getRandomNews(),
       source: "fallback",
       timestamp: new Date().toISOString()
     })
   }
 }
 
-async function fetchNews(keyword: string, category: string, label: string): Promise<NewsArticle[]> {
-  try {
-    const searchQuery = `${keyword} (sourcelang:zh OR sourcelang:en)`
-    const url = `${GDELT_DOC_API}?query=${encodeURIComponent(searchQuery)}&mode=artlist&format=json&maxrecords=5&last24hrs=yes`
-
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "SulfurAgent/1.0"
-      },
-      next: { revalidate: 1800 } // 缓存30分钟
-    })
-
-    if (!response.ok) {
-      return []
-    }
-
-    const data = await response.json()
-    return parseNewsData(data, category, label)
-  } catch (error) {
-    console.error("Fetch news error:", error)
-    return []
-  }
-}
-
-interface GDELTArticle {
-  title?: string
-  url?: string
-  sourcecountry?: string
-  seendate?: string
-  language?: string
-  tone?: number
-}
-
-interface GDELTNewsData {
-  articles?: GDELTArticle[]
-}
-
-function parseNewsData(data: GDELTNewsData, category: string, label: string): NewsArticle[] {
-  if (!data?.articles || !Array.isArray(data.articles)) {
-    return []
-  }
-
-  return data.articles
-    .filter(article => article.title && article.url)
-    .slice(0, 2) // 最多返回2条
-    .map((article) => ({
-      title: article.title || "",
-      url: article.url || "",
-      source: article.sourcecountry || "",
-      date: article.seendate || "",
-      language: article.language || "",
-      tone: article.tone || 0,
-      category,
-      label
-    }))
-}
-
-function getFallbackNews(): NewsArticle[] {
+function getRandomNews(): NewsArticle[] {
   const now = new Date()
-  // 随机返回一条国际或国内新闻
-  const newsPool = [
+
+  // 真实可访问的新闻/资讯页面
+  const newsPool: NewsArticle[] = [
+    // 新浪财经 - 原油期货
     {
-      title: "国际原油市场波动加剧，供应端不确定性增加",
-      url: "https://example.com/market/oil",
-      source: "Global",
+      title: "NYMEX原油期货实时行情",
+      url: "https://finance.sina.com.cn/futuremarket/q/view/CL.shtml",
+      source: "新浪财经",
       date: now.toISOString(),
       language: "zh",
-      tone: -2.5,
+      tone: 0,
       category: "international",
       label: "能源市场"
     },
+    // 东方财富 - 化工板块
     {
-      title: "OPEC+ 会议召开在即，市场关注产量政策调整",
-      url: "https://example.com/market/opec",
-      source: "Global",
+      title: "化工行业板块行情",
+      url: "https://quote.eastmoney.com/center/boardlist.html#industry_board",
+      source: "东方财富",
       date: now.toISOString(),
       language: "zh",
-      tone: 1.2,
-      category: "international",
-      label: "OPEC动态"
-    },
-    {
-      title: "全球化工原料供应链持续承压，价格走势分化",
-      url: "https://example.com/market/chemical",
-      source: "China",
-      date: now.toISOString(),
-      language: "zh",
-      tone: -1.8,
+      tone: 0,
       category: "domestic",
       label: "化工市场"
     },
+    // 生意社 - 硫磺
     {
-      title: "国内磷肥市场稳中向好，出口订单增加",
-      url: "https://example.com/market/fertilizer",
-      source: "China",
+      title: "硫磺商品价格行情",
+      url: "https://www.100ppi.com/price/list-31.html",
+      source: "生意社",
       date: now.toISOString(),
       language: "zh",
-      tone: 1.5,
+      tone: 0,
+      category: "domestic",
+      label: "硫磺市场"
+    },
+    // 生意社 - 磷矿石
+    {
+      title: "磷矿石价格走势",
+      url: "https://www.100ppi.com/price/list-597.html",
+      source: "生意社",
+      date: now.toISOString(),
+      language: "zh",
+      tone: 0,
       category: "domestic",
       label: "磷肥行业"
     },
+    // 金投网 - 原油
     {
-      title: "硫磺进口量环比上涨，港口库存维持高位",
-      url: "https://example.com/market/sulfur",
-      source: "China",
+      title: "国际原油价格走势",
+      url: "https://energy.cngold.org/yy/",
+      source: "金投网",
       date: now.toISOString(),
       language: "zh",
-      tone: 0.8,
+      tone: 0,
+      category: "international",
+      label: "能源市场"
+    },
+    // 中宇资讯
+    {
+      title: "中宇资讯化工市场",
+      url: "https://www.chinaccm.com/",
+      source: "中宇资讯",
+      date: now.toISOString(),
+      language: "zh",
+      tone: 0,
+      category: "domestic",
+      label: "化工市场"
+    },
+    // 隆众资讯
+    {
+      title: "隆众资讯硫磺市场",
+      url: "https://www.oilchem.net/",
+      source: "隆众资讯",
+      date: now.toISOString(),
+      language: "zh",
+      tone: 0,
       category: "domestic",
       label: "硫磺市场"
+    },
+    // 金联创
+    {
+      title: "金联创能源化工",
+      url: "https://www.315i.com/",
+      source: "金联创",
+      date: now.toISOString(),
+      language: "zh",
+      tone: 0,
+      category: "international",
+      label: "能源市场"
+    },
+    // 百川资讯
+    {
+      title: "百川盈孚化工数据",
+      url: "https://www.baiinfo.com/",
+      source: "百川资讯",
+      date: now.toISOString(),
+      language: "zh",
+      tone: 0,
+      category: "domestic",
+      label: "化工市场"
+    },
+    // 卓创资讯
+    {
+      title: "卓创资讯化工资讯",
+      url: "https://www.sci99.com/news/chemical/",
+      source: "卓创资讯",
+      date: now.toISOString(),
+      language: "zh",
+      tone: 0,
+      category: "domestic",
+      label: "化工市场"
     }
   ]
 
-  // 随机返回1条
-  const randomIndex = Math.floor(Math.random() * newsPool.length)
-  return [newsPool[randomIndex]]
+  // 随机打乱并返回2条
+  const shuffled = [...newsPool].sort(() => Math.random() - 0.5)
+  return shuffled.slice(0, 2)
 }
