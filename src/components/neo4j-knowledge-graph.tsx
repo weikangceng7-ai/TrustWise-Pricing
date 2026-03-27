@@ -201,28 +201,7 @@ export function Neo4jKnowledgeGraph({ enterpriseCode }: { enterpriseCode: string
   }
 
   if (!status.connected) {
-    return (
-      <Card className="bg-white/80 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-amber-500 to-red-500" />
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-500" />
-            <CardTitle className="text-lg">Neo4j 未连接</CardTitle>
-          </div>
-          <CardDescription>知识图谱功能需要 Neo4j 数据库</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="text-sm text-slate-600 dark:text-slate-400">
-            <p className="mb-2">请配置以下环境变量：</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li><code className="text-cyan-600">NEO4J_URI</code> - 连接地址</li>
-              <li><code className="text-cyan-600">NEO4J_USER</code> - 用户名</li>
-              <li><code className="text-cyan-600">NEO4J_PASSWORD</code> - 密码</li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
-    )
+    return null
   }
 
   // 计算节点位置
