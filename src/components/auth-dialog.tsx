@@ -122,6 +122,7 @@ export function AuthDialog({
   const [verifyCode, setVerifyCode] = useState("")
   const [countdown, setCountdown] = useState(0)
   const [isSendingCode, setIsSendingCode] = useState(false)
+  const [devCode, setDevCode] = useState<string | null>(null) // 开发环境验证码
 
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password])
   const emailSuggestions = useMemo(() => getEmailSuggestions(email), [email])
@@ -143,6 +144,7 @@ export function AuthDialog({
 
     setIsSendingCode(true)
     setError(null)
+    setDevCode(null)
 
     try {
       const res = await fetch("/api/auth/send-verify-code", {
@@ -157,6 +159,11 @@ export function AuthDialog({
         setError(data.error || "发送验证码失败")
         setIsSendingCode(false)
         return false
+      }
+
+      // 开发环境显示验证码
+      if (data.devCode) {
+        setDevCode(data.devCode)
       }
 
       setCountdown(60) // 60秒倒计时
@@ -639,6 +646,11 @@ export function AuthDialog({
 
         {mode === "register-verify" && (
           <div className="space-y-4">
+            {devCode && (
+              <div className="rounded-lg bg-cyan-500/10 border border-cyan-500/20 p-3 text-sm text-cyan-600 dark:text-cyan-400">
+                开发环境测试验证码：<span className="font-mono font-bold">{devCode}</span>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="verify-code">验证码</Label>
               <div className="flex gap-2">
@@ -731,6 +743,11 @@ export function AuthDialog({
 
         {mode === "forgot-verify" && !forgotSuccess && (
           <div className="space-y-4">
+            {devCode && (
+              <div className="rounded-lg bg-cyan-500/10 border border-cyan-500/20 p-3 text-sm text-cyan-600 dark:text-cyan-400">
+                开发环境测试验证码：<span className="font-mono font-bold">{devCode}</span>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="forgot-verify-code">验证码</Label>
               <div className="flex gap-2">

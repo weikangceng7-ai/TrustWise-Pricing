@@ -162,7 +162,7 @@ function ReportCarousel() {
 }
 
 export default function DashboardPage() {
-  const [timeRange, setTimeRange] = useState<TimeRange>("day")
+  const [timeRange, setTimeRange] = useState<TimeRange>("week")
   const bgImage = getBackgroundImage("dashboardBackground")
 
   return (
@@ -217,16 +217,6 @@ export default function DashboardPage() {
                 <h3 className="text-slate-900 dark:text-white font-semibold">价格走势</h3>
               </div>
               <div className="flex gap-1">
-                <button
-                  onClick={() => setTimeRange("day")}
-                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                    timeRange === "day"
-                      ? "bg-cyan-100 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-500/30"
-                      : "bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  日
-                </button>
                 <button
                   onClick={() => setTimeRange("week")}
                   className={`px-3 py-1 text-xs rounded-lg transition-colors ${

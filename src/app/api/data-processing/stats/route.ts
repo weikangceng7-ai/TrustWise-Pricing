@@ -93,6 +93,7 @@ export async function GET() {
 /**
  * 获取表统计信息
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getTableStats(table: any) {
   if (!db) {
     return { count: 0, latestDate: null, avgValue: null }

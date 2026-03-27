@@ -3,8 +3,8 @@
  * API 文档: https://www.eia.gov/opendata/v1/documentation
  */
 
-// EIA API 配置
-const EIA_API_KEY = "R0dpSMdgGXg6Je57FdVpyfX7db8lbyf52y3dtoeO"
+// EIA API 配置 - 从环境变量读取
+const EIA_API_KEY = process.env.EIA_API_KEY || ""
 const EIA_BASE_URL = "https://api.eia.gov/v2"
 
 // 原油价格数据类型

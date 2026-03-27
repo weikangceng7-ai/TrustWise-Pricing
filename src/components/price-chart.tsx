@@ -14,7 +14,7 @@ import {
 import { useTheme } from "@/components/theme-provider"
 
 // 时间范围类型
-export type TimeRange = "day" | "week" | "month"
+export type TimeRange = "week" | "month"
 
 // 外部数据类型
 interface ExternalDataPoint {
@@ -131,10 +131,6 @@ export function PriceChart({ timeRange = "month" }: PriceChartProps) {
     let cutoffDate: Date
 
     switch (timeRange) {
-      case "day":
-        cutoffDate = new Date(now)
-        cutoffDate.setDate(now.getDate() - 1)
-        break
       case "week":
         cutoffDate = new Date(now)
         cutoffDate.setDate(now.getDate() - 7)

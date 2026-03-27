@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useRef, useEffect } from "react"
+import { useMemo, useState, useRef, useLayoutEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -283,33 +283,44 @@ export function YihuaCodeKnowledgeGraph() {
   const marketData = useMarketDataOverview()
 
   // 缓存状态：记录上次缓存的时间和数据
-  const [cacheTime, setCacheTime] = useState<Date | null>(null)
-  const [isRefreshing, setIsRefreshing] = useState(false)
-
-  // 初始化时从 localStorage 读取缓存时间
-  useEffect(() => {
+  const [cacheTime, setCacheTime] = useState<Date | null>(() => {
+    // 初始化时从 localStorage 读取缓存时间
     try {
       const stored = localStorage.getItem(CACHE_KEY)
       if (stored) {
         const parsed = JSON.parse(stored)
         if (parsed.cacheTime) {
-          setCacheTime(new Date(parsed.cacheTime))
+          return new Date(parsed.cacheTime)
         }
       }
     } catch {
       // 忽略解析错误
     }
+    return null
+  })
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  // 使用 ref 存储时间戳，避免在 effect 中调用 setState
+  const currentTimestampRef = useRef<number | null>(null)
+
+  // 初始化时间戳（仅在客户端首次渲染后执行一次）
+  useLayoutEffect(() => {
+    if (currentTimestampRef.current === null) {
+      currentTimestampRef.current = Date.now()
+    }
   }, [])
 
-  // 检查缓存是否有效（10分钟内）
   const isCacheValid = (cacheTime: Date | null): boolean => {
-    if (!cacheTime) return false
-    return Date.now() - cacheTime.getTime() < CACHE_DURATION_MS
+    if (!cacheTime || currentTimestampRef.current === null) return false
+    return currentTimestampRef.current - cacheTime.getTime() < CACHE_DURATION_MS
   }
 
   // 手动刷新数据
   const handleRefresh = () => {
     if (isRefreshing) return
+
+    // 更新时间戳 - 在事件处理器中调用 Date.now() 是安全的
+    // eslint-disable-next-line react-hooks/purity
+    currentTimestampRef.current = Date.now()
 
     // 如果缓存仍然有效，不刷新数据
     if (isCacheValid(cacheTime)) {
@@ -340,15 +351,13 @@ export function YihuaCodeKnowledgeGraph() {
   }
 
   // 计算显示的时间：如果缓存有效，显示"10分钟前"
-  const getDisplayTime = (): Date | null => {
-    if (isCacheValid(cacheTime)) {
+  const displayTime = useMemo(() => {
+    if (isCacheValid(cacheTime) && currentTimestampRef.current !== null) {
       // 返回一个模拟的"10分钟前"时间
-      return new Date(Date.now() - 10 * 60 * 1000)
+      return new Date(currentTimestampRef.current - 10 * 60 * 1000)
     }
     return null
-  }
-
-  const displayTime = getDisplayTime()
+  }, [cacheTime])
 
   // 计算因子权重数据（基于实时数据）- 使用 useMemo 替代 useEffect + setState
   const liveWeights = useMemo(() => {
