@@ -1,0 +1,71 @@
+987fb3f|docs: 添加 EIA_API_KEY 到环境变量示例|2026-03-27|weikangceng7-ai
+5f43e8e|fix(security): 移除硬编码的 EIA API Key|2026-03-27|weikangceng7-ai
+973d3fd|error|2026-03-27|weikangceng7-ai
+df3a2d5|Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing|2026-03-27|weikangceng7-ai
+1e243c6|report，procurement|2026-03-27|weikangceng7-ai
+ea29f53|Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing|2026-03-27|zc-arch
+b5ebab0|ok|2026-03-27|zc-arch
+cbc37e3|Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing|2026-03-27|weikangceng7-ai
+89cff90|add 3.27|2026-03-27|weikangceng7-ai
+b4bd1ee|LSTM模型，折叠架构等|2026-03-26|zc-arch
+25a6c6e|Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing|2026-03-26|zc-arch
+1dfe061|系统架构可折叠|2026-03-26|zc-arch
+56c3923|add dashboard|2026-03-26|weikangceng7-ai
+e1b1385|Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing|2026-03-26|weikangceng7-ai
+66ff23b|add|2026-03-26|weikangceng7-ai
+3d995ca|删除仪表盘的系统架构|2026-03-26|zc-arch
+4f97f5d|On master: !!GitHub_Desktop<master>|2026-03-26|zc-arch
+3d9f32d|index on master: 11abda1 规整chat宏观和具体企业划分|2026-03-26|zc-arch
+f0775fd|Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing|2026-03-26|weikangceng7-ai
+3cf211a|addd|2026-03-26|weikangceng7-ai
+11abda1|规整chat宏观和具体企业划分|2026-03-26|zc-arch
+e1a4075|隐藏图谱数据源api|2026-03-26|zc-arch
+6a619ea|Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing|2026-03-26|zc-arch
+386f674|enterprise details|2026-03-26|weikangceng7-ai
+c72d15b|feat: 知识图谱3D流体可视化升级|2026-03-26|weikangceng7-ai
+c68454a|Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing|2026-03-26|zc-arch
+d11aaae|feat: 添加企业库存可视化组件|2026-03-26|weikangceng7-ai
+6ab9513|feat: 实现企业知识图谱差异化权重计算|2026-03-26|weikangceng7-ai
+2f945e0|Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing|2026-03-25|weikangceng7-ai
+21d7dce|add chat ,knowledge model,enterprise|2026-03-25|weikangceng7-ai
+5c857f7|feat: 集成 Neo4j 知识图谱，实现供应链推理分析|2026-03-25|weikangceng7-ai
+2f97389|采购报告单在仪表盘上轮播+入口|2026-03-25|zc-arch
+0a8d2bd|Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing|2026-03-25|zc-arch
+d855013|delete“待审核”，平均宽度剩下三块|2026-03-25|zc-arch
+07fe27e|Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing|2026-03-24|weikangceng7-ai
+fdc4b41|add sign|2026-03-24|weikangceng7-ai
+97e89ae|合并成功|2026-03-24|zc-arch
+820015a|1|2026-03-24|zc-arch
+a10f420|picture2|2026-03-24|zc-arch
+4dfbac5|picture|2026-03-24|zc-arch
+2772098|Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing|2026-03-24|zgr-a1
+340004f|add message，dashboard|2026-03-24|weikangceng7-ai
+9e1360a|add 3.23|2026-03-23|weikangceng7-ai
+9966167|一些加花|2026-03-23|weikangceng7-ai
+8768489|日间模式页面|2026-03-23|zc-arch
+c32ed83|微调|2026-03-23|zgr-a1
+e291044|Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing|2026-03-23|weikangceng7-ai
+801c307|add ui api|2026-03-23|weikangceng7-ai
+263595b|Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing|2026-03-22|zc-arch
+72cfb89|change|2026-03-22|zc-arch
+a69c9d6|Update README.md|2026-03-22|weikangceng7-ai
+fbca7e1|Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing|2026-03-22|weikangceng7-ai
+c225e2c|add-price-chat|2026-03-22|weikangceng7-ai
+a4b880f|3.22add aichat|2026-03-22|weikangceng7-ai
+e4bd4a8|内容微改|2026-03-22|zgr-a1
+dcaa93b|采购报告页面|2026-03-22|zc-arch
+85cc8e2|完善消息通知|2026-03-22|zc-arch
+1efee07|agent logo|2026-03-22|zc-arch
+c251cd8|logo|2026-03-22|zc-arch
+bf0c1fc|简要修改|2026-03-22|zc-arch
+b9b8be7|jianyi|2026-03-22|zc-arch
+cc39311|add|2026-03-21|weikangceng7-ai
+911e7fe|将 Agent Chat API 切换到 qnaigc (DeepSeek)|2026-03-20|weikangceng7-ai
+a91a5ca|Update route.ts|2026-03-20|weikangceng7-ai
+c5faa45|知识图谱|2026-03-20|weikangceng7-ai
+c2d4afd|update|2026-03-20|weikangceng7-ai
+471c05e|Update auth-dialog.tsx|2026-03-19|weikangceng7-ai
+7c359e6|sign,set chat api,web|2026-03-19|weikangceng7-ai
+d34b903|agent方案|2026-03-17|weikangceng7-ai
+e0ceebc|feat: initial commit|2026-03-16|weikangceng7-ai
+3b8fc40|Initial commit from Create Next App|2026-03-16|weikangceng7-ai

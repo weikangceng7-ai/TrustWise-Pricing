@@ -786,7 +786,7 @@ export default function AgentChatPage() {
               </div>
             </CardHeader>
 
-            {/* 系统架构轮播 - 可折叠，最大高度为屏幕的1/4 */}
+            {/* 系统架构轮播 - 可折叠 */}
             <div className="border-b border-slate-200 dark:border-slate-700/50 shrink-0">
               <button
                 onClick={() => setShowArchitecture(!showArchitecture)}
@@ -796,9 +796,7 @@ export default function AgentChatPage() {
                 <ChevronRight className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${showArchitecture ? 'rotate-90' : ''}`} />
               </button>
               {showArchitecture && (
-                <div className="max-h-[25vh] overflow-y-auto">
-                  <ThreePhaseArchitectureCarousel className="rounded-none border-0 border-t border-slate-200 dark:border-slate-700/50" autoPlay={true} interval={5000} />
-                </div>
+                <ThreePhaseArchitectureCarousel className="rounded-none border-0 border-t border-slate-200 dark:border-slate-700/50" autoPlay={true} interval={5000} />
               )}
             </div>
 

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getOilPriceSummary } from "@/services/eia-oil-price"
+import { getOilPriceSummary, analyzeOilSulfurCorrelation } from "@/services/eia-oil-price"
 
 export async function GET() {
   try {
@@ -14,8 +14,12 @@ export async function GET() {
       })
     }
 
-    // 基于原油价格推算硫磺价格（简化模型：原油价格约 10-15 倍关系）
-    const currentPrice = Math.round(oilSummary.currentPrice * 12)
+    const correlation = analyzeOilSulfurCorrelation(
+      oilSummary.currentPrice,
+      oilSummary.previousPrice
+    )
+
+    const currentPrice = correlation.sulfurPrice
     const changePercent = oilSummary.changePercent
 
     const baseInventory = 12.5

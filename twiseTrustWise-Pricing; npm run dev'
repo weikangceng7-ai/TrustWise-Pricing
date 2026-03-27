@@ -1,0 +1,121 @@
+[33m987fb3f[m[33m ([m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m docs: 添加 EIA_API_KEY 到环境变量示例
+[33m5f43e8e[m fix(security): 移除硬编码的 EIA API Key
+[33m973d3fd[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m error
+[33mdf3a2d5[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m1e243c6[m report，procurement
+[33mea29f53[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33mb5ebab0[m ok
+[33mcbc37e3[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m89cff90[m add 3.27
+[33mb4bd1ee[m LSTM模型，折叠架构等
+[33m25a6c6e[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m1dfe061[m 系统架构可折叠
+[33m56c3923[m add dashboard
+[33me1b1385[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m66ff23b[m add
+[33m3d995ca[m 删除仪表盘的系统架构
+[33m4f97f5d[m[33m ([m[1;35mrefs/stash[m[33m)[m On master: !!GitHub_Desktop<master>
+[33m3d9f32d[m index on master: 11abda1 规整chat宏观和具体企业划分
+[33mf0775fd[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m3cf211a[m addd
+[33m11abda1[m 规整chat宏观和具体企业划分
+[33me1a4075[m 隐藏图谱数据源api
+[33m6a619ea[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m386f674[m enterprise details
+[33mc72d15b[m feat: 知识图谱3D流体可视化升级
+[33mc68454a[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33md11aaae[m feat: 添加企业库存可视化组件
+[33m6ab9513[m feat: 实现企业知识图谱差异化权重计算
+[33m2f945e0[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m21d7dce[m add chat ,knowledge model,enterprise
+[33m5c857f7[m feat: 集成 Neo4j 知识图谱，实现供应链推理分析
+[33m2f97389[m 采购报告单在仪表盘上轮播+入口
+[33m0a8d2bd[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33md855013[m delete“待审核”，平均宽度剩下三块
+[33m07fe27e[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33mfdc4b41[m add sign
+[33m97e89ae[m 合并成功
+[33m820015a[m 1
+[33ma10f420[m picture2
+[33m4dfbac5[m picture
+[33m2772098[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m340004f[m add message，dashboard
+[33m9e1360a[m add 3.23
+[33m9966167[m 一些加花
+[33m8768489[m 日间模式页面
+[33mc32ed83[m 微调
+[33me291044[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m801c307[m add ui api
+[33m263595b[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m72cfb89[m change
+[33m987fb3f[m[33m ([m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m docs: 添加 EIA_API_KEY 到环境变量示例
+[33m5f43e8e[m fix(security): 移除硬编码的 EIA API Key
+[33m973d3fd[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m error
+[33mdf3a2d5[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m1e243c6[m report，procurement
+[33mea29f53[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33mb5ebab0[m ok
+[33mcbc37e3[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m89cff90[m add 3.27
+[33mb4bd1ee[m LSTM模型，折叠架构等
+[33m25a6c6e[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m1dfe061[m 系统架构可折叠
+[33m56c3923[m add dashboard
+[33me1b1385[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m66ff23b[m add
+[33m3d995ca[m 删除仪表盘的系统架构
+[33m4f97f5d[m[33m ([m[1;35mrefs/stash[m[33m)[m On master: !!GitHub_Desktop<master>
+[33m3d9f32d[m index on master: 11abda1 规整chat宏观和具体企业划分
+[33mf0775fd[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m3cf211a[m addd
+[33m11abda1[m 规整chat宏观和具体企业划分
+[33me1a4075[m 隐藏图谱数据源api
+[33m6a619ea[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m386f674[m enterprise details
+[33mc72d15b[m feat: 知识图谱3D流体可视化升级
+[33mc68454a[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33md11aaae[m feat: 添加企业库存可视化组件
+[33m6ab9513[m feat: 实现企业知识图谱差异化权重计算
+[33m2f945e0[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m21d7dce[m add chat ,knowledge model,enterprise
+[33m5c857f7[m feat: 集成 Neo4j 知识图谱，实现供应链推理分析
+[33m2f97389[m 采购报告单在仪表盘上轮播+入口
+[33m0a8d2bd[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33md855013[m delete“待审核”，平均宽度剩下三块
+[33m07fe27e[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33mfdc4b41[m add sign
+[33m97e89ae[m 合并成功
+[33m820015a[m 1
+[33ma10f420[m picture2
+[33m4dfbac5[m picture
+[33m2772098[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m340004f[m add message，dashboard
+[33m9e1360a[m add 3.23
+[33m9966167[m 一些加花
+[33m8768489[m 日间模式页面
+[33mc32ed83[m 微调
+[33me291044[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m801c307[m add ui api
+[33m263595b[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33m72cfb89[m change
+[33ma69c9d6[m Update README.md
+[33mfbca7e1[m Merge branch 'master' of https://github.com/weikangceng7-ai/TrustWise-Pricing
+[33mc225e2c[m add-price-chat
+[33ma4b880f[m 3.22add aichat
+[33me4bd4a8[m 内容微改
+[33mdcaa93b[m 采购报告页面
+[33m85cc8e2[m 完善消息通知
+[33m1efee07[m agent logo
+[33mc251cd8[m logo
+[33mbf0c1fc[m 简要修改
+[33mb9b8be7[m jianyi
+[33mcc39311[m add
+[33m911e7fe[m 将 Agent Chat API 切换到 qnaigc (DeepSeek)
+[33ma91a5ca[m Update route.ts
+[33mc5faa45[m 知识图谱
+[33mc2d4afd[m update
+[33m471c05e[m Update auth-dialog.tsx
+[33m7c359e6[m sign,set chat api,web
+[33md34b903[m agent方案
+[33me0ceebc[m feat: initial commit
+[33m3b8fc40[m Initial commit from Create Next App
