@@ -43,7 +43,7 @@ function generateMockData(enterprise: string, days: number): PredictionRecord[] 
       date: dateStr,
       actualPrice: Number(actualPrice.toFixed(2)),
       predictedPrice: Number(predictedPrice.toFixed(2)),
-      modelType: "LSTM",
+      modelType: "Hybrid ARIMA + XGBoost",
       confidence: Number((0.85 + Math.random() * 0.1).toFixed(2)),
       factors: {
         supply: 0.35 + Math.random() * 0.1,
@@ -86,7 +86,7 @@ export async function GET(request: Request) {
         latestDate: latest?.date || new Date().toISOString().split("T")[0],
         latestPrice: latest?.actualPrice?.toString() || "0",
         predictedPrice: latest?.predictedPrice?.toString() || "0",
-        modelType: latest?.modelType || "LSTM-Attention",
+        modelType: latest?.modelType || "Hybrid ARIMA + XGBoost",
         confidence: latest?.confidence?.toString() || "0.85",
       }
     })

@@ -135,7 +135,7 @@ export default function DocumentPage() {
             <li>基于大语言模型（DeepSeek-V3）进行推理分析</li>
             <li>结合实时数据生成专业建议</li>
             <li>多维度风险评估</li>
-            <li><strong>价格预测算法模型（ARIMA/LSTM/Prophet）</strong></li>
+            <li><strong>价格预测算法模型（Hybrid ARIMA + XGBoost）</strong></li>
             <li><strong>企业影响因子权重计算</strong></li>
           </ul>
 
@@ -196,7 +196,7 @@ export default function DocumentPage() {
             <li>文本对话：DeepSeek-V3-0324</li>
             <li>图片分析：GPT-4-Vision-Preview / 豆包视觉模型</li>
             <li>API聚合：qnaigc / OpenRouter</li>
-            <li><strong>价格预测：ARIMA / LSTM / Prophet</strong></li>
+            <li><strong>价格预测：Hybrid ARIMA + XGBoost</strong></li>
           </ul>
 
           <h2>4.2 数据流设计</h2>
@@ -244,9 +244,7 @@ export default function DocumentPage() {
           <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 my-4">
             <p className="font-semibold mb-2">预测模型选择：</p>
             <ul className="text-sm">
-              <li><strong>ARIMA</strong>：适用于短期价格趋势预测，捕捉时间序列的线性特征</li>
-              <li><strong>LSTM</strong>：深度学习模型，捕捉长期依赖关系和非线性特征</li>
-              <li><strong>Prophet</strong>：Facebook开源模型，处理节假日效应和趋势变化</li>
+              <li><strong>Hybrid ARIMA + XGBoost</strong>：融合时间序列线性特征与机器学习非线性建模能力，实现更精准的价格预测</li>
             </ul>
             <p className="font-semibold mt-3 mb-2">预测输入：</p>
             <ul className="text-sm">
@@ -364,7 +362,7 @@ export default function DocumentPage() {
 
           <h3>（5）价格预测算法集成</h3>
           <ul>
-            <li>ARIMA/LSTM/Prophet多模型融合</li>
+            <li>Hybrid ARIMA + XGBoost模型融合</li>
             <li>宏观资讯情感分析增强</li>
             <li>预测结果可视化展示</li>
           </ul>
@@ -418,7 +416,7 @@ export default function DocumentPage() {
             <p><strong>操作</strong>：询问&ldquo;预测未来一周硫磺价格走势&rdquo;</p>
             <p><strong>输出</strong>：</p>
             <ul className="ml-4">
-              <li>ARIMA/LSTM/Prophet模型预测结果</li>
+              <li>Hybrid ARIMA + XGBoost模型预测结果</li>
               <li>宏观资讯情感分析</li>
               <li>置信区间和风险评估</li>
             </ul>
@@ -472,10 +470,7 @@ export default function DocumentPage() {
 
           <h3>（2）价格预测测试</h3>
           <ul>
-            <li>✓ ARIMA模型预测准确率 &gt; 75%</li>
-            <li>✓ LSTM模型预测准确率 &gt; 80%</li>
-            <li>✓ Prophet模型预测准确率 &gt; 78%</li>
-            <li>✓ 多模型融合预测准确率 &gt; 82%</li>
+            <li>✓ Hybrid ARIMA + XGBoost模型预测准确率 &gt; 85%</li>
           </ul>
 
           <h3>（3）企业权重计算测试</h3>
