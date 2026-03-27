@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import {
   Card,
   CardContent,
@@ -150,12 +150,8 @@ function ReportDetailDialog({
   onOpenChange: (open: boolean) => void
   onExport: (format: "word" | "pdf" | "excel") => void
 }) {
-  const [currentTime, setCurrentTime] = useState<string>("")
-
-  useEffect(() => {
-    if (open) {
-      setCurrentTime(new Date().toLocaleString('zh-CN'))
-    }
+  const currentTime = useMemo(() => {
+    return open ? new Date().toLocaleString('zh-CN') : ""
   }, [open])
 
   if (!report) return null
@@ -429,11 +425,7 @@ export default function ReportsPage() {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
-  const [lastUpdate, setLastUpdate] = useState<string>("")
-
-  useEffect(() => {
-    setLastUpdate(new Date().toLocaleString('zh-CN'))
-  }, [])
+  const lastUpdate = useMemo(() => new Date().toLocaleString('zh-CN'), [])
 
   const handleViewReport = (report: Report) => {
     setSelectedReport(report)
