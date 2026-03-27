@@ -38,11 +38,6 @@ interface NewsTopic {
   articles: NewsArticle[]
 }
 
-interface NewsData {
-  topics: NewsTopic[]
-  totalArticles: number
-}
-
 /**
  * 外部数据面板组件
  * 展示 AKShare 行情数据、FRED 经济数据、GDELT 新闻数据

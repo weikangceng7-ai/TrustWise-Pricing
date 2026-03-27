@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { RefreshCw, Database, AlertTriangle, CheckCircle, Network, TrendingUp, TrendingDown, Activity } from "lucide-react"
+import { RefreshCw, Database, CheckCircle, Network } from "lucide-react"
 
 // 太阳系动画样式
 const solarSystemStyles = `
@@ -358,7 +358,6 @@ export function Neo4jKnowledgeGraph({ enterpriseCode }: { enterpriseCode: string
 
                     // 直线连接
                     const isHighlighted = hoveredNode === link.source || hoveredNode === link.target
-                    const linkWeight = link.weight || 10
 
                     return (
                       <line
@@ -394,9 +393,8 @@ export function Neo4jKnowledgeGraph({ enterpriseCode }: { enterpriseCode: string
 
                     const isHovered = hoveredNode === node.id
 
-                    // 趋势图标
+                    // 趋势颜色
                     const trend = node.properties?.trend as string
-                    const TrendIcon = trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : Activity
                     const trendColor = trend === "up" ? "#ef4444" : trend === "down" ? "#10b981" : "#6b7280"
 
                     // 动画延迟

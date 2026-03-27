@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import type { ReportFilters } from "@/services/reports"
 
 export interface Report {
@@ -25,7 +25,6 @@ export interface ReportStats {
 }
 
 export function useReports() {
-  const queryClient = useQueryClient()
   const [filters, setFilters] = useState<ReportFilters>({})
 
   const { data: reportsData, isLoading: isLoadingReports, refetch: refetchReports } = useQuery({

@@ -14,7 +14,6 @@ import {
   User,
   Sparkles,
   Loader2,
-  ChevronRight,
 } from "lucide-react"
 import { useChatContext } from "@/contexts/chat-context"
 import ReactMarkdown from "react-markdown"

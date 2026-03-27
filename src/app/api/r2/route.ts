@@ -248,7 +248,7 @@ export async function POST(request: NextRequest) {
 }
 
 // 获取图片列表
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const accountId = process.env.R2_ACCOUNT_ID
     const accessKeyId = process.env.R2_ACCESS_KEY_ID

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import {
   LineChart,
   Line,
@@ -124,7 +124,7 @@ export function PriceChart({ timeRange = "month" }: PriceChartProps) {
   }, [mounted])
 
   // 根据时间范围过滤数据
-  const filterDataByTimeRange = (data: ExternalDataPoint[]) => {
+  const filterDataByTimeRange = useCallback((data: ExternalDataPoint[]) => {
     if (!data || data.length === 0) return data
 
     const now = new Date()
@@ -143,7 +143,7 @@ export function PriceChart({ timeRange = "month" }: PriceChartProps) {
     }
 
     return data.filter(item => new Date(item.date) >= cutoffDate)
-  }
+  }, [timeRange])
 
   // 处理图表数据
   const chartData = useMemo(() => {
@@ -154,7 +154,7 @@ export function PriceChart({ timeRange = "month" }: PriceChartProps) {
     const predictions = generatePredictions(sulfurData)
 
     return [...sulfurData, ...predictions]
-  }, [externalData, timeRange])
+  }, [externalData, filterDataByTimeRange])
 
   if (isLoading || !mounted) {
     return (

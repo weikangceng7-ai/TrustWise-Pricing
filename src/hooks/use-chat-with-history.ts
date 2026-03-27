@@ -312,7 +312,7 @@ export function useChatWithHistory(options: UseChatWithHistoryOptions = {}) {
       setIsLoading(false)
       abortControllerRef.current = null
     }
-  }, [isLoading, messages, currentConversationId, options.userId, createNewConversation, saveMessage])
+  }, [isLoading, messages, currentConversationId, options.userId, options.enterprise, createNewConversation, saveMessage])
 
   // 重新生成回答
   const regenerateMessage = useCallback(async (messageId: string) => {
@@ -326,8 +326,6 @@ export function useChatWithHistory(options: UseChatWithHistoryOptions = {}) {
     }
 
     if (userMessageIndex < 0) return
-
-    const userContent = messages[userMessageIndex].content
 
     // 移除当前的 AI 回复
     setMessages((prev) => prev.filter((m) => m.id !== messageId))
@@ -402,7 +400,7 @@ export function useChatWithHistory(options: UseChatWithHistoryOptions = {}) {
       setIsLoading(false)
       abortControllerRef.current = null
     }
-  }, [messages, currentConversationId, options.userId, saveMessage])
+  }, [messages, currentConversationId, options.userId, options.enterprise, saveMessage])
 
   // 清空当前对话
   const clearMessages = useCallback(() => {

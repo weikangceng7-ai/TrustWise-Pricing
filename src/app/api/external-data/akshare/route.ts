@@ -65,7 +65,6 @@ export async function GET(request: Request) {
 async function fetchRealtimeExchangeRate() {
   try {
     // 计算需要的日期
-    const today = new Date()
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - 1)
     const thirtyDaysAgo = new Date()

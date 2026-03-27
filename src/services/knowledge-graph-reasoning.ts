@@ -149,7 +149,7 @@ export async function getFactorWithRelations(factorId: string): Promise<FactorIn
 /**
  * 获取供应链路径 - 从企业出发的影响链
  */
-export async function getSupplyChainPaths(enterpriseCode: string, depth: number = 2): Promise<SupplyChainPath[]> {
+export async function getSupplyChainPaths(enterpriseCode: string): Promise<SupplyChainPath[]> {
   const connection = await checkNeo4jConnection()
   if (!connection.connected) return []
 
@@ -164,7 +164,6 @@ export async function getSupplyChainPaths(enterpriseCode: string, depth: number 
   const paths: SupplyChainPath[] = []
 
   for (const row of results) {
-    const factor1Id = row.factor1Id as string
     const factor1Name = row.factor1Name as string
     const factor1Weight = row.factor1Weight as number
     const factor1Trend = row.factor1Trend as string

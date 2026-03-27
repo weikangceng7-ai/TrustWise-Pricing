@@ -42,7 +42,7 @@ export async function GET() {
 
     // 模拟数据处理流水线统计
     // 实际项目中应该有专门的数据处理状态表
-    const processingStats = calculateProcessingStats(totalRawData, reportStats.count)
+    const processingStats = calculateProcessingStats(totalRawData)
 
     // 处理效率数据
     const efficiency = calculateEfficiency(processingStats)
@@ -149,7 +149,7 @@ interface ProcessingStat {
 /**
  * 计算数据处理统计
  */
-function calculateProcessingStats(rawCount: number, reportCount: number): ProcessingStat[] {
+function calculateProcessingStats(rawCount: number): ProcessingStat[] {
   // 基于实际数据量计算各阶段数据
   const baseCount = Math.max(rawCount, 100) // 最小基数
 
@@ -237,7 +237,7 @@ function generateTimeline() {
  * 获取模拟统计数据（数据库不可用时使用）
  */
 function getMockStatsData() {
-  const processingStats = calculateProcessingStats(100, 0)
+  const processingStats = calculateProcessingStats(100)
   const efficiency = calculateEfficiency(processingStats)
   const metrics = calculateMetrics(processingStats)
 

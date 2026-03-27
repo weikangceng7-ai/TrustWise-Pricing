@@ -6,7 +6,6 @@ import {
   FACTOR_RELATIONS,
   calculateEnterpriseFactorWeights,
   getEnterpriseNameByCode,
-  type EnterpriseFactorWeight,
 } from "./enterprise-knowledge-config"
 
 // 企业价格知识图谱服务

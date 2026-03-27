@@ -29,8 +29,8 @@ export async function withRBAC(
     }
 
     return handler()
-  } catch (error) {
-    console.error("[RBAC] 权限检查失败:", error)
+  } catch {
+    console.error("[RBAC] 权限检查失败")
     return NextResponse.json({ error: "认证失败" }, { status: 401 })
   }
 }
@@ -87,7 +87,7 @@ export async function requireAuth(
     }
 
     return { success: true, userId: session.user.id }
-  } catch (error) {
+  } catch {
     return {
       success: false,
       response: NextResponse.json({ error: "认证失败" }, { status: 401 }),
@@ -124,7 +124,7 @@ export async function requireRole(
     }
 
     return { success: true, userId: authResult.userId }
-  } catch (error) {
+  } catch {
     return {
       success: false,
       response: NextResponse.json({ error: "权限检查失败" }, { status: 500 }),
