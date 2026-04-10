@@ -14,11 +14,8 @@ import {
   User,
   Sparkles,
   Loader2,
-<<<<<<< HEAD
   ChevronRight,
   GripVertical,
-=======
->>>>>>> 97339d10cee613b9766a68e9c808d3973ce4cba8
 } from "lucide-react"
 import { useChatContext } from "@/contexts/chat-context"
 import ReactMarkdown from "react-markdown"
@@ -74,16 +71,23 @@ export function FloatingChat() {
 
   const [inputValue, setInputValue] = useState("")
   const [isMinimized, setIsMinimized] = useState(false)
-  const [position, setPosition] = useState({ x: window.innerWidth - 400, y: window.innerHeight - 560 })
+  const [position, setPosition] = useState(() => ({ x: 0, y: 0 }))
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
-  const [buttonPosition, setButtonPosition] = useState({ x: window.innerWidth - 80, y: window.innerHeight - 80 })
+  const [buttonPosition, setButtonPosition] = useState(() => ({ x: 0, y: 0 }))
   const [isButtonDragging, setIsButtonDragging] = useState(false)
   const [buttonDragOffset, setButtonDragOffset] = useState({ x: 0, y: 0 })
   const [hasDragged, setHasDragged] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const chatRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setMounted(true)
+    setPosition({ x: window.innerWidth - 400, y: window.innerHeight - 560 })
+    setButtonPosition({ x: window.innerWidth - 80, y: window.innerHeight - 80 })
+  }, [])
 
   // 浮动按钮拖动处理
   const handleButtonMouseDown = useCallback((e: React.MouseEvent) => {
@@ -193,6 +197,10 @@ export function FloatingChat() {
       e.preventDefault()
       handleSend()
     }
+  }
+
+  if (!mounted) {
+    return null
   }
 
   // 浮动按钮（未展开时）
