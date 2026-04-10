@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -15,6 +15,7 @@ import {
   Sparkles,
   Loader2,
   ChevronRight,
+  GripVertical,
 } from "lucide-react"
 import { useChatContext } from "@/contexts/chat-context"
 import ReactMarkdown from "react-markdown"
@@ -70,8 +71,90 @@ export function FloatingChat() {
 
   const [inputValue, setInputValue] = useState("")
   const [isMinimized, setIsMinimized] = useState(false)
+  const [position, setPosition] = useState({ x: window.innerWidth - 400, y: window.innerHeight - 560 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [buttonPosition, setButtonPosition] = useState({ x: window.innerWidth - 80, y: window.innerHeight - 80 })
+  const [isButtonDragging, setIsButtonDragging] = useState(false)
+  const [buttonDragOffset, setButtonDragOffset] = useState({ x: 0, y: 0 })
+  const [hasDragged, setHasDragged] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const chatRef = useRef<HTMLDivElement>(null)
+
+  // 浮动按钮拖动处理
+  const handleButtonMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsButtonDragging(true)
+    setHasDragged(false)
+    setButtonDragOffset({
+      x: e.clientX - buttonPosition.x,
+      y: e.clientY - buttonPosition.y
+    })
+  }, [buttonPosition])
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isButtonDragging) return
+      
+      setHasDragged(true)
+      const newX = Math.max(0, Math.min(window.innerWidth - 56, e.clientX - buttonDragOffset.x))
+      const newY = Math.max(0, Math.min(window.innerHeight - 56, e.clientY - buttonDragOffset.y))
+      
+      setButtonPosition({ x: newX, y: newY })
+    }
+
+    const handleMouseUp = () => {
+      setIsButtonDragging(false)
+    }
+
+    if (isButtonDragging) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isButtonDragging, buttonDragOffset])
+
+  // 聊天窗口拖动处理
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) {
+      return
+    }
+    setIsDragging(true)
+    setDragOffset({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    })
+  }, [position])
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return
+      
+      const newX = Math.max(0, Math.min(window.innerWidth - 384, e.clientX - dragOffset.x))
+      const newY = Math.max(0, Math.min(window.innerHeight - 100, e.clientY - dragOffset.y))
+      
+      setPosition({ x: newX, y: newY })
+    }
+
+    const handleMouseUp = () => {
+      setIsDragging(false)
+    }
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isDragging, dragOffset])
 
   // 自动滚动到底部
   useEffect(() => {
@@ -113,9 +196,18 @@ export function FloatingChat() {
   if (!isFloatingChatOpen) {
     return (
       <Button
-        onClick={() => setIsFloatingChatOpen(true)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white z-50"
+        className="fixed h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white z-50 cursor-grab active:cursor-grabbing select-none"
+        style={{
+          left: buttonPosition.x,
+          top: buttonPosition.y
+        }}
         size="icon"
+        onMouseDown={handleButtonMouseDown}
+        onClick={() => {
+          if (!hasDragged) {
+            setIsFloatingChatOpen(true)
+          }
+        }}
       >
         <MessageSquare className="h-6 w-6" />
         {hasUnreadMessage && (
@@ -160,10 +252,21 @@ export function FloatingChat() {
 
   // 展开的聊天窗口
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-96 h-[500px] flex flex-col bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-      {/* 头部 */}
-      <div className="flex items-center justify-between p-3 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-slate-800 dark:to-slate-800">
+    <div 
+      ref={chatRef}
+      className="fixed z-50 w-96 h-[500px] flex flex-col bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden"
+      style={{ 
+        left: position.x, 
+        top: position.y 
+      }}
+    >
+      {/* 头部 - 可拖动区域 */}
+      <div 
+        className="flex items-center justify-between p-3 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-slate-800 dark:to-slate-800 cursor-move select-none"
+        onMouseDown={handleMouseDown}
+      >
         <div className="flex items-center gap-2">
+          <GripVertical className="h-4 w-4 text-slate-400" />
           <Sparkles className="h-5 w-5 text-cyan-500" />
           <span className="font-semibold text-sm">硫磺采购助手</span>
           {isLoading && <Loader2 className="h-4 w-4 animate-spin text-cyan-500" />}
