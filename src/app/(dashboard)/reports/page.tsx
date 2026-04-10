@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState } from "react"
 import {
   Card,
   CardContent,
@@ -132,10 +132,6 @@ function ReportDetailDialog({
   onOpenChange: (open: boolean) => void
   onExport: (format: "word" | "pdf" | "excel") => void
 }) {
-  const currentTime = useMemo(() => {
-    return open ? new Date().toLocaleString('zh-CN') : ""
-  }, [open])
-
   if (!report) return null
 
   const TrendIcon = trendConfig[report.priceTrend || "稳定"]?.icon || Minus
@@ -328,7 +324,6 @@ export default function ReportsPage() {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
-  const lastUpdate = useMemo(() => new Date().toLocaleString('zh-CN'), [])
 
   const handleViewReport = (report: Report) => {
     setSelectedReport(report)

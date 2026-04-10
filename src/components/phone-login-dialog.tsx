@@ -32,7 +32,6 @@ export function PhoneLoginDialog({
   const [isLoading, setIsLoading] = useState(false)
   const [isSendingCode, setIsSendingCode] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [codeSent, setCodeSent] = useState(false)
   const [countdown, setCountdown] = useState(0)
 
   // 发送验证码
@@ -66,7 +65,6 @@ export function PhoneLoginDialog({
         return
       }
 
-      setCodeSent(true)
       setCountdown(60)
 
       // 倒计时

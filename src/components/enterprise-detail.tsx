@@ -8,12 +8,9 @@ import {
   Building2,
   TrendingUp,
   TrendingDown,
-  Package,
   Factory,
   Truck,
   Globe,
-  DollarSign,
-  BarChart3,
   Activity,
   Warehouse,
   Users,
@@ -28,7 +25,7 @@ import {
 } from "lucide-react"
 import { EnterprisePredictionChart } from "./enterprise-prediction-chart"
 import { Neo4jKnowledgeGraph } from "./neo4j-knowledge-graph"
-import { ENTERPRISE_CONFIGS, getEnterpriseNameByCode, getEnterpriseColorByCode, calculateEnterpriseFactorWeights } from "@/services/enterprise-knowledge-config"
+import { ENTERPRISE_CONFIGS, getEnterpriseNameByCode, calculateEnterpriseFactorWeights } from "@/services/enterprise-knowledge-config"
 import { InventoryVisualization } from "./inventory-visualization"
 
 // 类型定义
@@ -121,17 +118,45 @@ const CategoryConfig: Record<string, { icon: React.ReactNode; color: string; lab
   internal: { icon: <Factory className="h-3.5 w-3.5" />, color: "text-emerald-500", label: "内部" },
 }
 
+// 企业颜色
+const ENTERPRISE_COLORS: Record<string, string> = {
+  yihua: "#06b6d4",
+  luxi: "#8b5cf6",
+  jinzhengda: "#f59e0b",
+}
+
+// 默认企业数据（后备）- 从集中配置生成
+function getDefaultEnterpriseData(code: string): EnterpriseData | null {
+  const config = ENTERPRISE_CONFIGS.find(e => e.code === code)
+  if (!config) {
+    // 返回第一个企业作为默认
+    const firstConfig = ENTERPRISE_CONFIGS[0]
+    if (!firstConfig) return null
+    return getDefaultEnterpriseData(firstConfig.code)
+  }
+
+  const factorWeights = calculateEnterpriseFactorWeights(config)
+
+  return {
+    code: config.code,
+    name: config.name,
+    location: config.location,
+    province: config.province,
+    capacity: config.capacity,
+    transportMode: config.transportMode,
+    mainProducts: config.mainProducts,
+    customerRegions: config.customerRegions,
+    inventoryStrategy: config.inventoryStrategy,
+    description: config.description,
+    color: ENTERPRISE_COLORS[code] || "#06b6d4",
+    factorWeights,
+  }
+}
+
 export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
   const [enterprise, setEnterprise] = useState<EnterpriseData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  // 企业颜色
-  const enterpriseColors: Record<string, string> = {
-    yihua: "#06b6d4",
-    luxi: "#8b5cf6",
-    jinzhengda: "#f59e0b",
-  }
 
   useEffect(() => {
     async function fetchEnterpriseData() {
@@ -182,7 +207,7 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
           customerRegions: enterpriseNode?.properties?.customerRegions || [],
           inventoryStrategy: enterpriseNode?.properties?.inventoryStrategy || "moderate",
           description: enterpriseNode?.properties?.description || "",
-          color: enterpriseColors[enterpriseCode],
+          color: ENTERPRISE_COLORS[enterpriseCode] || "#06b6d4",
           factorWeights,
         }
 
@@ -191,7 +216,10 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
         console.error("Failed to fetch enterprise data:", err)
         setError("无法加载企业数据，使用默认数据")
         // 使用默认数据
-        setEnterprise(getDefaultEnterpriseData(enterpriseCode))
+        const defaultData = getDefaultEnterpriseData(enterpriseCode)
+        if (defaultData) {
+          setEnterprise(defaultData)
+        }
       } finally {
         setLoading(false)
       }
@@ -199,50 +227,6 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
 
     fetchEnterpriseData()
   }, [enterpriseCode])
-
-  // 默认企业数据（后备）- 从集中配置生成
-  function getDefaultEnterpriseData(code: string): EnterpriseData {
-    const config = ENTERPRISE_CONFIGS.find(e => e.code === code)
-    if (!config) {
-      // 返回第一个企业作为默认
-      return getDefaultEnterpriseData(ENTERPRISE_CONFIGS[0].code)
-    }
-
-    const factorWeights = calculateEnterpriseFactorWeights(config)
-
-    return {
-      code: config.code,
-      name: config.name,
-      location: config.location,
-      province: config.province,
-      capacity: config.capacity,
-      transportMode: config.transportMode,
-      mainProducts: config.mainProducts,
-      customerRegions: config.customerRegions,
-      inventoryStrategy: config.inventoryStrategy,
-      description: config.description,
-      color: getEnterpriseColorByCode(config.code),
-      factorWeights: factorWeights.map(f => ({
-        factorId: f.factorId,
-        factorName: f.factorName,
-        category: f.category,
-        weight: f.weight,
-        trend: f.trend,
-        reason: f.reason,
-      })),
-      inventory: {
-        currentStock: config.inventory.currentStock,
-        maxCapacity: config.inventory.maxCapacity,
-        safetyDays: config.inventory.safetyDays,
-        avgConsumption: config.inventory.avgConsumption,
-        turnoverRate: config.inventory.turnoverRate,
-        lastPurchaseDate: config.inventory.lastPurchaseDate,
-        nextPurchaseDate: config.inventory.nextPurchaseDate,
-        supplierCount: config.inventory.supplierCount,
-        portDistance: config.inventory.portDistance,
-      },
-    }
-  }
 
   function getEnterpriseName(code: string): string {
     return getEnterpriseNameByCode(code)

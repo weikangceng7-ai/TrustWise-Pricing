@@ -1,7 +1,7 @@
 import { db } from "@/db"
 import { notifications } from "@/db/schema"
 import { eq, desc, and, sql } from "drizzle-orm"
-import type { Notification, NewNotification } from "@/db/schema"
+import type { Notification } from "@/db/schema"
 
 export type NotificationType =
   | "price_alert"

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { db, enterprisePricePredictions } from "@/db"
-import { desc, sql } from "drizzle-orm"
 import { ENTERPRISE_CONFIGS } from "@/services/enterprise-knowledge-config"
 
 // 安全检查：仅在开发环境或提供正确密钥时允许访问

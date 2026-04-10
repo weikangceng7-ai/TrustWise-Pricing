@@ -1,4 +1,4 @@
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } from "docx"
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from "docx"
 import { saveAs } from "file-saver"
 import { generateKnowledgeGraphContext, formatGraphContextAsText } from "@/services/knowledge-graph-reasoning"
 
@@ -10,7 +10,6 @@ export interface ReportMessage {
 
 export interface ReportOptions {
   title?: string
-  enterpriseCode?: string
   includeKnowledgeGraph?: boolean
 }
 
@@ -18,7 +17,7 @@ export async function generateChatReport(
   messages: ReportMessage[],
   options: ReportOptions = {}
 ): Promise<string> {
-  const { title = "硫磺采购决策报告", enterpriseCode, includeKnowledgeGraph = true } = options
+  const { title = "硫磺采购决策报告", includeKnowledgeGraph = true } = options
   const now = new Date()
   const dateStr = now.toLocaleString("zh-CN")
 

@@ -2,7 +2,6 @@ import { NextResponse } from "next/server"
 import {
   ENTERPRISE_CODES,
   getEnterpriseNameByCode,
-  type EnterpriseCode,
 } from "@/services/enterprise-knowledge-config"
 
 interface PredictionRecord {

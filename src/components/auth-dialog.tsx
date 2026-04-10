@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, Eye, EyeOff, Check, X, ArrowLeft, Mail, Shield } from "lucide-react"
+import { Loader2, Eye, EyeOff, Check, X, ArrowLeft, Shield } from "lucide-react"
 import { signIn, signUp } from "@/lib/auth-client"
 
 type AuthMode = "login" | "register" | "register-verify" | "forgot-password" | "forgot-verify"

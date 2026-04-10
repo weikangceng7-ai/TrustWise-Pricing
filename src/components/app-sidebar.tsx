@@ -110,7 +110,6 @@ const enterpriseItems = ENTERPRISE_CONFIGS.map((enterprise) => ({
 export function AppSidebar() {
   const pathname = usePathname()
   const [enterprisesOpen, setEnterprisesOpen] = useState(true)
-  const isEnterpriseActive = pathname.startsWith("/enterprise/")
 
   return (
     <Sidebar collapsible="icon">

@@ -4,7 +4,7 @@ import { useMemo, useState, useRef, useLayoutEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Network, TrendingUp, Database, Building2, FileText, Lightbulb, DollarSign, BarChart3, Newspaper, RefreshCw, ArrowUpRight, ArrowDownRight, Minus, Clock } from "lucide-react"
+import { Network, TrendingUp, Building2, FileText, Lightbulb, DollarSign, BarChart3, Newspaper, RefreshCw, ArrowUpRight, ArrowDownRight, Minus, Clock } from "lucide-react"
 import { useMarketDataOverview } from "@/hooks/use-external-data"
 import { formatDistanceToNow } from "date-fns"
 import { zhCN } from "date-fns/locale"
@@ -1334,7 +1334,7 @@ function NodeRealtimeDataSection({
 
   // 静态信息类型 - 显示节点相关的详细分析信息
   if (config.dataType === 'static') {
-    const staticInfo = getStaticNodeInfo(nodeId, liveWeights, marketData)
+    const staticInfo = getStaticNodeInfo(nodeId, liveWeights)
     return (
       <div className="pt-3 border-t space-y-2">
         <div className="text-xs text-muted-foreground">{config.title}</div>
@@ -1356,8 +1356,7 @@ function NodeRealtimeDataSection({
 // 获取静态节点的详细信息
 function getStaticNodeInfo(
   nodeId: string,
-  weights: typeof KNOWLEDGE_DATA.factorWeights,
-  marketData: ReturnType<typeof useMarketDataOverview>
+  weights: typeof KNOWLEDGE_DATA.factorWeights
 ): { label: string; value: string; highlight?: boolean }[] {
   switch (nodeId) {
     case 'supply-factor':

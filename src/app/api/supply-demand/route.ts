@@ -19,7 +19,8 @@ export async function GET() {
       oilSummary.previousPrice
     )
 
-    const currentPrice = correlation.sulfurPrice
+    // 根据原油价格估算硫磺价格 (原油价格 * 汇率 * 系数)
+    const currentPrice = Math.round(oilSummary.currentPrice * 7.2 * 1.2)
     const changePercent = oilSummary.changePercent
 
     const baseInventory = 12.5

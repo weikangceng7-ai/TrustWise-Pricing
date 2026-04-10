@@ -290,6 +290,7 @@ const MessageBubble = memo(function MessageBubble({
                 <div className="flex flex-wrap gap-2 mb-2">
                   {message.images.map((img, index) => (
                     <div key={index} className="relative group">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={img}
                         alt={`上传图片 ${index + 1}`}
@@ -825,6 +826,7 @@ export default function AgentChatPage() {
                 <div className="flex flex-wrap gap-2 mb-3">
                   {uploadedImages.map((img, index) => (
                     <div key={index} className="relative group">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={img}
                         alt={`预览图片 ${index + 1}`}

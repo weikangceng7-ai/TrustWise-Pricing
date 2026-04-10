@@ -4,7 +4,7 @@ import { sendEmailVerificationCode } from "@/lib/services/email"
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, action = "verify" } = body
+    const { email } = body
 
     // 验证邮箱
     if (!email) {

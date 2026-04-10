@@ -361,8 +361,6 @@ export function ChatProvider({ children, userId }: ChatProviderProps) {
 
     if (userMessageIndex < 0) return
 
-    const userContent = messages[userMessageIndex].content
-
     setMessages((prev) => prev.filter((m) => m.id !== messageId))
 
     const agentMessageId = generateId()

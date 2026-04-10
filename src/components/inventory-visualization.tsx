@@ -1,19 +1,13 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import {
   Warehouse,
   TrendingUp,
-  TrendingDown,
   Activity,
   Package,
-  Truck,
   Calendar,
-  Users,
-  MapPin,
-  Clock,
   AlertTriangle,
   CheckCircle,
   Info

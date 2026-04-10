@@ -1,6 +1,4 @@
-import { db } from "@/db"
-import { purchaseReports, type PurchaseReport, type NewPurchaseReport } from "@/db/schema"
-import { desc, eq, and, gte, lte, or, like, sql, count } from "drizzle-orm"
+import { type PurchaseReport, type NewPurchaseReport } from "@/db/schema"
 
 export type ReportType = "weekly" | "monthly" | "supplier" | "inventory" | "special"
 export type PriceTrend = "上涨" | "下跌" | "稳定" | "震荡" | "小幅上涨" | "小幅下跌"

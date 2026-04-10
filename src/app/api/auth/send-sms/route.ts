@@ -8,7 +8,7 @@ import {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { phone, action = "login" } = body
+    const { phone } = body
 
     // 验证手机号
     if (!phone) {
