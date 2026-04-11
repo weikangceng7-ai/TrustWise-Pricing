@@ -11,8 +11,10 @@ import {
   ChevronRight,
   Building2,
   ChevronDown,
+  Settings,
+  Plus,
 } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ENTERPRISE_CONFIGS } from "@/services/enterprise-knowledge-config"
 
 import {
@@ -28,6 +30,14 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
+
+interface DynamicEnterprise {
+  id: number
+  code: string
+  name: string
+  tailwindColor: string
+  shortDescription: string | null
+}
 
 // 颜色样式映射 - 解决 Tailwind JIT 无法检测动态类名的问题
 const COLOR_STYLES: Record<string, {
@@ -65,6 +75,20 @@ const COLOR_STYLES: Record<string, {
     text: "text-emerald-400",
     glow: "bg-emerald-400/30",
   },
+  rose: {
+    bg: "bg-rose-500/10",
+    border: "border-rose-500/30",
+    shadow: "shadow-rose-500/10",
+    text: "text-rose-400",
+    glow: "bg-rose-400/30",
+  },
+  blue: {
+    bg: "bg-blue-500/10",
+    border: "border-blue-500/30",
+    shadow: "shadow-blue-500/10",
+    text: "text-blue-400",
+    glow: "bg-blue-400/30",
+  },
 }
 
 const navItems = [
@@ -99,7 +123,7 @@ const navItems = [
 ]
 
 // 企业导航配置（从集中配置生成）
-const enterpriseItems = ENTERPRISE_CONFIGS.map((enterprise) => ({
+const staticEnterpriseItems = ENTERPRISE_CONFIGS.map((enterprise) => ({
   title: enterprise.name,
   url: `/enterprise/${enterprise.code}`,
   code: enterprise.code,
@@ -110,6 +134,38 @@ const enterpriseItems = ENTERPRISE_CONFIGS.map((enterprise) => ({
 export function AppSidebar() {
   const pathname = usePathname()
   const [enterprisesOpen, setEnterprisesOpen] = useState(true)
+  const [dynamicEnterprises, setDynamicEnterprises] = useState<DynamicEnterprise[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchEnterprises = async () => {
+      try {
+        const res = await fetch('/api/enterprises/manage')
+        const data = await res.json()
+        if (data.enterprises) {
+          setDynamicEnterprises(data.enterprises)
+        }
+      } catch (error) {
+        console.error('获取企业列表失败:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchEnterprises()
+  }, [])
+
+  const allEnterpriseItems = [
+    ...staticEnterpriseItems,
+    ...dynamicEnterprises
+      .filter(e => !staticEnterpriseItems.find(s => s.code === e.code))
+      .map((enterprise) => ({
+        title: enterprise.name,
+        url: `/enterprise/${enterprise.code}`,
+        code: enterprise.code,
+        description: enterprise.shortDescription || '',
+        color: enterprise.tailwindColor || 'cyan',
+      })),
+  ]
 
   return (
     <Sidebar collapsible="icon">
@@ -225,9 +281,9 @@ export function AppSidebar() {
           {enterprisesOpen && (
             <SidebarGroupContent>
               <SidebarMenu>
-                {enterpriseItems.map((item) => {
+                {allEnterpriseItems.map((item) => {
                   const isActive = pathname === item.url
-                  const styles = COLOR_STYLES[item.color]
+                  const styles = COLOR_STYLES[item.color] || COLOR_STYLES.cyan
                   return (
                     <SidebarMenuItem key={item.code}>
                       <SidebarMenuButton
@@ -254,6 +310,19 @@ export function AppSidebar() {
                     </SidebarMenuItem>
                   )
                 })}
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    render={<Link href="/enterprise-manage" />}
+                    isActive={pathname === "/enterprise-manage"}
+                    tooltip="添加或导入新企业"
+                    className="group relative transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 border-transparent"
+                  >
+                    <div className="relative">
+                      <Plus className="relative size-4.5 text-slate-500 dark:text-slate-400 group-hover:text-cyan-500 transition-colors" />
+                    </div>
+                    <span className="font-medium text-slate-500 dark:text-slate-400 group-hover:text-cyan-500 transition-colors">管理企业</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           )}

@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, date, decimal, timestamp, text, boolean, jsonb, uniqueIndex } from "drizzle-orm/pg-core"
+import { pgTable, serial, varchar, date, decimal, timestamp, text, boolean, jsonb, uniqueIndex, integer } from "drizzle-orm/pg-core"
 
 // Better Auth 用户表 - 必须导出为 user
 export const user = pgTable("user", {
@@ -189,6 +189,42 @@ export const enterprisePricePredictions = pgTable("enterprise_price_predictions"
   createdAt: timestamp("created_at").defaultNow(),
 })
 
+// 企业信息表
+export const enterprises = pgTable("enterprises", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 50 }).notNull().unique(), // 企业代码
+  name: varchar("name", { length: 100 }).notNull(), // 企业名称
+  location: varchar("location", { length: 100 }), // 所在地区
+  province: varchar("province", { length: 50 }), // 省份
+  capacity: decimal("capacity", { precision: 10, scale: 2 }), // 产能（万吨/年）
+  transportMode: varchar("transport_mode", { length: 20 }), // 运输方式: water/rail/road
+  mainProducts: jsonb("main_products").$type<string[]>().default([]), // 主要产品
+  customerRegions: jsonb("customer_regions").$type<string[]>().default([]), // 客户区域
+  inventoryStrategy: varchar("inventory_strategy", { length: 20 }).default("moderate"), // 库存策略: aggressive/moderate/conservative
+  description: text("description"), // 企业描述
+  tailwindColor: varchar("tailwind_color", { length: 20 }).default("cyan"), // UI 颜色
+  shortDescription: varchar("short_description", { length: 200 }), // 简短描述
+  // 价格预测配置
+  basePrice: decimal("base_price", { precision: 10, scale: 2 }), // 基准价格
+  volatility: decimal("volatility", { precision: 10, scale: 2 }), // 波动幅度
+  trend: decimal("trend", { precision: 5, scale: 2 }), // 趋势
+  modelAccuracy: decimal("model_accuracy", { precision: 5, scale: 2 }), // 模型准确率
+  // 库存信息
+  currentStock: decimal("current_stock", { precision: 10, scale: 2 }), // 当前库存（吨）
+  maxCapacity: decimal("max_capacity", { precision: 10, scale: 2 }), // 最大仓储能力（吨）
+  safetyDays: integer("safety_days"), // 安全库存天数
+  avgConsumption: decimal("avg_consumption", { precision: 10, scale: 2 }), // 日均消耗量（吨/天）
+  turnoverRate: integer("turnover_rate"), // 年周转次数
+  lastPurchaseDate: date("last_purchase_date"), // 上次采购日期
+  nextPurchaseDate: date("next_purchase_date"), // 预计下次采购日期
+  supplierCount: integer("supplier_count"), // 供应商数量
+  portDistance: integer("port_distance"), // 距离最近港口距离（公里）
+  // 状态
+  isActive: boolean("is_active").notNull().default(true), // 是否启用
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
 // 类型导出
 export type SulfurPrice = typeof sulfurPrices.$inferSelect
 export type NewSulfurPrice = typeof sulfurPrices.$inferInsert
@@ -208,3 +244,5 @@ export type Notification = typeof notifications.$inferSelect
 export type NewNotification = typeof notifications.$inferInsert
 export type EnterprisePricePrediction = typeof enterprisePricePredictions.$inferSelect
 export type NewEnterprisePricePrediction = typeof enterprisePricePredictions.$inferInsert
+export type Enterprise = typeof enterprises.$inferSelect
+export type NewEnterprise = typeof enterprises.$inferInsert
