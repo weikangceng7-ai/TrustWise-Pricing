@@ -275,7 +275,7 @@ export function AppSidebar() {
             onClick={() => setEnterprisesOpen(!enterprisesOpen)}
             className="w-full flex items-center justify-between px-2 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-wide uppercase hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
           >
-            <span>企业价格分析</span>
+            <span>定制化企业服务</span>
             <ChevronDown className={`size-3.5 transition-transform duration-200 ${enterprisesOpen ? 'rotate-0' : '-rotate-90'}`} />
           </button>
           {enterprisesOpen && (
