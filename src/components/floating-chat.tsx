@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   MessageSquare,
   Send,
@@ -303,7 +302,10 @@ export function FloatingChat() {
       </div>
 
       {/* 消息区域 */}
-      <ScrollArea className="flex-1 p-3" ref={scrollRef}>
+      <div 
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto p-3 min-h-0"
+      >
         <div className="space-y-3">
           {messages.map((message) => (
             <div
@@ -358,7 +360,7 @@ export function FloatingChat() {
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* 输入区域 */}
       <div className="p-3 border-t border-slate-200 dark:border-slate-700">
