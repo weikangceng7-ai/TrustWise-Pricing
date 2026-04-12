@@ -1,0 +1,33 @@
+:root {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-card: rgba(30, 41, 59, 0.8);
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  
+  --border-color: rgba(148, 163, 184, 0.1);
+  
+  --cyan: #06b6d4;
+  --cyan-light: rgba(6, 182, 212, 0.15);
+  --violet: #8b5cf6;
+  --violet-light: rgba(139, 92, 246, 0.15);
+  --amber: #f59e0b;
+  --amber-light: rgba(245, 158, 11, 0.15);
+  --emerald: #10b981;
+  --emerald-light: rgba(16, 185, 129, 0.15);
+  --rose: #f43f5e;
+  --rose-light: rgba(244, 63, 94, 0.15);
+  --blue: #3b82f6;
+  --blue-light: rgba(59, 130, 246, 0.15);
+  
+  --radius-sm: 12rpx;
+  --radius-md: 24rpx;
+  --radius-lg: 32rpx;
+  --radius-full: 9999rpx;
+  
+  --shadow-sm: 0 4rpx 16rpx rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 8rpx 32rpx rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 16rpx 48rpx rgba(0, 0, 0, 0.4);
+}
