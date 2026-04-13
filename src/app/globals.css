@@ -151,3 +151,392 @@ body::before {
 .dark::before {
   background: rgba(20, 20, 20, 0.88);
 }
+
+/* 首页动画效果 */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.5;
+  }
+  25% {
+    transform: translateY(-20px) translateX(10px);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translateY(-10px) translateX(-5px);
+    opacity: 0.6;
+  }
+  75% {
+    transform: translateY(-30px) translateX(5px);
+    opacity: 0.9;
+  }
+}
+
+@keyframes float-delayed {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.4;
+  }
+  33% {
+    transform: translateY(-15px) translateX(-10px);
+    opacity: 0.7;
+  }
+  66% {
+    transform: translateY(-25px) translateX(8px);
+    opacity: 0.5;
+  }
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-40px);
+    opacity: 0.6;
+  }
+}
+
+.animate-float {
+  animation: float 8s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float-delayed 10s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+.animate-float-slow {
+  animation: float-slow 12s ease-in-out infinite;
+  animation-delay: 4s;
+}
+
+/* 渐变文字动画 */
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+/* 缓慢弹跳动画 */
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 2s ease-in-out infinite;
+}
+
+/* 滑入动画 */
+@keyframes slide-in-from-top {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-from-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-in {
+  animation-duration: 0.5s;
+  animation-fill-mode: both;
+}
+
+.slide-in-from-top {
+  animation-name: slide-in-from-top;
+}
+
+.slide-in-from-bottom {
+  animation-name: slide-in-from-bottom;
+}
+
+.slide-in-from-left {
+  animation-name: slide-in-from-left;
+}
+
+.slide-in-from-right {
+  animation-name: slide-in-from-right;
+}
+
+/* 淡入缩放动画 */
+@keyframes fade-in-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in-scale {
+  animation: fade-in-scale 0.5s ease-out forwards;
+}
+
+/* 脉冲发光动画 */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(6, 182, 212, 0.6);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* 旋转进入动画 */
+@keyframes rotate-in {
+  from {
+    opacity: 0;
+    transform: rotate(-10deg) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+.animate-rotate-in {
+  animation: rotate-in 0.6s ease-out forwards;
+}
+
+/* 粒子动画 - 浮动效果 (更明显) */
+@keyframes particle-float-1 {
+  0%, 100% {
+    transform: translate(5%, 10%) scale(1);
+    opacity: 0.6;
+  }
+  25% {
+    transform: translate(25%, 40%) scale(1.8);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(15%, 60%) scale(1.2);
+    opacity: 0.8;
+  }
+  75% {
+    transform: translate(35%, 50%) scale(1.5);
+    opacity: 0.9;
+  }
+}
+
+@keyframes particle-float-2 {
+  0%, 100% {
+    transform: translate(85%, 15%) scale(1);
+    opacity: 0.7;
+  }
+  33% {
+    transform: translate(65%, 45%) scale(2);
+    opacity: 1;
+  }
+  66% {
+    transform: translate(90%, 70%) scale(1.3);
+    opacity: 0.85;
+  }
+}
+
+@keyframes particle-float-3 {
+  0%, 100% {
+    transform: translate(20%, 80%) scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translate(40%, 50%) scale(2.5);
+    opacity: 1;
+  }
+}
+
+@keyframes particle-float-4 {
+  0%, 100% {
+    transform: translate(70%, 85%) scale(1);
+    opacity: 0.55;
+  }
+  25% {
+    transform: translate(50%, 60%) scale(1.8);
+    opacity: 0.95;
+  }
+  75% {
+    transform: translate(80%, 65%) scale(1.4);
+    opacity: 0.75;
+  }
+}
+
+@keyframes particle-float-5 {
+  0%, 100% {
+    transform: translate(40%, 20%) scale(1);
+    opacity: 0.7;
+  }
+  33% {
+    transform: translate(55%, 50%) scale(1.6);
+    opacity: 1;
+  }
+  66% {
+    transform: translate(30%, 65%) scale(1.8);
+    opacity: 0.85;
+  }
+}
+
+@keyframes particle-float-6 {
+  0%, 100% {
+    transform: translate(55%, 5%) scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate(65%, 30%) scale(2.5);
+    opacity: 1;
+  }
+}
+
+@keyframes particle-float-7 {
+  0%, 100% {
+    transform: translate(90%, 40%) scale(1);
+    opacity: 0.75;
+  }
+  50% {
+    transform: translate(80%, 70%) scale(2);
+    opacity: 1;
+  }
+}
+
+@keyframes particle-float-8 {
+  0%, 100% {
+    transform: translate(15%, 55%) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translate(35%, 35%) scale(2.2);
+    opacity: 0.95;
+  }
+}
+
+.animate-particle-1 {
+  animation: particle-float-1 10s ease-in-out infinite;
+}
+
+.animate-particle-2 {
+  animation: particle-float-2 12s ease-in-out infinite;
+}
+
+.animate-particle-3 {
+  animation: particle-float-3 14s ease-in-out infinite;
+}
+
+.animate-particle-4 {
+  animation: particle-float-4 11s ease-in-out infinite;
+}
+
+.animate-particle-5 {
+  animation: particle-float-5 9s ease-in-out infinite;
+}
+
+.animate-particle-6 {
+  animation: particle-float-6 8s ease-in-out infinite;
+}
+
+.animate-particle-7 {
+  animation: particle-float-7 13s ease-in-out infinite;
+}
+
+.animate-particle-8 {
+  animation: particle-float-8 15s ease-in-out infinite;
+}
+
+/* 流星动画 (更明显) */
+@keyframes meteor-shoot-1 {
+  0% {
+    transform: translate(-200px, -100px) rotate(-45deg);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  25% {
+    transform: translate(400px, 200px) rotate(-45deg);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(800px, 400px) rotate(-45deg);
+    opacity: 0;
+  }
+}
+
+@keyframes meteor-shoot-2 {
+  0% {
+    transform: translate(-300px, 50px) rotate(-40deg);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  28% {
+    transform: translate(350px, 250px) rotate(-40deg);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(700px, 500px) rotate(-40deg);
+    opacity: 0;
+  }
+}
+
+.animate-meteor-1 {
+  animation: meteor-shoot-1 5s ease-out infinite;
+  animation-delay: 1s;
+}
+
+.animate-meteor-2 {
+  animation: meteor-shoot-2 6s ease-out infinite;
+  animation-delay: 3s;
+}

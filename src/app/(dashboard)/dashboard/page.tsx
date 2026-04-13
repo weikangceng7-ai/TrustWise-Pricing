@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { TrendingUp, Package, DollarSign, BarChart3, AlertTriangle, ChevronRight, MessageCircle, FileText, Settings, ArrowRight, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
+import { TrendingUp, Package, DollarSign, BarChart3, AlertTriangle, ChevronRight, MessageCircle, FileText, Settings, ArrowRight, ChevronLeft, ChevronRight as ChevronRightIcon, ArrowUpRight, ArrowDownRight, Activity, Zap, Target, Layers, Grid3X3 } from "lucide-react"
 import { PriceChart, TimeRange } from "@/components/price-chart"
 import { EnterprisePredictionOverview } from "@/components/enterprise-prediction-chart"
 import { SupplyDemandAnalysis } from "@/components/supply-demand-analysis"
@@ -163,7 +163,18 @@ function ReportCarousel() {
 
 export default function DashboardPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>("week")
+  const [currentPageIndex, setCurrentPageIndex] = useState(0) // 底部导航栏当前页面索引
   const bgImage = getBackgroundImage("dashboardBackground")
+
+  // 定义不同页面的内容
+  const pages = [
+    // 页面 0: 首页 - 默认仪表盘内容
+    "首页内容",
+    // 页面 1: 图谱 - 知识图谱页面
+    "图谱内容",
+    // 页面 2: 数据 - 数据分析页面
+    "数据内容",
+  ]
 
   return (
     <div className="min-h-screen relative overflow-hidden pb-24 bg-slate-50 dark:bg-[#0a0a1a]">
@@ -202,6 +213,102 @@ export default function DashboardPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">价格知识图谱</h1>
           <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">硫磺市场价格分析与知识关系可视化</p>
+        </div>
+
+        {/* High Level 概览 */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          {/* 当前均价 */}
+          <div className="bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-500/10 dark:to-blue-500/10 backdrop-blur-sm rounded-xl p-4 border border-cyan-200/50 dark:border-cyan-500/20 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-slate-500 dark:text-slate-400">当前均价</span>
+              <div className="w-8 h-8 rounded-lg bg-cyan-100 dark:bg-cyan-500/20 flex items-center justify-center">
+                <DollarSign className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-slate-900 dark:text-white">¥1,850</span>
+              <span className="text-xs text-cyan-600 dark:text-cyan-400">/吨</span>
+            </div>
+            <div className="flex items-center gap-1 mt-2">
+              <ArrowUpRight className="h-3 w-3 text-emerald-500" />
+              <span className="text-xs text-emerald-600 dark:text-emerald-400">+3.2%</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500">较上周</span>
+            </div>
+          </div>
+
+          {/* 月度趋势 */}
+          <div className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-500/10 dark:to-purple-500/10 backdrop-blur-sm rounded-xl p-4 border border-violet-200/50 dark:border-violet-500/20 hover:shadow-lg hover:shadow-violet-500/10 transition-all duration-300">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-slate-500 dark:text-slate-400">月度趋势</span>
+              <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center">
+                <TrendingUp className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-slate-900 dark:text-white">上涨</span>
+            </div>
+            <div className="flex items-center gap-1 mt-2">
+              <Activity className="h-3 w-3 text-violet-500" />
+              <span className="text-xs text-slate-500 dark:text-slate-400">连续 3 周上涨</span>
+            </div>
+          </div>
+
+          {/* 市场热度 */}
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10 backdrop-blur-sm rounded-xl p-4 border border-amber-200/50 dark:border-amber-500/20 hover:shadow-lg hover:shadow-amber-500/10 transition-all duration-300">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-slate-500 dark:text-slate-400">市场热度</span>
+              <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center">
+                <Zap className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-slate-900 dark:text-white">活跃</span>
+            </div>
+            <div className="flex items-center gap-1 mt-2">
+              <div className="flex -space-x-1">
+                <div className="w-4 h-4 rounded-full bg-amber-400 dark:bg-amber-500" />
+                <div className="w-4 h-4 rounded-full bg-orange-400 dark:bg-orange-500" />
+                <div className="w-4 h-4 rounded-full bg-red-400 dark:bg-red-500" />
+              </div>
+              <span className="text-xs text-slate-500 dark:text-slate-400">需求旺盛</span>
+            </div>
+          </div>
+
+          {/* 风险等级 */}
+          <div className="bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-500/10 dark:to-pink-500/10 backdrop-blur-sm rounded-xl p-4 border border-rose-200/50 dark:border-rose-500/20 hover:shadow-lg hover:shadow-rose-500/10 transition-all duration-300">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-slate-500 dark:text-slate-400">风险等级</span>
+              <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-500/20 flex items-center justify-center">
+                <AlertTriangle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-rose-600 dark:text-rose-400">中等</span>
+            </div>
+            <div className="flex items-center gap-1 mt-2">
+              <Target className="h-3 w-3 text-rose-500" />
+              <span className="text-xs text-slate-500 dark:text-slate-400">需关注运费变化</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 快速洞察 */}
+        <div className="bg-gradient-to-r from-slate-50 via-blue-50 to-slate-50 dark:from-slate-800/30 dark:via-blue-900/20 dark:to-slate-800/30 backdrop-blur-sm rounded-xl p-4 border border-slate-200 dark:border-white/10 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shrink-0">
+              <Layers className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-0.5">市场洞察</h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                近期硫磺价格受下游磷肥需求带动持续走强，建议关注港口库存变化及进口船期动态。预计短期内价格将维持高位震荡态势。
+              </p>
+            </div>
+            <Link href="/agent-chat" className="shrink-0 px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium flex items-center gap-1 transition-colors">
+              深入分析
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
         </div>
 
         {/* 采购报告轮播 */}
@@ -362,28 +469,98 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 底部浮动导航栏 */}
+      {/* 底部浮动导航栏 - 多页滑动设计 */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-[#0a0a1a]/95 backdrop-blur-xl border-t border-slate-200 dark:border-white/10 z-50">
         <div className="max-w-lg mx-auto px-4 py-3">
+          {/* 顶部滑动指示器 */}
+          <div className="flex items-center justify-center gap-1.5 mb-3">
+            <button
+              onClick={() => setCurrentPageIndex((prev) => (prev - 1 + pages.length) % pages.length)}
+              className="p-1 rounded-full bg-white/80 dark:bg-slate-800/80 shadow-sm hover:bg-white dark:hover:bg-slate-700 transition-colors"
+            >
+              <ChevronLeft className="h-3.5 w-3.5 text-slate-600 dark:text-slate-300" />
+            </button>
+            <div className="flex items-center gap-1.5">
+              {pages.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentPageIndex(idx)}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    currentPageIndex === idx
+                      ? "w-8 bg-cyan-500"
+                      : "w-2 bg-slate-300 dark:bg-slate-600"
+                  }`}
+                />
+              ))}
+            </div>
+            <button
+              onClick={() => setCurrentPageIndex((prev) => (prev + 1) % pages.length)}
+              className="p-1 rounded-full bg-white/80 dark:bg-slate-800/80 shadow-sm hover:bg-white dark:hover:bg-slate-700 transition-colors"
+            >
+              <ChevronRightIcon className="h-3.5 w-3.5 text-slate-600 dark:text-slate-300" />
+            </button>
+          </div>
+
+          {/* 底部导航图标 */}
           <div className="flex items-center justify-around">
-            <Link href="/dashboard" className="flex flex-col items-center gap-1 group">
-              <div className="p-2 rounded-xl bg-cyan-100 dark:bg-cyan-500/20 group-hover:bg-cyan-200 dark:group-hover:bg-cyan-500/30 transition-colors">
-                <BarChart3 className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+            <button
+              onClick={() => setCurrentPageIndex(0)}
+              className="flex flex-col items-center gap-1 group"
+            >
+              <div className={`p-2 rounded-xl transition-colors ${
+                currentPageIndex === 0
+                  ? "bg-cyan-100 dark:bg-cyan-500/20"
+                  : "group-hover:bg-slate-100 dark:group-hover:bg-white/10"
+              }`}>
+                <BarChart3 className={`h-5 w-5 transition-colors ${
+                  currentPageIndex === 0
+                    ? "text-cyan-600 dark:text-cyan-400"
+                    : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300"
+                }`} />
               </div>
-<span className="text-xs text-cyan-600 dark:text-cyan-400">首页</span>
-            </Link>
+              <span className={`text-xs transition-colors ${
+                currentPageIndex === 0
+                  ? "text-cyan-600 dark:text-cyan-400"
+                  : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300"
+              }`}>首页</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentPageIndex(1)}
+              className="flex flex-col items-center gap-1 group"
+            >
+              <div className={`p-2 rounded-xl transition-colors ${
+                currentPageIndex === 1
+                  ? "bg-violet-100 dark:bg-violet-500/20"
+                  : "group-hover:bg-slate-100 dark:group-hover:bg-white/10"
+              }`}>
+                <Grid3X3 className={`h-5 w-5 transition-colors ${
+                  currentPageIndex === 1
+                    ? "text-violet-600 dark:text-violet-400"
+                    : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300"
+                }`} />
+              </div>
+              <span className={`text-xs transition-colors ${
+                currentPageIndex === 1
+                  ? "text-violet-600 dark:text-violet-400"
+                  : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300"
+              }`}>图谱</span>
+            </button>
+
             <Link href="/agent-chat" className="flex flex-col items-center gap-1 group">
               <div className="p-2 rounded-xl group-hover:bg-slate-100 dark:group-hover:bg-white/10 transition-colors">
                 <MessageCircle className="h-5 w-5 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
               </div>
               <span className="text-xs text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">对话</span>
             </Link>
+
             <Link href="/reports" className="flex flex-col items-center gap-1 group">
               <div className="p-2 rounded-xl group-hover:bg-slate-100 dark:group-hover:bg-white/10 transition-colors">
                 <FileText className="h-5 w-5 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
               </div>
               <span className="text-xs text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">报告</span>
             </Link>
+
             <Link href="/settings" className="flex flex-col items-center gap-1 group">
               <div className="p-2 rounded-xl group-hover:bg-slate-100 dark:group-hover:bg-white/10 transition-colors">
                 <Settings className="h-5 w-5 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
