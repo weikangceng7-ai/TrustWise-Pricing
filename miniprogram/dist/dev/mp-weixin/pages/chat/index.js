@@ -1,6 +1,6 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
-const utils_api = require("../../utils/api.js");
+const BASE_URL = "http://localhost:3000";
 const _sfc_main = {
   __name: "index",
   setup(__props, { expose: __expose }) {
@@ -13,8 +13,10 @@ const _sfc_main = {
     const inputText = common_vendor.ref("");
     const isTyping = common_vendor.ref(false);
     const scrollTop = common_vendor.ref(0);
+    const scrollIntoView = common_vendor.ref("");
     const quickActions = ["最新价格走势", "库存分析", "采购建议", "市场预测", "供应商分析"];
     const send = async () => {
+      var _a, _b;
       const text = inputText.value.trim();
       if (!text || isTyping.value)
         return;
@@ -23,10 +25,56 @@ const _sfc_main = {
       scrollToBottom();
       isTyping.value = true;
       try {
-        const res = await utils_api.api.chat(messages.value.map((m) => ({ role: m.role, content: m.content })));
-        messages.value.push({ role: "assistant", content: res.message || res.content || "抱歉，我暂时无法回答这个问题。", timestamp: Date.now() });
+        const response = await new Promise((resolve, reject) => {
+          common_vendor.index.request({
+            url: BASE_URL + "/api/chat?stream=false",
+            method: "POST",
+            data: {
+              messages: messages.value.map((m) => ({ role: m.role, content: m.content }))
+            },
+            header: {
+              "Content-Type": "application/json"
+            },
+            timeout: 6e4,
+            success: (res) => {
+              var _a2;
+              if (res.statusCode === 200) {
+                resolve(res.data);
+              } else {
+                reject(new Error(((_a2 = res.data) == null ? void 0 : _a2.error) || "请求失败"));
+              }
+            },
+            fail: (err) => {
+              reject(new Error(err.errMsg || "网络请求失败"));
+            }
+          });
+        });
+        let replyContent = "";
+        if (typeof response === "string") {
+          replyContent = response;
+        } else if (response.message) {
+          replyContent = response.message;
+        } else if (response.content) {
+          replyContent = response.content;
+        } else if (response.choices && ((_b = (_a = response.choices[0]) == null ? void 0 : _a.message) == null ? void 0 : _b.content)) {
+          replyContent = response.choices[0].message.content;
+        } else if (response.error) {
+          replyContent = `抱歉，服务暂时不可用：${response.error}`;
+        } else {
+          replyContent = JSON.stringify(response);
+        }
+        messages.value.push({
+          role: "assistant",
+          content: replyContent,
+          timestamp: Date.now()
+        });
       } catch (e) {
-        messages.value.push({ role: "assistant", content: "网络连接失败，请稍后重试。", timestamp: Date.now() });
+        console.error("Chat error:", e);
+        messages.value.push({
+          role: "assistant",
+          content: `网络连接失败，请检查网络或稍后重试。错误：${e.message || "未知错误"}`,
+          timestamp: Date.now()
+        });
       } finally {
         isTyping.value = false;
         scrollToBottom();
@@ -36,18 +84,21 @@ const _sfc_main = {
       inputText.value = text;
       send();
     };
-    const scrollToBottom = () => common_vendor.nextTick$1(() => {
-      scrollTop.value = 99999;
-    });
+    const scrollToBottom = () => {
+      common_vendor.nextTick$1(() => {
+        scrollIntoView.value = "";
+        setTimeout(() => {
+          scrollIntoView.value = "msg-" + (messages.value.length - 1);
+        }, 50);
+      });
+    };
     const formatTime = (ts) => {
       if (!ts)
         return "";
       const d = new Date(ts);
       return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
     };
-    const __returned__ = { messages, inputText, isTyping, scrollTop, quickActions, send, sendQuick, scrollToBottom, formatTime, ref: common_vendor.ref, nextTick: common_vendor.nextTick$1, get api() {
-      return utils_api.api;
-    } };
+    const __returned__ = { BASE_URL, messages, inputText, isTyping, scrollTop, scrollIntoView, quickActions, send, sendQuick, scrollToBottom, formatTime, ref: common_vendor.ref, nextTick: common_vendor.nextTick$1 };
     Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
     return __returned__;
   }
@@ -63,24 +114,28 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
         d: msg.role === "user"
       }, msg.role === "user" ? {} : {}, {
         e: i,
-        f: common_vendor.n(msg.role)
+        f: "msg-" + i,
+        g: common_vendor.n(msg.role)
       });
     }),
     b: $setup.isTyping
   }, $setup.isTyping ? {} : {}, {
     c: $setup.scrollTop,
-    d: common_vendor.f($setup.quickActions, (a, i, i0) => {
+    d: $setup.scrollIntoView,
+    e: common_vendor.f($setup.quickActions, (a, i, i0) => {
       return {
         a: common_vendor.t(a),
         b: i,
         c: common_vendor.o(($event) => $setup.sendQuick(a), i)
       };
     }),
-    e: common_vendor.o($setup.send),
-    f: $setup.inputText,
-    g: common_vendor.o(($event) => $setup.inputText = $event.detail.value),
-    h: $setup.inputText.trim() ? 1 : "",
-    i: common_vendor.o($setup.send)
+    f: common_vendor.o($setup.send),
+    g: $setup.isTyping,
+    h: $setup.inputText,
+    i: common_vendor.o(($event) => $setup.inputText = $event.detail.value),
+    j: common_vendor.t($setup.isTyping ? "发送中" : "发送"),
+    k: $setup.inputText.trim() && !$setup.isTyping ? 1 : "",
+    l: common_vendor.o($setup.send)
   });
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render], ["__scopeId", "data-v-da04a0a0"], ["__file", "D:/trustwise/TrustWise-Pricing/miniprogram/src/pages/chat/index.vue"]]);

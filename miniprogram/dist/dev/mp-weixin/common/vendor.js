@@ -7629,3 +7629,4 @@ exports.onMounted = onMounted;
 exports.onShow = onShow;
 exports.ref = ref;
 exports.t = t;
+exports.watch = watch;

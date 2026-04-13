@@ -171,6 +171,9 @@ function formatInventoryData(inventory: Awaited<ReturnType<typeof getInventory>>
 
 export async function POST(req: Request) {
   try {
+    const url = new URL(req.url)
+    const streamMode = url.searchParams.get('stream') !== 'false'
+    
     const body = await req.json() as ChatRequest
     const { messages, enterprise } = body
 
@@ -275,6 +278,20 @@ export async function POST(req: Request) {
       { role: "system", content: systemPrompt },
       ...formattedMessages,
     ]
+
+    if (!streamMode) {
+      const completion = await openai.chat.completions.create({
+        model,
+        messages: messagesWithSystem,
+        stream: false,
+      })
+
+      const content = completion.choices[0]?.message?.content || "抱歉，我暂时无法回答这个问题。"
+
+      return new Response(JSON.stringify({ message: content }), {
+        headers: { "Content-Type": "application/json" },
+      })
+    }
 
     const stream = await openai.chat.completions.create({
       model,

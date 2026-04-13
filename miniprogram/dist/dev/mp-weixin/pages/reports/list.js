@@ -42,7 +42,7 @@ const _sfc_main = {
       const d = new Date(dateStr);
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     };
-    const viewReport = () => common_vendor.index.showToast({ title: "报告详情开发中", icon: "none" });
+    const viewReport = (item) => common_vendor.index.navigateTo({ url: `/pages/reports/detail?id=${item.id}` });
     common_vendor.onMounted(() => fetchData());
     const __returned__ = { reports, loading, typeIndex, selectedDate, typeOptions, onTypeChange, onDateChange, fetchData, getTypeText, getStatusText, formatDate, viewReport, ref: common_vendor.ref, onMounted: common_vendor.onMounted, get api() {
       return utils_api.api;
