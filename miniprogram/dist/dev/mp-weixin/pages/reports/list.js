@@ -12,22 +12,20 @@ const _sfc_main = {
     const typeOptions = ["全部类型", "周报", "月报", "季报", "年报", "专题报告"];
     const onTypeChange = (e) => {
       typeIndex.value = e.detail.value;
-      fetchReports();
+      fetchData();
     };
     const onDateChange = (e) => {
       selectedDate.value = e.detail.value;
-      fetchReports();
+      fetchData();
     };
-    const fetchReports = async () => {
+    const fetchData = async () => {
       loading.value = true;
       try {
         const params = {};
-        if (typeIndex.value > 0) {
+        if (typeIndex.value > 0)
           params.type = typeOptions[typeIndex.value];
-        }
-        if (selectedDate.value) {
+        if (selectedDate.value)
           params.date = selectedDate.value;
-        }
         const res = await utils_api.api.getReports(params);
         reports.value = res.reports || [];
       } catch (e) {
@@ -36,41 +34,17 @@ const _sfc_main = {
         loading.value = false;
       }
     };
-    const getTypeText = (type) => {
-      const types = {
-        weekly: "周报",
-        monthly: "月报",
-        quarterly: "季报",
-        yearly: "年报",
-        special: "专题"
-      };
-      return types[type] || type || "报告";
-    };
-    const getStatusText = (status) => {
-      const statuses = {
-        draft: "草稿",
-        pending: "待审核",
-        published: "已发布",
-        archived: "已归档"
-      };
-      return statuses[status] || status || "未知";
-    };
+    const getTypeText = (type) => ({ weekly: "周报", monthly: "月报", quarterly: "季报", yearly: "年报", special: "专题" })[type] || type || "报告";
+    const getStatusText = (status) => ({ draft: "草稿", pending: "待审核", published: "已发布", archived: "已归档" })[status] || status || "未知";
     const formatDate = (dateStr) => {
       if (!dateStr)
         return "";
-      const date = new Date(dateStr);
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      const d = new Date(dateStr);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     };
-    const viewReport = (item) => {
-      common_vendor.index.showToast({
-        title: "报告详情开发中",
-        icon: "none"
-      });
-    };
-    common_vendor.onMounted(() => {
-      fetchReports();
-    });
-    const __returned__ = { reports, loading, typeIndex, selectedDate, typeOptions, onTypeChange, onDateChange, fetchReports, getTypeText, getStatusText, formatDate, viewReport, ref: common_vendor.ref, onMounted: common_vendor.onMounted, get api() {
+    const viewReport = () => common_vendor.index.showToast({ title: "报告详情开发中", icon: "none" });
+    common_vendor.onMounted(() => fetchData());
+    const __returned__ = { reports, loading, typeIndex, selectedDate, typeOptions, onTypeChange, onDateChange, fetchData, getTypeText, getStatusText, formatDate, viewReport, ref: common_vendor.ref, onMounted: common_vendor.onMounted, get api() {
       return utils_api.api;
     } };
     Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
@@ -84,8 +58,8 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     c: common_vendor.o($setup.onTypeChange),
     d: common_vendor.t($setup.selectedDate || "选择日期"),
     e: common_vendor.o($setup.onDateChange),
-    f: $setup.reports.length > 0
-  }, $setup.reports.length > 0 ? {
+    f: $setup.reports.length
+  }, $setup.reports.length ? {
     g: common_vendor.f($setup.reports, (item, k0, i0) => {
       return common_vendor.e({
         a: common_vendor.t($setup.getTypeText(item.type)),
