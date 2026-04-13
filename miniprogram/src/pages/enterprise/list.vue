@@ -5,6 +5,12 @@
       <text class="desc">选择企业查看专属价格预测分析</text>
     </view>
 
+    <view class="action-bar">
+      <view class="add-btn" @tap="goToImport">
+        <text>+ 导入新企业</text>
+      </view>
+    </view>
+
     <view class="list" v-if="enterprises.length">
       <view class="card" v-for="item in enterprises" :key="item.id" @tap="goDetail(item.code)">
         <view class="card-header">
@@ -37,7 +43,9 @@
     <view class="empty" v-else-if="!loading">
       <text class="empty-icon">🏢</text>
       <text class="empty-text">暂无企业数据</text>
-      <text class="empty-tip">请在网页端添加企业信息</text>
+      <view class="empty-btn" @tap="goToImport">
+        <text>导入新企业</text>
+      </view>
     </view>
 
     <view class="loading" v-if="loading">
@@ -48,6 +56,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { api } from '@/utils/api'
 
 const enterprises = ref([])
@@ -59,6 +68,7 @@ const fetchData = async () => {
     const res = await api.getEnterprises()
     enterprises.value = res.enterprises || []
   } catch (e) {
+    console.error('获取企业列表失败:', e)
     uni.showToast({ title: '获取企业列表失败', icon: 'none' })
   } finally {
     loading.value = false
@@ -69,7 +79,12 @@ const goDetail = (code) => {
   uni.navigateTo({ url: `/pages/enterprise/detail?code=${code}` })
 }
 
+const goToImport = () => {
+  uni.navigateTo({ url: '/pages/enterprise/import' })
+}
+
 onMounted(() => fetchData())
+onShow(() => fetchData())
 </script>
 
 <style scoped>
@@ -80,9 +95,13 @@ onMounted(() => fetchData())
   padding-bottom: 200rpx;
 }
 
-.header { margin-bottom: 32rpx; }
+.header { margin-bottom: 24rpx; }
 .title { font-size: 36rpx; font-weight: 700; color: #f8fafc; }
 .desc { font-size: 24rpx; color: #64748b; margin-top: 8rpx; }
+
+.action-bar { margin-bottom: 24rpx; }
+.add-btn { display: inline-flex; padding: 16rpx 32rpx; background: linear-gradient(135deg, #06b6d4, #0891b2); border-radius: 24rpx; }
+.add-btn text { font-size: 28rpx; color: #fff; font-weight: 500; }
 
 .list { display: flex; flex-direction: column; gap: 24rpx; }
 
@@ -91,25 +110,26 @@ onMounted(() => fetchData())
   border-radius: 24rpx;
   padding: 32rpx;
   border: 1rpx solid rgba(148, 163, 184, 0.1);
-  border-left: 6rpx solid #06b6d4;
 }
 
-.card-header { display: flex; align-items: center; gap: 20rpx; margin-bottom: 24rpx; }
-.icon { width: 80rpx; height: 80rpx; border-radius: 20rpx; background: rgba(6, 182, 212, 0.15); display: flex; align-items: center; justify-content: center; font-size: 36rpx; }
+.card-header { display: flex; align-items: center; gap: 16rpx; margin-bottom: 24rpx; }
+.icon { width: 72rpx; height: 72rpx; background: linear-gradient(135deg, #06b6d4, #0891b2); border-radius: 16rpx; display: flex; align-items: center; justify-content: center; font-size: 36rpx; }
+.info { flex: 1; }
 .name { font-size: 32rpx; font-weight: 600; color: #f8fafc; }
 .location { font-size: 24rpx; color: #64748b; margin-top: 4rpx; }
-.arrow { font-size: 40rpx; color: #64748b; margin-left: auto; }
+.arrow { font-size: 40rpx; color: #64748b; }
 
-.stats { display: flex; align-items: center; padding: 20rpx 0; border-top: 1rpx solid rgba(148, 163, 184, 0.1); border-bottom: 1rpx solid rgba(148, 163, 184, 0.1); }
-.stat { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8rpx; }
-.value { font-size: 32rpx; font-weight: 700; color: #06b6d4; }
-.label { font-size: 22rpx; color: #64748b; }
+.stats { display: flex; align-items: center; }
+.stat { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.stat .value { font-size: 32rpx; font-weight: 600; color: #f8fafc; }
+.stat .label { font-size: 22rpx; color: #64748b; margin-top: 4rpx; }
 .divider { width: 1rpx; height: 48rpx; background: rgba(148, 163, 184, 0.2); }
 
 .empty { display: flex; flex-direction: column; align-items: center; padding: 120rpx 0; }
-.empty-icon { font-size: 64rpx; margin-bottom: 32rpx; }
-.empty-text { font-size: 32rpx; color: #94a3b8; margin-bottom: 16rpx; }
-.empty-tip { font-size: 24rpx; color: #64748b; }
+.empty-icon { font-size: 80rpx; margin-bottom: 24rpx; }
+.empty-text { font-size: 32rpx; color: #94a3b8; margin-bottom: 32rpx; }
+.empty-btn { padding: 16rpx 48rpx; background: linear-gradient(135deg, #06b6d4, #0891b2); border-radius: 24rpx; }
+.empty-btn text { font-size: 28rpx; color: #fff; }
 
 .loading { display: flex; justify-content: center; padding: 80rpx 0; color: #64748b; }
 </style>

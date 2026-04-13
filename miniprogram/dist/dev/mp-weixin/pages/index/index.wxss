@@ -5,78 +5,73 @@
   padding: 32rpx;
   padding-bottom: 200rpx;
 }
-.header.data-v-83a5a03c { margin-bottom: 48rpx;
+.header.data-v-83a5a03c { margin-bottom: 32rpx;
 }
-.header-top.data-v-83a5a03c { display: flex; align-items: center; gap: 24rpx;
+.header-top.data-v-83a5a03c { display: flex; align-items: center; gap: 16rpx; margin-bottom: 12rpx;
 }
-.logo.data-v-83a5a03c { width: 80rpx; height: 80rpx; font-size: 40rpx;
+.logo.data-v-83a5a03c { width: 64rpx; height: 64rpx; background: linear-gradient(135deg, #06b6d4, #0891b2); border-radius: 16rpx; display: flex; align-items: center; justify-content: center; font-size: 32rpx;
 }
-.title.data-v-83a5a03c { font-size: 40rpx; font-weight: 700; color: #f8fafc;
+.title.data-v-83a5a03c { font-size: 36rpx; font-weight: 700; color: #f8fafc;
 }
-.subtitle.data-v-83a5a03c { font-size: 24rpx; color: #94a3b8; margin-top: 4rpx;
+.subtitle.data-v-83a5a03c { font-size: 24rpx; color: #64748b; margin-top: 4rpx;
 }
-.header-desc.data-v-83a5a03c { font-size: 24rpx; color: #64748b; margin-top: 16rpx;
+.header-desc.data-v-83a5a03c { font-size: 24rpx; color: #64748b;
 }
-.stats-grid.data-v-83a5a03c {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24rpx;
-  margin-bottom: 48rpx;
+.stats-grid.data-v-83a5a03c { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16rpx; margin-bottom: 32rpx;
 }
-.stat-card.data-v-83a5a03c {
-  background: rgba(30, 41, 59, 0.8);
-  border-radius: 24rpx;
-  padding: 32rpx;
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-  border: 1rpx solid rgba(148, 163, 184, 0.1);
+.stat-card.data-v-83a5a03c { display: flex; align-items: center; gap: 16rpx; padding: 24rpx; background: rgba(30, 41, 59, 0.6); border-radius: 16rpx; border: 1rpx solid rgba(148, 163, 184, 0.1);
 }
-.stat-icon.data-v-83a5a03c { font-size: 40rpx;
+.stat-icon.data-v-83a5a03c { width: 56rpx; height: 56rpx; background: rgba(6, 182, 212, 0.15); border-radius: 12rpx; display: flex; align-items: center; justify-content: center; font-size: 28rpx;
 }
-.stat-value.data-v-83a5a03c { font-size: 36rpx; font-weight: 700; color: #f8fafc;
+.stat-value.data-v-83a5a03c { font-size: 32rpx; font-weight: 600; color: #f8fafc;
 }
-.stat-label.data-v-83a5a03c { font-size: 24rpx; color: #94a3b8; margin-top: 4rpx;
+.stat-label.data-v-83a5a03c { font-size: 22rpx; color: #64748b; margin-top: 4rpx;
 }
-.section.data-v-83a5a03c { margin-bottom: 48rpx;
+.section.data-v-83a5a03c { margin-bottom: 32rpx;
 }
-.section-header.data-v-83a5a03c { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24rpx;
+.section-header.data-v-83a5a03c { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx;
 }
-.section-title.data-v-83a5a03c { font-size: 32rpx; font-weight: 600; color: #f8fafc; margin-bottom: 24rpx;
+.section-title.data-v-83a5a03c { font-size: 28rpx; font-weight: 600; color: #f8fafc;
 }
 .refresh-btn.data-v-83a5a03c { font-size: 24rpx; color: #06b6d4;
 }
-.quick-actions.data-v-83a5a03c {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24rpx;
+.quick-actions.data-v-83a5a03c { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16rpx;
 }
-.action-item.data-v-83a5a03c { display: flex; flex-direction: column; align-items: center; gap: 16rpx;
+.action-item.data-v-83a5a03c { display: flex; flex-direction: column; align-items: center; gap: 8rpx; padding: 24rpx 8rpx; background: rgba(30, 41, 59, 0.6); border-radius: 16rpx; border: 1rpx solid rgba(148, 163, 184, 0.1);
 }
-.action-icon.data-v-83a5a03c { width: 100rpx; height: 100rpx; border-radius: 24rpx; background: rgba(6, 182, 212, 0.15); display: flex; align-items: center; justify-content: center; font-size: 44rpx;
+.action-icon.data-v-83a5a03c { font-size: 40rpx;
 }
-.action-text.data-v-83a5a03c { font-size: 24rpx; color: #94a3b8;
+.action-text.data-v-83a5a03c { font-size: 22rpx; color: #94a3b8;
 }
-.news-list.data-v-83a5a03c {
-  background: rgba(30, 41, 59, 0.6);
-  border-radius: 24rpx;
-  padding: 24rpx;
-  border: 1rpx solid rgba(148, 163, 184, 0.1);
+.price-card.data-v-83a5a03c { display: flex; justify-content: space-between; align-items: center; padding: 24rpx; background: rgba(30, 41, 59, 0.6); border-radius: 16rpx; border: 1rpx solid rgba(148, 163, 184, 0.1);
 }
-.news-item.data-v-83a5a03c {
-  display: flex;
-  align-items: flex-start;
-  gap: 16rpx;
-  padding: 20rpx 0;
-  border-bottom: 1rpx solid rgba(148, 163, 184, 0.1);
+.price-main.data-v-83a5a03c { display: flex; align-items: baseline; gap: 8rpx;
 }
-.news-item.data-v-83a5a03c:last-child { border-bottom: none;
+.price-value.data-v-83a5a03c { font-size: 40rpx; font-weight: 700; color: #f8fafc;
 }
-.news-dot.data-v-83a5a03c { width: 12rpx; height: 12rpx; border-radius: 50%; background: #06b6d4; margin-top: 12rpx;
+.price-unit.data-v-83a5a03c { font-size: 24rpx; color: #64748b;
 }
-.news-title.data-v-83a5a03c { font-size: 28rpx; color: #e2e8f0; line-height: 1.4;
+.price-change.data-v-83a5a03c { padding: 8rpx 16rpx; border-radius: 8rpx; background: rgba(148, 163, 184, 0.1);
 }
-.news-time.data-v-83a5a03c { font-size: 22rpx; color: #64748b; margin-top: 8rpx;
+.price-change.up.data-v-83a5a03c { background: rgba(16, 185, 129, 0.2);
 }
-.empty.data-v-83a5a03c { padding: 40rpx; text-align: center; color: #64748b; font-size: 26rpx;
+.price-change.up text.data-v-83a5a03c { color: #10b981;
+}
+.price-change.down.data-v-83a5a03c { background: rgba(244, 63, 94, 0.2);
+}
+.price-change.down text.data-v-83a5a03c { color: #f43f5e;
+}
+.price-change text.data-v-83a5a03c { font-size: 24rpx; color: #94a3b8;
+}
+.news-list.data-v-83a5a03c { display: flex; flex-direction: column; gap: 16rpx;
+}
+.news-item.data-v-83a5a03c { display: flex; align-items: flex-start; gap: 12rpx; padding: 16rpx; background: rgba(30, 41, 59, 0.4); border-radius: 12rpx;
+}
+.news-dot.data-v-83a5a03c { width: 8rpx; height: 8rpx; margin-top: 12rpx; background: #06b6d4; border-radius: 50%; flex-shrink: 0;
+}
+.news-title.data-v-83a5a03c { font-size: 26rpx; color: #e2e8f0; line-height: 1.4;
+}
+.news-time.data-v-83a5a03c { font-size: 22rpx; color: #64748b; margin-top: 4rpx;
+}
+.empty.data-v-83a5a03c { text-align: center; padding: 32rpx; color: #64748b;
 }

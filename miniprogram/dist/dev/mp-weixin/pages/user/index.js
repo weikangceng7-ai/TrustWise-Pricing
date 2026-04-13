@@ -11,6 +11,8 @@ const _sfc_main = {
       { icon: "🔔", text: "消息通知", type: "notification" },
       { icon: "📊", text: "数据管理", type: "data" }
     ];
+    const goToImport = () => common_vendor.index.navigateTo({ url: "/pages/enterprise/import" });
+    const goToKnowledge = () => common_vendor.index.navigateTo({ url: "/pages/knowledge/index" });
     const handleMenu = (type) => common_vendor.index.showToast({ title: `${type} 设置开发中`, icon: "none" });
     const showAbout = () => {
       common_vendor.index.showModal({
@@ -35,7 +37,7 @@ const _sfc_main = {
         }
       });
     };
-    const __returned__ = { user, menuItems, handleMenu, showAbout, clearCache, ref: common_vendor.ref };
+    const __returned__ = { user, menuItems, goToImport, goToKnowledge, handleMenu, showAbout, clearCache, ref: common_vendor.ref };
     Object.defineProperty(__returned__, "__isScriptSetup", { enumerable: false, value: true });
     return __returned__;
   }
@@ -44,7 +46,9 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   return {
     a: common_vendor.t($setup.user.name || "未登录"),
     b: common_vendor.t($setup.user.role || "请登录以获取更多功能"),
-    c: common_vendor.f($setup.menuItems, (item, i, i0) => {
+    c: common_vendor.o($setup.goToImport),
+    d: common_vendor.o($setup.goToKnowledge),
+    e: common_vendor.f($setup.menuItems, (item, i, i0) => {
       return {
         a: common_vendor.t(item.icon),
         b: common_vendor.t(item.text),
@@ -52,8 +56,8 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
         d: common_vendor.o(($event) => $setup.handleMenu(item.type), i)
       };
     }),
-    d: common_vendor.o($setup.showAbout),
-    e: common_vendor.o($setup.clearCache)
+    f: common_vendor.o($setup.showAbout),
+    g: common_vendor.o($setup.clearCache)
   };
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render], ["__scopeId", "data-v-642c545b"], ["__file", "D:/trustwise/TrustWise-Pricing/miniprogram/src/pages/user/index.vue"]]);

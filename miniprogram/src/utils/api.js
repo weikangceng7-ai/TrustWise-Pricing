@@ -52,14 +52,14 @@ export const api = {
     data 
   }),
   
-  updateEnterprise: (code, data) => request({ 
+  updateEnterprise: (id, data) => request({ 
     url: '/api/enterprises/manage', 
     method: 'PUT', 
-    data: { code, ...data } 
+    data: { id, ...data } 
   }),
   
-  deleteEnterprise: (code) => request({ 
-    url: `/api/enterprises/manage?code=${code}`, 
+  deleteEnterprise: (id) => request({ 
+    url: `/api/enterprises/manage?id=${id}`, 
     method: 'DELETE' 
   }),
   
@@ -94,7 +94,17 @@ export const api = {
     return request({ url: `/api/inventory${query ? '?' + query : ''}` })
   },
   
-  getSupplyDemand: () => request({ url: '/api/supply-demand' })
+  getSupplyDemand: () => request({ url: '/api/supply-demand' }),
+  
+  getKnowledgeGraph: (enterprise = 'yihua') => request({ 
+    url: `/api/neo4j/graph?enterprise=${enterprise}` 
+  }),
+  
+  getPriceSummary: () => request({ url: '/api/prices/summary' }),
+  
+  getInventorySummary: () => request({ url: '/api/inventory/summary' }),
+  
+  getPredictionSummary: () => request({ url: '/api/enterprise-predictions' })
 }
 
 export default api

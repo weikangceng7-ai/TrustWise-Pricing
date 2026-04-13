@@ -9,6 +9,19 @@
     </view>
 
     <view class="menu-section">
+      <view class="menu-item" @tap="goToImport">
+        <view class="menu-icon">➕</view>
+        <text class="menu-text">导入新企业</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item" @tap="goToKnowledge">
+        <view class="menu-icon">🧠</view>
+        <text class="menu-text">知识图谱</text>
+        <text class="menu-arrow">›</text>
+      </view>
+    </view>
+
+    <view class="menu-section">
       <view class="menu-item" v-for="(item, i) in menuItems" :key="i" @tap="handleMenu(item.type)">
         <view class="menu-icon">{{ item.icon }}</view>
         <text class="menu-text">{{ item.text }}</text>
@@ -47,6 +60,8 @@ const menuItems = [
   { icon: '📊', text: '数据管理', type: 'data' }
 ]
 
+const goToImport = () => uni.navigateTo({ url: '/pages/enterprise/import' })
+const goToKnowledge = () => uni.navigateTo({ url: '/pages/knowledge/index' })
 const handleMenu = (type) => uni.showToast({ title: `${type} 设置开发中`, icon: 'none' })
 
 const showAbout = () => {

@@ -3,6 +3,8 @@
     "pages/index/index",
     "pages/enterprise/list",
     "pages/enterprise/detail",
+    "pages/enterprise/import",
+    "pages/knowledge/index",
     "pages/reports/list",
     "pages/chat/index",
     "pages/user/index"

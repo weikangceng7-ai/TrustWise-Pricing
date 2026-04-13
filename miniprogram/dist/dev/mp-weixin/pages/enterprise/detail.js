@@ -31,6 +31,7 @@ const _sfc_main = {
         const res = await utils_api.api.getEnterprise(code.value);
         enterprise.value = res.enterprise;
       } catch (e) {
+        console.error("获取企业详情失败:", e);
         common_vendor.index.showToast({ title: "获取企业详情失败", icon: "none" });
       }
     };
@@ -39,7 +40,7 @@ const _sfc_main = {
         return;
       try {
         const res = await utils_api.api.getPredictions(code.value, period.value);
-        predictions.value = res.predictions || [];
+        predictions.value = res.data || res.predictions || [];
       } catch (e) {
         console.error("获取预测数据失败:", e);
       }
@@ -57,17 +58,28 @@ const _sfc_main = {
     };
     const formatPrice = (price) => price ? (price / 100).toFixed(0) : "-";
     const formatDate = (dateStr) => {
+      if (!dateStr)
+        return "";
       const d = new Date(dateStr);
       return `${d.getMonth() + 1}/${d.getDate()}`;
     };
     const openChat = () => common_vendor.index.switchTab({ url: "/pages/chat/index" });
+    const openKnowledge = () => common_vendor.index.navigateTo({ url: `/pages/knowledge/index?code=${code.value}` });
     common_vendor.onLoad((options) => {
       code.value = options.code;
       fetchData();
       fetchPredictions();
     });
-    const __returned__ = { enterprise, predictions, period, code, trend, transportModeText, inventoryStrategyText, fetchData, fetchPredictions, changePeriod, getBarHeight, formatPrice, formatDate, openChat, ref: common_vendor.ref, computed: common_vendor.computed, onMounted: common_vendor.onMounted, get onLoad() {
+    common_vendor.onShow(() => {
+      if (code.value) {
+        fetchData();
+        fetchPredictions();
+      }
+    });
+    const __returned__ = { enterprise, predictions, period, code, trend, transportModeText, inventoryStrategyText, fetchData, fetchPredictions, changePeriod, getBarHeight, formatPrice, formatDate, openChat, openKnowledge, ref: common_vendor.ref, computed: common_vendor.computed, onMounted: common_vendor.onMounted, get onLoad() {
       return common_vendor.onLoad;
+    }, get onShow() {
+      return common_vendor.onShow;
     }, get api() {
       return utils_api.api;
     } };
@@ -121,7 +133,8 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   }, ((_g = $setup.enterprise) == null ? void 0 : _g.description) ? {
     A: common_vendor.t($setup.enterprise.description)
   } : {}, {
-    B: common_vendor.o($setup.openChat)
+    B: common_vendor.o($setup.openKnowledge),
+    C: common_vendor.o($setup.openChat)
   });
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render], ["__scopeId", "data-v-ad07d255"], ["__file", "D:/trustwise/TrustWise-Pricing/miniprogram/src/pages/enterprise/detail.vue"]]);

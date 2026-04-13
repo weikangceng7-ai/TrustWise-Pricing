@@ -88,13 +88,19 @@
       </view>
     </view>
 
+    <view class="action-bar">
+      <view class="action-btn" @tap="openKnowledge">
+        <text>🧠 查看知识图谱</text>
+      </view>
+    </view>
+
     <view class="fab" @tap="openChat">💬</view>
   </view>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { api } from '@/utils/api'
 
 const enterprise = ref(null)
@@ -118,6 +124,7 @@ const fetchData = async () => {
     const res = await api.getEnterprise(code.value)
     enterprise.value = res.enterprise
   } catch (e) {
+    console.error('获取企业详情失败:', e)
     uni.showToast({ title: '获取企业详情失败', icon: 'none' })
   }
 }
@@ -126,7 +133,7 @@ const fetchPredictions = async () => {
   if (!code.value) return
   try {
     const res = await api.getPredictions(code.value, period.value)
-    predictions.value = res.predictions || []
+    predictions.value = res.data || res.predictions || []
   } catch (e) {
     console.error('获取预测数据失败:', e)
   }
@@ -142,13 +149,21 @@ const getBarHeight = (price) => {
 }
 
 const formatPrice = (price) => price ? (price / 100).toFixed(0) : '-'
-const formatDate = (dateStr) => { const d = new Date(dateStr); return `${d.getMonth() + 1}/${d.getDate()}` }
+const formatDate = (dateStr) => { if (!dateStr) return ''; const d = new Date(dateStr); return `${d.getMonth() + 1}/${d.getDate()}` }
 const openChat = () => uni.switchTab({ url: '/pages/chat/index' })
+const openKnowledge = () => uni.navigateTo({ url: `/pages/knowledge/index?code=${code.value}` })
 
 onLoad((options) => {
   code.value = options.code
   fetchData()
   fetchPredictions()
+})
+
+onShow(() => {
+  if (code.value) {
+    fetchData()
+    fetchPredictions()
+  }
 })
 </script>
 
@@ -164,66 +179,49 @@ onLoad((options) => {
   background: rgba(30, 41, 59, 0.8);
   border-radius: 24rpx;
   padding: 32rpx;
-  margin-bottom: 32rpx;
-  border: 1rpx solid rgba(148, 163, 184, 0.1);
-}
-
-.header-main { display: flex; align-items: center; gap: 20rpx; margin-bottom: 24rpx; }
-.icon { width: 96rpx; height: 96rpx; border-radius: 24rpx; background: rgba(6, 182, 212, 0.15); display: flex; align-items: center; justify-content: center; font-size: 44rpx; }
-.name { font-size: 36rpx; font-weight: 700; color: #f8fafc; }
-.location { font-size: 26rpx; color: #94a3b8; margin-top: 8rpx; }
-.badges { display: flex; gap: 16rpx; flex-wrap: wrap; }
-.badge { padding: 12rpx 24rpx; border-radius: 12rpx; font-size: 24rpx; color: #94a3b8; background: rgba(6, 182, 212, 0.15); }
-
-.section { margin-bottom: 32rpx; }
-.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20rpx; }
-.section-title { font-size: 32rpx; font-weight: 600; color: #f8fafc; margin-bottom: 20rpx; }
-.tabs { display: flex; gap: 16rpx; }
-.tab { padding: 8rpx 20rpx; border-radius: 8rpx; font-size: 24rpx; color: #64748b; background: rgba(148, 163, 184, 0.1); }
-.tab.active { background: rgba(6, 182, 212, 0.2); color: #06b6d4; }
-
-.chart {
-  background: rgba(30, 41, 59, 0.6);
-  border-radius: 24rpx;
-  padding: 32rpx;
-  border: 1rpx solid rgba(148, 163, 184, 0.1);
   margin-bottom: 24rpx;
+  border: 1rpx solid rgba(148, 163, 184, 0.1);
 }
 
-.bars { display: flex; align-items: flex-end; gap: 16rpx; height: 280rpx; padding-bottom: 16rpx; }
-.bar { flex: 1; background: linear-gradient(180deg, #06b6d4, #0891b2); border-radius: 8rpx 8rpx 0 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 8rpx; min-height: 40rpx; }
-.bar-value { font-size: 18rpx; color: #f8fafc; }
-.labels { display: flex; gap: 16rpx; }
+.header-main { display: flex; align-items: center; gap: 16rpx; margin-bottom: 16rpx; }
+.icon { width: 80rpx; height: 80rpx; background: linear-gradient(135deg, #06b6d4, #0891b2); border-radius: 20rpx; display: flex; align-items: center; justify-content: center; font-size: 40rpx; }
+.name { font-size: 36rpx; font-weight: 700; color: #f8fafc; }
+.location { font-size: 24rpx; color: #64748b; margin-top: 4rpx; }
+.badges { display: flex; gap: 12rpx; flex-wrap: wrap; }
+.badge { padding: 8rpx 16rpx; background: rgba(6, 182, 212, 0.15); border-radius: 8rpx; font-size: 22rpx; color: #06b6d4; }
+
+.section { background: rgba(30, 41, 59, 0.6); border-radius: 24rpx; padding: 24rpx; margin-bottom: 24rpx; border: 1rpx solid rgba(148, 163, 184, 0.1); }
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20rpx; }
+.section-title { font-size: 28rpx; font-weight: 600; color: #f8fafc; }
+.tabs { display: flex; gap: 8rpx; }
+.tab { padding: 8rpx 16rpx; border-radius: 8rpx; font-size: 24rpx; color: #64748b; background: rgba(148, 163, 184, 0.1); }
+.tab.active { background: #06b6d4; color: #fff; }
+
+.chart { margin-bottom: 20rpx; }
+.bars { display: flex; align-items: flex-end; gap: 8rpx; height: 200rpx; padding: 0 8rpx; }
+.bar { flex: 1; background: linear-gradient(180deg, #06b6d4, #0891b2); border-radius: 8rpx 8rpx 0 0; display: flex; align-items: flex-start; justify-content: center; padding-top: 8rpx; min-height: 40rpx; }
+.bar-value { font-size: 18rpx; color: #fff; }
+.labels { display: flex; gap: 8rpx; padding: 8rpx 8rpx 0; }
 .label { flex: 1; text-align: center; font-size: 20rpx; color: #64748b; }
 
-.summary { display: flex; background: rgba(30, 41, 59, 0.6); border-radius: 24rpx; padding: 24rpx; border: 1rpx solid rgba(148, 163, 184, 0.1); }
-.item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8rpx; }
-.item .label { font-size: 24rpx; color: #64748b; }
-.item .value { font-size: 28rpx; font-weight: 600; color: #f8fafc; }
-.value.up { color: #10b981; }
-.value.down { color: #f43f5e; }
+.summary { display: flex; gap: 16rpx; }
+.item { flex: 1; text-align: center; padding: 16rpx; background: rgba(15, 23, 42, 0.4); border-radius: 12rpx; }
+.item .label { font-size: 22rpx; color: #64748b; }
+.item .value { font-size: 28rpx; font-weight: 600; color: #f8fafc; margin-top: 8rpx; }
+.item .value.up { color: #10b981; }
+.item .value.down { color: #f43f5e; }
 
-.info-list { background: rgba(30, 41, 59, 0.6); border-radius: 24rpx; padding: 8rpx 32rpx; border: 1rpx solid rgba(148, 163, 184, 0.1); }
-.info-item { display: flex; justify-content: space-between; padding: 24rpx 0; border-bottom: 1rpx solid rgba(148, 163, 184, 0.1); }
-.info-item:last-child { border-bottom: none; }
-.info-item .label { font-size: 28rpx; color: #94a3b8; }
-.info-item .value { font-size: 28rpx; color: #f8fafc; }
+.info-list { display: flex; flex-direction: column; gap: 16rpx; }
+.info-item { display: flex; justify-content: space-between; align-items: center; padding: 16rpx; background: rgba(15, 23, 42, 0.4); border-radius: 12rpx; }
+.info-item .label { font-size: 26rpx; color: #64748b; }
+.info-item .value { font-size: 26rpx; color: #f8fafc; }
 
-.desc-card { background: rgba(30, 41, 59, 0.6); border-radius: 24rpx; padding: 32rpx; border: 1rpx solid rgba(148, 163, 184, 0.1); }
-.desc-card text { font-size: 28rpx; color: #94a3b8; line-height: 1.6; }
+.desc-card { padding: 20rpx; background: rgba(15, 23, 42, 0.4); border-radius: 12rpx; }
+.desc-card text { font-size: 26rpx; color: #94a3b8; line-height: 1.6; }
 
-.fab {
-  position: fixed;
-  right: 32rpx;
-  bottom: 200rpx;
-  width: 100rpx;
-  height: 100rpx;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #06b6d4, #0891b2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 44rpx;
-  box-shadow: 0 8rpx 32rpx rgba(6, 182, 212, 0.4);
-}
+.action-bar { margin-bottom: 24rpx; }
+.action-btn { display: flex; align-items: center; justify-content: center; padding: 24rpx; background: rgba(139, 92, 246, 0.2); border-radius: 16rpx; border: 1rpx solid rgba(139, 92, 246, 0.3); }
+.action-btn text { font-size: 28rpx; color: #8b5cf6; }
+
+.fab { position: fixed; right: 32rpx; bottom: 200rpx; width: 100rpx; height: 100rpx; background: linear-gradient(135deg, #06b6d4, #0891b2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 48rpx; box-shadow: 0 8rpx 24rpx rgba(6, 182, 212, 0.4); }
 </style>

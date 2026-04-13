@@ -26,6 +26,22 @@
       }
     },
     {
+      "path": "pages/enterprise/import",
+      "style": {
+        "navigationBarTitleText": "企业导入",
+        "navigationBarBackgroundColor": "#0f172a",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/knowledge/index",
+      "style": {
+        "navigationBarTitleText": "知识图谱",
+        "navigationBarBackgroundColor": "#0f172a",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
       "path": "pages/reports/list",
       "style": {
         "navigationBarTitleText": "采购报告",
