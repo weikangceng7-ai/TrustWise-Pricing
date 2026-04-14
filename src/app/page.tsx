@@ -1,4 +1,4 @@
-/"use client"
+"use client"
 
 import { useEffect, useState, useRef } from "react"
 import {
@@ -18,7 +18,11 @@ import {
   X,
   TrendingUp,
   Zap,
-  Shield
+  Shield,
+  ChevronLeft,
+  ChevronRight as ChevronRightIcon,
+  Home as HomeIcon,
+  Network
 } from "lucide-react"
 import Link from "next/link"
 
@@ -276,6 +280,13 @@ function Navbar() {
 
           {/* Right Actions */}
           <div className="hidden md:flex items-center gap-4">
+            <Link
+              href="/dashboard"
+              className="text-slate-400 hover:text-white transition-colors text-sm font-medium px-4 py-2 hover:bg-white/5 rounded-lg flex items-center gap-1.5"
+            >
+              <BarChart3 className="h-4 w-4" />
+              进入仪表盘
+            </Link>
             <Link
               href="/login"
               className="text-slate-400 hover:text-white transition-colors text-sm font-medium px-4 py-2 hover:bg-white/5 rounded-lg"
@@ -831,6 +842,210 @@ function Footer() {
   )
 }
 
+// 右下角快速页面导航 - 静态配置
+const QUICK_NAV_PAGES = [
+  {
+    title: "首页",
+    icon: HomeIcon,
+    href: "/",
+    description: "产品介绍与功能展示",
+    color: "cyan"
+  },
+  {
+    title: "仪表盘",
+    icon: BarChart3,
+    href: "/dashboard",
+    description: "市场概览与价格走势",
+    color: "violet"
+  },
+  {
+    title: "知识图谱",
+    icon: Network,
+    href: "/yihua-code-graph",
+    description: "价格知识图谱可视化",
+    color: "amber"
+  },
+  {
+    title: "HX集团",
+    icon: TrendingUp,
+    href: "/enterprise/yihua",
+    description: "硫磺产能约120万吨/年",
+    color: "cyan"
+  },
+  {
+    title: "HY集团",
+    icon: TrendingUp,
+    href: "/enterprise/luxi",
+    description: "华北地区大型化工企业",
+    color: "violet"
+  },
+  {
+    title: "TC集团",
+    icon: TrendingUp,
+    href: "/enterprise/jinzhengda",
+    description: "化肥行业龙头",
+    color: "amber"
+  },
+  {
+    title: "AI对话",
+    icon: Sparkles,
+    href: "/agent-chat",
+    description: "智能问答助手",
+    color: "rose"
+  },
+  {
+    title: "决策报告",
+    icon: FileText,
+    href: "/reports",
+    description: "采购决策报告",
+    color: "blue"
+  },
+]
+
+const QUICK_NAV_COLOR_CLASSES: Record<string, { bg: string; border: string; text: string; badge: string }> = {
+  cyan: { bg: "bg-cyan-100 dark:bg-cyan-500/20", border: "border-cyan-300 dark:border-cyan-500/30", text: "text-cyan-600 dark:text-cyan-400", badge: "bg-cyan-500" },
+  violet: { bg: "bg-violet-100 dark:bg-violet-500/20", border: "border-violet-300 dark:border-violet-500/30", text: "text-violet-600 dark:text-violet-400", badge: "bg-violet-500" },
+  amber: { bg: "bg-amber-100 dark:bg-amber-500/20", border: "border-amber-300 dark:border-amber-500/30", text: "text-amber-600 dark:text-amber-400", badge: "bg-amber-500" },
+  emerald: { bg: "bg-emerald-100 dark:bg-emerald-500/20", border: "border-emerald-300 dark:border-emerald-500/30", text: "text-emerald-600 dark:text-emerald-400", badge: "bg-emerald-500" },
+  rose: { bg: "bg-rose-100 dark:bg-rose-500/20", border: "border-rose-300 dark:border-rose-500/30", text: "text-rose-600 dark:text-rose-400", badge: "bg-rose-500" },
+  blue: { bg: "bg-blue-100 dark:bg-blue-500/20", border: "border-blue-300 dark:border-blue-500/30", text: "text-blue-600 dark:text-blue-400", badge: "bg-blue-500" },
+}
+
+function QuickPageNavigator() {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true)
+  const touchStartY = useRef(0)
+  const touchEndY = useRef(0)
+
+  const pagesLength = QUICK_NAV_PAGES.length
+
+  // 自动轮播
+  useEffect(() => {
+    if (!isAutoPlaying || isExpanded) return
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % pagesLength)
+    }, 5000)
+    return () => clearInterval(timer)
+  }, [isAutoPlaying, isExpanded, pagesLength])
+
+  const goToPrev = () => {
+    setIsAutoPlaying(false)
+    setCurrentIndex((prev) => (prev - 1 + pagesLength) % pagesLength)
+  }
+
+  const goToNext = () => {
+    setIsAutoPlaying(false)
+    setCurrentIndex((prev) => (prev + 1) % pagesLength)
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndY.current = e.touches[0].clientY
+  }
+
+  const handleTouchEnd = () => {
+    const diff = touchStartY.current - touchEndY.current
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        goToPrev()
+      } else {
+        goToNext()
+      }
+    }
+  }
+
+  const currentPage = QUICK_NAV_PAGES[currentIndex]
+  const colors = QUICK_NAV_COLOR_CLASSES[currentPage.color] || QUICK_NAV_COLOR_CLASSES.cyan
+  const IconComponent = currentPage.icon
+
+  return (
+    <div
+      className="fixed bottom-6 right-4 z-50"
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
+    >
+      {/* 主卡片 */}
+      <div
+        className={`relative transition-all duration-300 ${isExpanded ? 'w-64' : 'w-48'}`}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div className={`bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-xl border ${colors.border} overflow-hidden`}>
+          {/* 当前页面展示 */}
+          <Link
+            href={currentPage.href || "#"}
+            className={`block p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50`}
+          >
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl ${colors.bg} flex items-center justify-center shrink-0`}>
+                <IconComponent className={`h-4 w-4 ${colors.text}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className={`text-sm font-semibold ${colors.text} truncate`}>{currentPage.title}</h3>
+                  <span className={`px-1.5 py-0.5 rounded text-xs text-white ${colors.badge}`}>{currentIndex + 1}/{pagesLength}</span>
+                </div>
+                {isExpanded && currentPage.description && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{currentPage.description}</p>
+                )}
+              </div>
+            </div>
+          </Link>
+
+          {/* 导航控制 */}
+          <div className="flex items-center justify-between px-3 py-2 bg-slate-50/50 dark:bg-slate-800/50 border-t border-slate-200/50 dark:border-slate-700/50">
+            <button
+              onClick={goToPrev}
+              className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors"
+            >
+              <ChevronLeft className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+            </button>
+
+            {/* 页面指示器 */}
+            <div className="flex items-center gap-1">
+              {QUICK_NAV_PAGES.map((page, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setIsAutoPlaying(false)
+                    setCurrentIndex(idx)
+                  }}
+                  className={`transition-all rounded-full ${
+                    idx === currentIndex
+                      ? `w-5 h-2 ${colors.badge}`
+                      : "w-1.5 h-1.5 bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 dark:hover:bg-slate-500"
+                  }`}
+                  title={page.title}
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={goToNext}
+              className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors"
+            >
+              <ChevronRightIcon className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+            </button>
+          </div>
+        </div>
+
+        {/* 进度指示线 */}
+        <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+          <div
+            className={`h-full ${colors.badge} transition-all duration-1000 ease-linear`}
+            style={{ width: isAutoPlaying ? `${((currentIndex + 1) / pagesLength) * 100}%` : '100%' }}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // 首页主组件
 export default function Home() {
   return (
@@ -841,6 +1056,8 @@ export default function Home() {
       <StatsSection />
       <AboutSection />
       <Footer />
+      {/* 右下角快速页面导航 */}
+      <QuickPageNavigator />
     </main>
   )
 }

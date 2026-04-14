@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { TrendingUp, Package, DollarSign, BarChart3, AlertTriangle, ChevronRight, MessageCircle, FileText, Settings, ArrowRight, ChevronLeft, ChevronRight as ChevronRightIcon, ArrowUpRight, ArrowDownRight, Activity, Zap, Target, Layers, Grid3X3 } from "lucide-react"
 import { PriceChart, TimeRange } from "@/components/price-chart"
 import { EnterprisePredictionOverview } from "@/components/enterprise-prediction-chart"
@@ -163,18 +163,9 @@ function ReportCarousel() {
 
 export default function DashboardPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>("week")
-  const [currentPageIndex, setCurrentPageIndex] = useState(0) // 底部导航栏当前页面索引
+  const [currentPageIndex, setCurrentPageIndex] = useState(0)
+  const PAGE_COUNT = 3
   const bgImage = getBackgroundImage("dashboardBackground")
-
-  // 定义不同页面的内容
-  const pages = [
-    // 页面 0: 首页 - 默认仪表盘内容
-    "首页内容",
-    // 页面 1: 图谱 - 知识图谱页面
-    "图谱内容",
-    // 页面 2: 数据 - 数据分析页面
-    "数据内容",
-  ]
 
   return (
     <div className="min-h-screen relative overflow-hidden pb-24 bg-slate-50 dark:bg-[#0a0a1a]">
@@ -209,11 +200,20 @@ export default function DashboardPage() {
       </div>
 
       <div className="relative px-5 pt-8 pb-32 max-w-6xl mx-auto">
+        {/* 返回首页导航 */}
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all duration-300 mb-4"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          <span className="text-base font-medium">返回首页</span>
+        </Link>
+
         {/* 页面标题 */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">价格知识图谱</h1>
+        <Link href="/" className="block mb-6 group">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">价格知识图谱</h1>
           <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">硫磺市场价格分析与知识关系可视化</p>
-        </div>
+        </Link>
 
         {/* High Level 概览 */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
@@ -475,13 +475,13 @@ export default function DashboardPage() {
           {/* 顶部滑动指示器 */}
           <div className="flex items-center justify-center gap-1.5 mb-3">
             <button
-              onClick={() => setCurrentPageIndex((prev) => (prev - 1 + pages.length) % pages.length)}
+              onClick={() => setCurrentPageIndex((prev) => (prev - 1 + PAGE_COUNT) % PAGE_COUNT)}
               className="p-1 rounded-full bg-white/80 dark:bg-slate-800/80 shadow-sm hover:bg-white dark:hover:bg-slate-700 transition-colors"
             >
               <ChevronLeft className="h-3.5 w-3.5 text-slate-600 dark:text-slate-300" />
             </button>
             <div className="flex items-center gap-1.5">
-              {pages.map((_, idx) => (
+              {Array.from({ length: PAGE_COUNT }).map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => setCurrentPageIndex(idx)}
@@ -494,7 +494,7 @@ export default function DashboardPage() {
               ))}
             </div>
             <button
-              onClick={() => setCurrentPageIndex((prev) => (prev + 1) % pages.length)}
+              onClick={() => setCurrentPageIndex((prev) => (prev + 1) % PAGE_COUNT)}
               className="p-1 rounded-full bg-white/80 dark:bg-slate-800/80 shadow-sm hover:bg-white dark:hover:bg-slate-700 transition-colors"
             >
               <ChevronRightIcon className="h-3.5 w-3.5 text-slate-600 dark:text-slate-300" />
