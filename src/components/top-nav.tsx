@@ -1,6 +1,7 @@
 "use client"
 
-import { Moon, Sun } from "lucide-react"
+import { Moon, Sun, Home } from "lucide-react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "@/components/theme-provider"
 import { SidebarTrigger } from "@/components/ui/sidebar"
@@ -28,6 +29,15 @@ export function TopNav() {
 
       {/* Mobile menu trigger & Sidebar toggle */}
       <SidebarTrigger className="-ml-1" />
+
+      {/* 返回首页 */}
+      <Link
+        href="/"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all duration-300"
+      >
+        <Home className="h-4 w-4" />
+        <span className="text-sm font-medium">首页</span>
+      </Link>
 
       {/* Page title area */}
       <div className="flex-1 flex items-center gap-4 relative">

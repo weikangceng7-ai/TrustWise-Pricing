@@ -200,15 +200,6 @@ export default function DashboardPage() {
       </div>
 
       <div className="relative px-5 pt-8 pb-32 max-w-6xl mx-auto">
-        {/* 返回首页导航 */}
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all duration-300 mb-4"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          <span className="text-base font-medium">返回首页</span>
-        </Link>
-
         {/* 页面标题 */}
         <Link href="/" className="block mb-6 group">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">价格知识图谱</h1>
