@@ -3,6 +3,7 @@ import {
   ENTERPRISE_CODES,
   getEnterpriseNameByCode,
 } from "@/services/enterprise-knowledge-config"
+import { getEnterpriseByCode, getAllEnterprises } from "@/services/enterprise-storage"
 
 interface PredictionRecord {
   id: number
@@ -19,26 +20,35 @@ interface PredictionRecord {
 function generateMockData(enterprise: string, days: number): PredictionRecord[] {
   const data: PredictionRecord[] = []
   const now = new Date()
+
+  // 获取企业价格配置（静态或动态）
+  const storedEnterprise = getEnterpriseByCode(enterprise)
   const basePrices: Record<string, number> = {
     yihua: 1180,
     luxi: 1195,
     jinzhengda: 1170,
   }
-  const basePrice = basePrices[enterprise] || 1180
+
+  // 优先使用动态企业的 basePrice，否则使用静态配置或默认值
+  const basePrice = storedEnterprise?.basePrice || basePrices[enterprise] || 1180
+  const volatility = storedEnterprise?.volatility || 30
+
+  // 获取企业名称
+  const enterpriseName = getEnterpriseNameByCode(enterprise) || storedEnterprise?.name || enterprise
 
   for (let i = days; i >= 0; i--) {
     const date = new Date(now)
     date.setDate(date.getDate() - i)
     const dateStr = date.toISOString().split("T")[0]
 
-    const fluctuation = (Math.random() - 0.5) * 40
+    const fluctuation = (Math.random() - 0.5) * volatility
     const actualPrice = basePrice + fluctuation
     const predictedPrice = basePrice + fluctuation + (Math.random() - 0.5) * 20
 
     data.push({
       id: i,
       enterpriseCode: enterprise,
-      enterpriseName: getEnterpriseNameByCode(enterprise),
+      enterpriseName: enterpriseName,
       date: dateStr,
       actualPrice: Number(actualPrice.toFixed(2)),
       predictedPrice: Number(predictedPrice.toFixed(2)),
@@ -71,17 +81,22 @@ export async function GET(request: Request) {
       })
     }
 
+    // 合并静态企业和动态企业
+    const allEnterprises = getAllEnterprises()
+    const allCodes = allEnterprises.map(e => e.code)
+
     const allData: Record<string, PredictionRecord[]> = {}
-    for (const code of ENTERPRISE_CODES) {
+    for (const code of allCodes) {
       allData[code] = generateMockData(code, days)
     }
 
-    const summary = ENTERPRISE_CODES.map((code) => {
+    const summary = allCodes.map((code) => {
       const data = allData[code]
       const latest = data[data.length - 1]
+      const enterprise = allEnterprises.find(e => e.code === code)
       return {
         enterpriseCode: code,
-        enterpriseName: getEnterpriseNameByCode(code),
+        enterpriseName: enterprise?.name || getEnterpriseNameByCode(code) || code,
         latestDate: latest?.date || new Date().toISOString().split("T")[0],
         latestPrice: latest?.actualPrice?.toString() || "0",
         predictedPrice: latest?.predictedPrice?.toString() || "0",

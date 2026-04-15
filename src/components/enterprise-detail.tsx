@@ -26,6 +26,12 @@ import {
 import { EnterprisePredictionChart } from "./enterprise-prediction-chart"
 import { Neo4jKnowledgeGraph } from "./neo4j-knowledge-graph"
 import { ENTERPRISE_CONFIGS, getEnterpriseNameByCode, calculateEnterpriseFactorWeights } from "@/services/enterprise-knowledge-config"
+import {
+  getEnterpriseByCode,
+  convertStorageToConfig,
+  getEnterpriseColor,
+  isStaticEnterprise,
+} from "@/services/enterprise-storage"
 import { InventoryVisualization } from "./inventory-visualization"
 
 // 类型定义
@@ -67,7 +73,7 @@ interface EnterpriseData {
 }
 
 interface EnterpriseDetailProps {
-  enterpriseCode: "yihua" | "luxi" | "jinzhengda"
+  enterpriseCode: string  // 改为接受任意字符串
 }
 
 // 运输方式图标映射
@@ -118,39 +124,70 @@ const CategoryConfig: Record<string, { icon: React.ReactNode; color: string; lab
   internal: { icon: <Factory className="h-3.5 w-3.5" />, color: "text-emerald-500", label: "内部" },
 }
 
-// 企业颜色
-const ENTERPRISE_COLORS: Record<string, string> = {
+// 企业颜色（静态）
+const STATIC_ENTERPRISE_COLORS: Record<string, string> = {
   yihua: "#06b6d4",
   luxi: "#8b5cf6",
   jinzhengda: "#f59e0b",
 }
 
-// 默认企业数据（后备）- 从集中配置生成
+// 默认企业数据（后备）- 支持静态和动态企业
 function getDefaultEnterpriseData(code: string): EnterpriseData | null {
-  const config = ENTERPRISE_CONFIGS.find(e => e.code === code)
-  if (!config) {
-    // 返回第一个企业作为默认
-    const firstConfig = ENTERPRISE_CONFIGS[0]
-    if (!firstConfig) return null
-    return getDefaultEnterpriseData(firstConfig.code)
+  // 1. 先查静态配置
+  const staticConfig = ENTERPRISE_CONFIGS.find(e => e.code === code)
+  if (staticConfig) {
+    const factorWeights = calculateEnterpriseFactorWeights(staticConfig)
+    return {
+      code: staticConfig.code,
+      name: staticConfig.name,
+      location: staticConfig.location,
+      province: staticConfig.province,
+      capacity: staticConfig.capacity,
+      transportMode: staticConfig.transportMode,
+      mainProducts: staticConfig.mainProducts,
+      customerRegions: staticConfig.customerRegions,
+      inventoryStrategy: staticConfig.inventoryStrategy,
+      description: staticConfig.description,
+      color: STATIC_ENTERPRISE_COLORS[code] || "#06b6d4",
+      factorWeights,
+      inventory: staticConfig.inventory,
+    }
   }
 
-  const factorWeights = calculateEnterpriseFactorWeights(config)
-
-  return {
-    code: config.code,
-    name: config.name,
-    location: config.location,
-    province: config.province,
-    capacity: config.capacity,
-    transportMode: config.transportMode,
-    mainProducts: config.mainProducts,
-    customerRegions: config.customerRegions,
-    inventoryStrategy: config.inventoryStrategy,
-    description: config.description,
-    color: ENTERPRISE_COLORS[code] || "#06b6d4",
-    factorWeights,
+  // 2. 再查动态企业（localStorage）
+  const storedEnterprise = getEnterpriseByCode(code)
+  if (storedEnterprise) {
+    const config = convertStorageToConfig(storedEnterprise)
+    const factorWeights = calculateEnterpriseFactorWeights(config)
+    return {
+      code: storedEnterprise.code,
+      name: storedEnterprise.name,
+      location: storedEnterprise.location || '未知地区',
+      province: storedEnterprise.province || '华东',
+      capacity: storedEnterprise.capacity || 80,
+      transportMode: storedEnterprise.transportMode || 'water',
+      mainProducts: storedEnterprise.mainProducts || [],
+      customerRegions: storedEnterprise.customerRegions || [],
+      inventoryStrategy: storedEnterprise.inventoryStrategy || 'moderate',
+      description: storedEnterprise.description || '',
+      color: getEnterpriseColor(code),
+      factorWeights,
+      inventory: {
+        currentStock: storedEnterprise.currentStock || 5000,
+        maxCapacity: storedEnterprise.maxCapacity || 10000,
+        safetyDays: storedEnterprise.safetyDays || 20,
+        avgConsumption: storedEnterprise.avgConsumption || 200,
+        turnoverRate: storedEnterprise.turnoverRate || 8,
+        lastPurchaseDate: storedEnterprise.lastPurchaseDate || new Date().toISOString().split('T')[0],
+        nextPurchaseDate: storedEnterprise.nextPurchaseDate || new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        supplierCount: storedEnterprise.supplierCount || 4,
+        portDistance: storedEnterprise.portDistance || 100,
+      },
+    }
   }
+
+  // 3. 企业不存在
+  return null
 }
 
 export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
@@ -207,7 +244,7 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
           customerRegions: enterpriseNode?.properties?.customerRegions || [],
           inventoryStrategy: enterpriseNode?.properties?.inventoryStrategy || "moderate",
           description: enterpriseNode?.properties?.description || "",
-          color: ENTERPRISE_COLORS[enterpriseCode] || "#06b6d4",
+          color: getEnterpriseColor(enterpriseCode),
           factorWeights,
         }
 

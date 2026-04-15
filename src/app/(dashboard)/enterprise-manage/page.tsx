@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import Link from "next/link"
 import {
   Card,
   CardContent,
@@ -30,36 +31,23 @@ import {
   FileSpreadsheet,
   AlertCircle,
   CheckCircle,
+  ExternalLink,
 } from "lucide-react"
+import {
+  getAllEnterprises,
+  createEnterprise,
+  updateEnterprise,
+  deleteEnterprise,
+  importEnterprises,
+  getImportTemplate,
+  isStaticEnterprise,
+  StorageEnterprise,
+  EnterpriseFormData,
+  ImportResult,
+} from "@/services/enterprise-storage"
 
-interface Enterprise {
-  id: number
-  code: string
-  name: string
-  location: string | null
-  province: string | null
-  capacity: string | null
-  transportMode: string | null
-  mainProducts: string[]
-  customerRegions: string[]
-  inventoryStrategy: string
-  description: string | null
-  tailwindColor: string
-  shortDescription: string | null
-  basePrice: string | null
-  currentStock: string | null
-  maxCapacity: string | null
-  safetyDays: number | null
-  avgConsumption: string | null
-  turnoverRate: number | null
-  lastPurchaseDate: string | null
-  nextPurchaseDate: string | null
-  supplierCount: number | null
-  portDistance: number | null
-  isActive: boolean
-  createdAt: string
-  updatedAt: string
-}
+// 企业接口（使用存储服务的类型）
+interface Enterprise extends StorageEnterprise {}
 
 const COLOR_OPTIONS = [
   { value: 'cyan', label: '青色', class: 'bg-cyan-500' },
@@ -89,12 +77,8 @@ export default function EnterpriseManagePage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [editingEnterprise, setEditingEnterprise] = useState<Enterprise | null>(null)
-  const [importResult, setImportResult] = useState<{
-    success: number
-    failed: number
-    skipped: number
-    errors: { code: string; error: string }[]
-  } | null>(null)
+  const [importResult, setImportResult] = useState<ImportResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState({
@@ -122,14 +106,16 @@ export default function EnterpriseManagePage() {
     portDistance: '',
   })
 
-  const fetchEnterprises = async () => {
+  const fetchEnterprises = () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/enterprises/manage')
-      const data = await res.json()
-      setEnterprises(data.enterprises || [])
-    } catch (error) {
-      console.error('获取企业列表失败:', error)
+      // 使用 localStorage 存储服务
+      const data = getAllEnterprises()
+      setEnterprises(data)
+      setError(null)
+    } catch (err) {
+      console.error('获取企业列表失败:', err)
+      setError('获取企业列表失败')
     } finally {
       setLoading(false)
     }
@@ -180,7 +166,7 @@ export default function EnterpriseManagePage() {
         name: enterprise.name,
         location: enterprise.location || '',
         province: enterprise.province || '',
-        capacity: enterprise.capacity || '',
+        capacity: enterprise.capacity?.toString() || '',
         transportMode: enterprise.transportMode || 'water',
         mainProducts: enterprise.mainProducts?.join(', ') || '',
         customerRegions: enterprise.customerRegions?.join(', ') || '',
@@ -188,11 +174,11 @@ export default function EnterpriseManagePage() {
         description: enterprise.description || '',
         tailwindColor: enterprise.tailwindColor || 'cyan',
         shortDescription: enterprise.shortDescription || '',
-        basePrice: enterprise.basePrice || '',
-        currentStock: enterprise.currentStock || '',
-        maxCapacity: enterprise.maxCapacity || '',
+        basePrice: enterprise.basePrice?.toString() || '',
+        currentStock: enterprise.currentStock?.toString() || '',
+        maxCapacity: enterprise.maxCapacity?.toString() || '',
         safetyDays: enterprise.safetyDays?.toString() || '',
-        avgConsumption: enterprise.avgConsumption || '',
+        avgConsumption: enterprise.avgConsumption?.toString() || '',
         turnoverRate: enterprise.turnoverRate?.toString() || '',
         lastPurchaseDate: enterprise.lastPurchaseDate || '',
         nextPurchaseDate: enterprise.nextPurchaseDate || '',
@@ -205,71 +191,68 @@ export default function EnterpriseManagePage() {
     setDialogOpen(true)
   }
 
-  const handleSubmit = async () => {
-    const payload = {
-      ...(editingEnterprise ? { id: editingEnterprise.id } : {}),
-      code: formData.code,
-      name: formData.name,
-      location: formData.location || null,
-      province: formData.province || null,
-      capacity: formData.capacity ? parseFloat(formData.capacity) : null,
-      transportMode: formData.transportMode,
-      mainProducts: formData.mainProducts.split(',').map(s => s.trim()).filter(Boolean),
-      customerRegions: formData.customerRegions.split(',').map(s => s.trim()).filter(Boolean),
-      inventoryStrategy: formData.inventoryStrategy,
-      description: formData.description || null,
-      tailwindColor: formData.tailwindColor,
-      shortDescription: formData.shortDescription || null,
-      basePrice: formData.basePrice ? parseFloat(formData.basePrice) : null,
-      currentStock: formData.currentStock ? parseFloat(formData.currentStock) : null,
-      maxCapacity: formData.maxCapacity ? parseFloat(formData.maxCapacity) : null,
-      safetyDays: formData.safetyDays ? parseInt(formData.safetyDays) : null,
-      avgConsumption: formData.avgConsumption ? parseFloat(formData.avgConsumption) : null,
-      turnoverRate: formData.turnoverRate ? parseInt(formData.turnoverRate) : null,
-      lastPurchaseDate: formData.lastPurchaseDate || null,
-      nextPurchaseDate: formData.nextPurchaseDate || null,
-      supplierCount: formData.supplierCount ? parseInt(formData.supplierCount) : null,
-      portDistance: formData.portDistance ? parseInt(formData.portDistance) : null,
-    }
-
+  const handleSubmit = () => {
     try {
-      const res = await fetch('/api/enterprises/manage', {
-        method: editingEnterprise ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      if (res.ok) {
-        setDialogOpen(false)
-        resetForm()
-        fetchEnterprises()
-      } else {
-        const data = await res.json()
-        alert(data.error || '操作失败')
+      const payload: EnterpriseFormData = {
+        code: formData.code,
+        name: formData.name,
+        location: formData.location || undefined,
+        province: formData.province || undefined,
+        capacity: formData.capacity ? parseFloat(formData.capacity) : undefined,
+        transportMode: formData.transportMode as 'water' | 'rail' | 'road',
+        mainProducts: formData.mainProducts.split(',').map(s => s.trim()).filter(Boolean),
+        customerRegions: formData.customerRegions.split(',').map(s => s.trim()).filter(Boolean),
+        inventoryStrategy: formData.inventoryStrategy as 'aggressive' | 'moderate' | 'conservative',
+        description: formData.description || undefined,
+        tailwindColor: formData.tailwindColor,
+        shortDescription: formData.shortDescription || undefined,
+        basePrice: formData.basePrice ? parseFloat(formData.basePrice) : undefined,
+        currentStock: formData.currentStock ? parseFloat(formData.currentStock) : undefined,
+        maxCapacity: formData.maxCapacity ? parseFloat(formData.maxCapacity) : undefined,
+        safetyDays: formData.safetyDays ? parseInt(formData.safetyDays) : undefined,
+        avgConsumption: formData.avgConsumption ? parseFloat(formData.avgConsumption) : undefined,
+        turnoverRate: formData.turnoverRate ? parseInt(formData.turnoverRate) : undefined,
+        lastPurchaseDate: formData.lastPurchaseDate || undefined,
+        nextPurchaseDate: formData.nextPurchaseDate || undefined,
+        supplierCount: formData.supplierCount ? parseInt(formData.supplierCount) : undefined,
+        portDistance: formData.portDistance ? parseInt(formData.portDistance) : undefined,
       }
-    } catch (error) {
-      console.error('保存企业失败:', error)
-      alert('保存企业失败')
+
+      if (editingEnterprise) {
+        updateEnterprise(editingEnterprise.id, payload)
+      } else {
+        createEnterprise(payload)
+      }
+
+      setDialogOpen(false)
+      resetForm()
+      fetchEnterprises()
+      setError(null)
+    } catch (err) {
+      console.error('保存企业失败:', err)
+      setError(err instanceof Error ? err.message : '保存企业失败')
     }
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = (id: number) => {
+    const enterprise = enterprises.find(e => e.id === id)
+    if (!enterprise) return
+
+    // 检查是否为静态企业
+    if (isStaticEnterprise(enterprise.code)) {
+      alert('静态企业（HX集团、HY集团、TC集团）不允许删除')
+      return
+    }
+
     if (!confirm('确定要删除此企业吗？')) return
 
     try {
-      const res = await fetch(`/api/enterprises/manage?id=${id}`, {
-        method: 'DELETE',
-      })
-
-      if (res.ok) {
-        fetchEnterprises()
-      } else {
-        const data = await res.json()
-        alert(data.error || '删除失败')
-      }
-    } catch (error) {
-      console.error('删除企业失败:', error)
-      alert('删除企业失败')
+      deleteEnterprise(id)
+      fetchEnterprises()
+      setError(null)
+    } catch (err) {
+      console.error('删除企业失败:', err)
+      setError(err instanceof Error ? err.message : '删除企业失败')
     }
   }
 
@@ -281,10 +264,11 @@ export default function EnterpriseManagePage() {
     reader.onload = async (event) => {
       try {
         const content = event.target?.result as string
-        let data: Record<string, string | number | undefined>[] = []
+        let data: EnterpriseFormData[] = []
 
         if (file.name.endsWith('.json')) {
-          data = JSON.parse(content)
+          const json = JSON.parse(content)
+          data = Array.isArray(json) ? json : [json]
         } else if (file.name.endsWith('.csv')) {
           const lines = content.split('\n')
           const headers = lines[0].split(',').map(h => h.trim())
@@ -296,39 +280,31 @@ export default function EnterpriseManagePage() {
                 const val = values[idx]?.trim()
                 row[h] = isNaN(Number(val)) ? val : Number(val)
               })
-              data.push(row)
+              data.push(row as unknown as EnterpriseFormData)
             }
           }
         }
 
-        const res = await fetch('/api/enterprises/import', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ enterprises: data, mode: 'upsert' }),
-        })
-
-        const result = await res.json()
+        // 使用 localStorage 导入
+        const result = importEnterprises(data, 'upsert')
         setImportResult(result)
         fetchEnterprises()
       } catch (error) {
         console.error('导入失败:', error)
-        alert('导入失败，请检查文件格式')
+        setError('导入失败，请检查文件格式')
       }
     }
 
-    if (file.name.endsWith('.json')) {
-      reader.readAsText(file)
-    } else if (file.name.endsWith('.csv')) {
+    if (file.name.endsWith('.json') || file.name.endsWith('.csv')) {
       reader.readAsText(file)
     } else {
-      alert('请上传 JSON 或 CSV 文件')
+      setError('请上传 JSON 或 CSV 文件')
     }
   }
 
-  const downloadTemplate = async () => {
-    const res = await fetch('/api/enterprises/import')
-    const data = await res.json()
-    const blob = new Blob([JSON.stringify(data.template, null, 2)], { type: 'application/json' })
+  const downloadTemplate = () => {
+    const template = getImportTemplate()
+    const blob = new Blob([JSON.stringify(template, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -388,30 +364,49 @@ export default function EnterpriseManagePage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div 
+                    <div
                       className={`w-3 h-3 rounded-full ${
                         COLOR_OPTIONS.find(c => c.value === enterprise.tailwindColor)?.class || 'bg-cyan-500'
                       }`}
                     />
                     <CardTitle className="text-lg">{enterprise.name}</CardTitle>
+                    {isStaticEnterprise(enterprise.code) && (
+                      <span className="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+                        预设
+                      </span>
+                    )}
                   </div>
                   <div className="flex gap-1">
+                    <Link href={`/enterprise/${enterprise.code}`}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        title="查看详情"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    </Link>
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
                       onClick={() => handleOpenDialog(enterprise)}
+                      title="编辑"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-red-500 hover:text-red-600"
-                      onClick={() => handleDelete(enterprise.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {!isStaticEnterprise(enterprise.code) && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-600"
+                        onClick={() => handleDelete(enterprise.id)}
+                        title="删除"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <CardDescription className="flex items-center gap-2">
@@ -423,7 +418,7 @@ export default function EnterpriseManagePage() {
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <span className="text-muted-foreground">产能：</span>
-                    <span className="font-medium">{enterprise.capacity || '-'} 万吨/年</span>
+                    <span className="font-medium">{enterprise.capacity ?? '-'} 万吨/年</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">运输：</span>
@@ -433,7 +428,7 @@ export default function EnterpriseManagePage() {
                   </div>
                   <div>
                     <span className="text-muted-foreground">库存：</span>
-                    <span className="font-medium">{enterprise.currentStock || '-'} 吨</span>
+                    <span className="font-medium">{enterprise.currentStock ?? '-'} 吨</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">策略：</span>
@@ -464,6 +459,12 @@ export default function EnterpriseManagePage() {
                     {enterprise.shortDescription}
                   </p>
                 )}
+                <Link
+                  href={`/enterprise/${enterprise.code}`}
+                  className="block mt-2 text-sm text-cyan-600 dark:text-cyan-400 hover:underline"
+                >
+                  查看价格影响因子权重和预测趋势 →
+                </Link>
               </CardContent>
             </Card>
           ))}
@@ -752,7 +753,7 @@ export default function EnterpriseManagePage() {
                 {importResult.errors.length > 0 && (
                   <div className="max-h-32 overflow-y-auto text-xs text-muted-foreground bg-slate-50 dark:bg-slate-900 rounded p-2">
                     {importResult.errors.map((err, idx) => (
-                      <div key={idx}>{err.code}: {err.error}</div>
+                      <div key={idx}>{err}</div>
                     ))}
                   </div>
                 )}

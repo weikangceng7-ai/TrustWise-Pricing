@@ -15,11 +15,8 @@ import { useTheme } from "@/components/theme-provider"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { TrendingUp, TrendingDown, Minus, Brain, Target, BarChart3 } from "lucide-react"
-import {
-  ENTERPRISE_CONFIGS,
-  ENTERPRISE_COLORS,
-  type EnterpriseCode,
-} from "@/services/enterprise-knowledge-config"
+import { ENTERPRISE_CONFIGS, ENTERPRISE_COLORS } from "@/services/enterprise-knowledge-config"
+import { getEnterpriseByCode, getEnterpriseColor } from "@/services/enterprise-storage"
 
 interface PredictionData {
   id: number
@@ -35,7 +32,7 @@ interface PredictionData {
 }
 
 interface EnterprisePredictionChartProps {
-  enterpriseCode: EnterpriseCode
+  enterpriseCode: string  // 改为接受任意字符串
   days?: number
 }
 
@@ -45,8 +42,17 @@ export function EnterprisePredictionChart({ enterpriseCode, days = 60 }: Enterpr
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  const config = ENTERPRISE_CONFIGS.find(e => e.code === enterpriseCode)!
-  const enterpriseColor = ENTERPRISE_COLORS[enterpriseCode]
+  // 动态获取企业配置（静态或 localStorage）
+  const staticConfig = ENTERPRISE_CONFIGS.find(e => e.code === enterpriseCode)
+  const storedEnterprise = getEnterpriseByCode(enterpriseCode)
+
+  // 企业名称和描述
+  const enterpriseName = staticConfig?.name || storedEnterprise?.name || enterpriseCode
+  const enterpriseDescription = staticConfig?.description || storedEnterprise?.description || ''
+
+  // 企业颜色
+  const enterpriseColor = ENTERPRISE_COLORS[enterpriseCode as keyof typeof ENTERPRISE_COLORS]
+    || getEnterpriseColor(enterpriseCode)
 
   useEffect(() => {
     async function fetchData() {
@@ -110,8 +116,8 @@ export function EnterprisePredictionChart({ enterpriseCode, days = 60 }: Enterpr
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg text-slate-900 dark:text-slate-100">{config.name}</CardTitle>
-              <CardDescription className="text-slate-500 dark:text-slate-400">{config.description}</CardDescription>
+              <CardTitle className="text-lg text-slate-900 dark:text-slate-100">{enterpriseName}</CardTitle>
+              <CardDescription className="text-slate-500 dark:text-slate-400">{enterpriseDescription}</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -128,8 +134,8 @@ export function EnterprisePredictionChart({ enterpriseCode, days = 60 }: Enterpr
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg text-slate-900 dark:text-slate-100">{config.name}</CardTitle>
-              <CardDescription className="text-slate-500 dark:text-slate-400">{config.description}</CardDescription>
+              <CardTitle className="text-lg text-slate-900 dark:text-slate-100">{enterpriseName}</CardTitle>
+              <CardDescription className="text-slate-500 dark:text-slate-400">{enterpriseDescription}</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -155,9 +161,9 @@ export function EnterprisePredictionChart({ enterpriseCode, days = 60 }: Enterpr
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: enterpriseColor }}
               />
-              {config.name}
+              {enterpriseName}
             </CardTitle>
-            <CardDescription className="text-slate-500 dark:text-slate-400">{config.description}</CardDescription>
+            <CardDescription className="text-slate-500 dark:text-slate-400">{enterpriseDescription}</CardDescription>
           </div>
           {stats && (
             <div className="flex items-center gap-2">
