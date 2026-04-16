@@ -42,9 +42,25 @@
       }
     },
     {
+      "path": "pages/supply-demand/index",
+      "style": {
+        "navigationBarTitleText": "供需分析",
+        "navigationBarBackgroundColor": "#0f172a",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
       "path": "pages/reports/list",
       "style": {
         "navigationBarTitleText": "采购报告",
+        "navigationBarBackgroundColor": "#0f172a",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/reports/detail",
+      "style": {
+        "navigationBarTitleText": "报告详情",
         "navigationBarBackgroundColor": "#0f172a",
         "navigationBarTextStyle": "white"
       }

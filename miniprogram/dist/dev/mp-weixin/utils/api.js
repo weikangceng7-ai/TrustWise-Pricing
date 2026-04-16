@@ -15,6 +15,7 @@ const request = (options) => {
         "Content-Type": "application/json",
         ...options.header
       },
+      timeout: options.timeout || 3e4,
       success: (res) => {
         var _a;
         common_vendor.index.hideLoading();
@@ -63,23 +64,25 @@ const api = {
     data
   }),
   getReports: (params = {}) => {
-    const query = new URLSearchParams(params).toString();
+    const query = Object.keys(params).map((k) => `${k}=${params[k]}`).join("&");
     return request({ url: `/api/reports${query ? "?" + query : ""}` });
   },
+  getReportDetail: (id) => request({ url: `/api/reports/${id}` }),
   getPredictions: (enterprise, days = 90) => request({
     url: `/api/enterprise-predictions?enterprise=${enterprise}&days=${days}`
   }),
   chat: (messages) => request({
-    url: "/api/chat",
+    url: "/api/chat?stream=false",
     method: "POST",
-    data: { messages }
+    data: { messages },
+    timeout: 6e4
   }),
   getPrices: (params = {}) => {
-    const query = new URLSearchParams(params).toString();
+    const query = Object.keys(params).map((k) => `${k}=${params[k]}`).join("&");
     return request({ url: `/api/prices${query ? "?" + query : ""}` });
   },
   getInventory: (params = {}) => {
-    const query = new URLSearchParams(params).toString();
+    const query = Object.keys(params).map((k) => `${k}=${params[k]}`).join("&");
     return request({ url: `/api/inventory${query ? "?" + query : ""}` });
   },
   getSupplyDemand: () => request({ url: "/api/supply-demand" }),
@@ -88,6 +91,26 @@ const api = {
   }),
   getPriceSummary: () => request({ url: "/api/prices/summary" }),
   getInventorySummary: () => request({ url: "/api/inventory/summary" }),
-  getPredictionSummary: () => request({ url: "/api/enterprise-predictions" })
+  getPredictionSummary: () => request({ url: "/api/enterprise-predictions" }),
+  getNotifications: () => request({ url: "/api/notifications" }),
+  markNotificationRead: (id) => request({
+    url: `/api/notifications/${id}/read`,
+    method: "POST"
+  }),
+  login: (data) => request({
+    url: "/api/auth/login",
+    method: "POST",
+    data
+  }),
+  register: (data) => request({
+    url: "/api/auth/register",
+    method: "POST",
+    data
+  }),
+  logout: () => request({
+    url: "/api/auth/logout",
+    method: "POST"
+  }),
+  getUserInfo: () => request({ url: "/api/auth/user" })
 };
 exports.api = api;

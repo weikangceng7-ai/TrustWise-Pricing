@@ -25,9 +25,39 @@ const _sfc_main = {
     const goToImport = () => {
       common_vendor.index.navigateTo({ url: "/pages/enterprise/import" });
     };
+    const editEnterprise = (item) => {
+      common_vendor.index.navigateTo({ url: `/pages/enterprise/import?edit=${item.id}` });
+    };
+    const confirmDelete = (item) => {
+      common_vendor.index.showModal({
+        title: "确认删除",
+        content: `确定要删除企业"${item.name}"吗？删除后数据将无法恢复。`,
+        confirmText: "删除",
+        confirmColor: "#ef4444",
+        cancelText: "取消",
+        success: (res) => {
+          if (res.confirm) {
+            deleteEnterprise(item);
+          }
+        }
+      });
+    };
+    const deleteEnterprise = async (item) => {
+      try {
+        common_vendor.index.showLoading({ title: "删除中...", mask: true });
+        await utils_api.api.deleteEnterprise(item.id);
+        common_vendor.index.hideLoading();
+        common_vendor.index.showToast({ title: "删除成功", icon: "success" });
+        fetchData();
+      } catch (e) {
+        common_vendor.index.hideLoading();
+        console.error("删除企业失败:", e);
+        common_vendor.index.showToast({ title: "删除失败", icon: "none" });
+      }
+    };
     common_vendor.onMounted(() => fetchData());
     common_vendor.onShow(() => fetchData());
-    const __returned__ = { enterprises, loading, fetchData, goDetail, goToImport, ref: common_vendor.ref, onMounted: common_vendor.onMounted, get onShow() {
+    const __returned__ = { enterprises, loading, fetchData, goDetail, goToImport, editEnterprise, confirmDelete, deleteEnterprise, ref: common_vendor.ref, onMounted: common_vendor.onMounted, get onShow() {
       return common_vendor.onShow;
     }, get api() {
       return utils_api.api;
@@ -45,11 +75,14 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
       return {
         a: common_vendor.t(item.name),
         b: common_vendor.t(item.location || item.province || "未设置地区"),
-        c: common_vendor.t(item.capacity || "-"),
-        d: common_vendor.t(item.currentStock || "-"),
-        e: common_vendor.t(item.supplierCount || "-"),
-        f: item.id,
-        g: common_vendor.o(($event) => $setup.goDetail(item.code), item.id)
+        c: common_vendor.o(($event) => $setup.goDetail(item.code), item.id),
+        d: common_vendor.t(item.capacity || "-"),
+        e: common_vendor.t(item.currentStock || "-"),
+        f: common_vendor.t(item.supplierCount || "-"),
+        g: common_vendor.o(($event) => $setup.goDetail(item.code), item.id),
+        h: common_vendor.o(($event) => $setup.editEnterprise(item), item.id),
+        i: common_vendor.o(($event) => $setup.confirmDelete(item), item.id),
+        j: item.id
       };
     })
   } : !$setup.loading ? {

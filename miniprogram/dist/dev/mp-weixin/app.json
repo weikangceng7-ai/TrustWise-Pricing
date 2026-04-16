@@ -5,7 +5,9 @@
     "pages/enterprise/detail",
     "pages/enterprise/import",
     "pages/knowledge/index",
+    "pages/supply-demand/index",
     "pages/reports/list",
+    "pages/reports/detail",
     "pages/chat/index",
     "pages/user/index"
   ],

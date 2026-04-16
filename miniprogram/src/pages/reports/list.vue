@@ -77,7 +77,7 @@ const fetchData = async () => {
 const getTypeText = (type) => ({ weekly: '周报', monthly: '月报', quarterly: '季报', yearly: '年报', special: '专题' }[type] || type || '报告')
 const getStatusText = (status) => ({ draft: '草稿', pending: '待审核', published: '已发布', archived: '已归档' }[status] || status || '未知')
 const formatDate = (dateStr) => { if (!dateStr) return ''; const d = new Date(dateStr); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
-const viewReport = () => uni.showToast({ title: '报告详情开发中', icon: 'none' })
+const viewReport = (item) => uni.navigateTo({ url: `/pages/reports/detail?id=${item.id}` })
 
 onMounted(() => fetchData())
 </script>

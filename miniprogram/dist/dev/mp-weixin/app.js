@@ -7,7 +7,9 @@ if (!Math) {
   "./pages/enterprise/detail.js";
   "./pages/enterprise/import.js";
   "./pages/knowledge/index.js";
+  "./pages/supply-demand/index.js";
   "./pages/reports/list.js";
+  "./pages/reports/detail.js";
   "./pages/chat/index.js";
   "./pages/user/index.js";
 }
