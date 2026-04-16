@@ -33,9 +33,9 @@ import remarkGfm from "remark-gfm"
 
 // 自定义 Markdown 组件 - 增强表格和可视化效果
 const markdownComponents = {
-  // 表格容器 - 添加滚动和阴影
+  // 表格容器 - 添加滚动
   table: ({ children }: { children?: React.ReactNode }) => (
-    <div className="overflow-x-auto my-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+    <div className="overflow-x-auto my-4 rounded-lg border border-slate-200 dark:border-slate-700">
       <table className="w-full text-sm">{children}</table>
     </div>
   ),
@@ -76,14 +76,14 @@ const markdownComponents = {
   ),
   // 段落
   p: ({ children }: { children?: React.ReactNode }) => (
-    <p className="my-2 leading-relaxed">{children}</p>
+    <p className="my-2 leading-relaxed text-slate-700 dark:text-slate-200">{children}</p>
   ),
   // 列表
   ul: ({ children }: { children?: React.ReactNode }) => (
-    <ul className="my-2 ml-4 list-disc space-y-1">{children}</ul>
+    <ul className="my-2 ml-4 list-disc space-y-1 text-slate-700 dark:text-slate-200">{children}</ul>
   ),
   ol: ({ children }: { children?: React.ReactNode }) => (
-    <ol className="my-2 ml-4 list-decimal space-y-1">{children}</ol>
+    <ol className="my-2 ml-4 list-decimal space-y-1 text-slate-700 dark:text-slate-200">{children}</ol>
   ),
   // 行内代码
   code: ({ className, children, ...props }: { className?: string; children?: React.ReactNode }) => {
@@ -107,7 +107,7 @@ const markdownComponents = {
   ),
   // 引用块
   blockquote: ({ children }: { children?: React.ReactNode }) => (
-    <blockquote className="border-l-4 border-cyan-500 bg-cyan-50/50 dark:bg-cyan-900/20 pl-4 py-2 my-3 rounded-r-lg">
+    <blockquote className="border-l-4 border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20 pl-4 py-2 my-3 rounded-r-lg">
       {children}
     </blockquote>
   ),
@@ -120,10 +120,11 @@ const markdownComponents = {
 // Prose styling for markdown content - enhanced table styling
 const proseClassName = `prose prose-sm prose-zinc dark:prose-invert max-w-none
   prose-headings:text-foreground prose-headings:font-semibold
-  prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5
+  prose-p:my-2 prose-p:text-slate-700 dark:prose-p:text-slate-200
+  prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 prose-li:text-slate-700 dark:prose-li:text-slate-200
   prose-table:my-3 prose-table:text-sm prose-table:w-full
   prose-thead:bg-gradient-to-r prose-thead:from-slate-100 prose-thead:to-slate-50
-  dark:prose-thead:from-slate-700 dark:prose-thead:to-slate-800
+  dark:prose-thead:from-slate-800 dark:prose-thead:to-slate-700
   prose-th:p-2.5 prose-th:text-left prose-th:font-semibold prose-th:text-slate-700 dark:prose-th:text-slate-200
   prose-th:border prose-th:border-slate-200 dark:prose-th:border-slate-600
   prose-td:p-2.5 prose-td:text-slate-600 dark:prose-td:text-slate-300
@@ -133,7 +134,7 @@ const proseClassName = `prose prose-sm prose-zinc dark:prose-invert max-w-none
   prose-strong:text-foreground prose-strong:font-semibold
   prose-code:bg-cyan-100 dark:prose-code:bg-cyan-900/30 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-cyan-700 dark:prose-code:text-cyan-300 prose-code:before:content-none prose-code:after:content-none
   prose-hr:border-slate-200 dark:prose-hr:border-slate-700
-  prose-blockquote:border-l-cyan-500 prose-blockquote:bg-cyan-50/50 dark:prose-blockquote:bg-cyan-900/20 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-lg`
+  prose-blockquote:border-l-cyan-500 prose-blockquote:bg-cyan-50 dark:prose-blockquote:bg-cyan-900/20 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-lg prose-blockquote:text-slate-700 dark:prose-blockquote:text-slate-200`
 
 // Time format options - stable reference
 const timeFormatOptions: Intl.DateTimeFormatOptions = { hour: "2-digit", minute: "2-digit" }
@@ -281,7 +282,7 @@ const MessageBubble = memo(function MessageBubble({
           className={`rounded-2xl px-5 py-4 transition-all duration-300 ${
             isUser
               ? "bg-gradient-to-br from-cyan-500 via-blue-500 to-violet-500 text-white shadow-lg shadow-cyan-500/25 dark:shadow-cyan-500/20"
-              : "bg-white/80 dark:bg-slate-800/80 border border-indigo-100/50 dark:border-slate-700/50 backdrop-blur-sm hover:border-cyan-300/50 dark:hover:border-cyan-500/30 shadow-sm hover:shadow-md"
+              : "bg-white dark:bg-slate-800 border border-indigo-100/50 dark:border-slate-700/50 hover:border-cyan-300/50 dark:hover:border-cyan-500/30"
           }`}
         >
           {isUser ? (
@@ -320,7 +321,7 @@ const MessageBubble = memo(function MessageBubble({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-3 text-xs bg-gradient-to-r from-slate-50 to-indigo-50 dark:bg-slate-700/30 border border-indigo-100/50 dark:border-slate-600/50 text-indigo-600 dark:text-slate-300 hover:from-cyan-50 hover:to-blue-50 dark:hover:bg-slate-700/50 hover:border-cyan-300 dark:hover:border-cyan-500/30 hover:text-cyan-600 dark:hover:text-cyan-300 transition-all shadow-sm"
+              className="h-8 px-3 text-xs bg-gradient-to-r from-slate-50 to-indigo-50 dark:bg-slate-800 dark:from-slate-800 dark:to-slate-800 border border-indigo-100/50 dark:border-slate-700 text-indigo-600 dark:text-slate-300 hover:from-cyan-50 hover:to-blue-50 dark:hover:bg-slate-700 dark:hover:from-slate-700 dark:hover:to-slate-700 hover:border-cyan-300 dark:hover:border-cyan-500/40 hover:text-cyan-600 dark:hover:text-cyan-300 transition-all shadow-sm dark:shadow-none"
               onClick={onRegenerate}
             >
               <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
@@ -329,7 +330,7 @@ const MessageBubble = memo(function MessageBubble({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-3 text-xs bg-gradient-to-r from-slate-50 to-indigo-50 dark:bg-slate-700/30 border border-indigo-100/50 dark:border-slate-600/50 text-indigo-600 dark:text-slate-300 hover:from-violet-50 hover:to-pink-50 dark:hover:bg-slate-700/50 hover:border-violet-300 dark:hover:border-violet-500/30 hover:text-violet-600 dark:hover:text-violet-300 transition-all shadow-sm"
+              className="h-8 px-3 text-xs bg-gradient-to-r from-slate-50 to-indigo-50 dark:bg-slate-800 dark:from-slate-800 dark:to-slate-800 border border-indigo-100/50 dark:border-slate-700 text-indigo-600 dark:text-slate-300 hover:from-violet-50 hover:to-pink-50 dark:hover:bg-slate-700 dark:hover:from-slate-700 dark:hover:to-slate-700 hover:border-violet-300 dark:hover:border-violet-500/40 hover:text-violet-600 dark:hover:text-violet-300 transition-all shadow-sm dark:shadow-none"
               onClick={onCopy}
             >
               {copiedId === message.id ? (
@@ -342,7 +343,7 @@ const MessageBubble = memo(function MessageBubble({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-3 text-xs bg-gradient-to-r from-slate-50 to-indigo-50 dark:bg-slate-700/30 border border-indigo-100/50 dark:border-slate-600/50 text-indigo-600 dark:text-slate-300 hover:from-emerald-50 hover:to-teal-50 dark:hover:bg-slate-700/50 hover:border-emerald-300 dark:hover:border-emerald-500/30 hover:text-emerald-600 dark:hover:text-emerald-300 transition-all shadow-sm"
+              className="h-8 px-3 text-xs bg-gradient-to-r from-slate-50 to-indigo-50 dark:bg-slate-800 dark:from-slate-800 dark:to-slate-800 border border-indigo-100/50 dark:border-slate-700 text-indigo-600 dark:text-slate-300 hover:from-emerald-50 hover:to-teal-50 dark:hover:bg-slate-700 dark:hover:from-slate-700 dark:hover:to-slate-700 hover:border-emerald-300 dark:hover:border-emerald-500/40 hover:text-emerald-600 dark:hover:text-emerald-300 transition-all shadow-sm dark:shadow-none"
               onClick={onGenerateReport}
             >
               <FileText className="h-3.5 w-3.5 mr-1.5" />
@@ -367,7 +368,7 @@ const MessageBubble = memo(function MessageBubble({
                   key={index}
                   variant="outline"
                   size="sm"
-                  className="h-7 px-3 text-xs bg-gradient-to-r from-white to-indigo-50/50 dark:bg-slate-800/40 border-indigo-100/50 dark:border-slate-700/50 text-indigo-600 dark:text-slate-300 hover:from-cyan-50 hover:to-violet-50 dark:hover:bg-cyan-500/10 hover:border-cyan-300 dark:hover:border-cyan-500/40 hover:text-cyan-600 dark:hover:text-cyan-300 transition-all shadow-sm"
+                  className="h-7 px-3 text-xs bg-gradient-to-r from-slate-50 to-indigo-50 dark:bg-slate-800 dark:from-slate-800 dark:to-slate-800 border border-indigo-100/50 dark:border-slate-700 text-indigo-600 dark:text-slate-300 hover:from-cyan-50 hover:to-violet-50 dark:hover:bg-slate-700 dark:hover:from-slate-700 dark:hover:to-slate-700 hover:border-cyan-300 dark:hover:border-cyan-500/40 hover:text-cyan-600 dark:hover:text-cyan-300 transition-all shadow-sm dark:shadow-none"
                   onClick={() => onFollowUp?.(question)}
                 >
                   {question}
@@ -697,7 +698,7 @@ export default function AgentChatPage() {
           <div className="h-full grid gap-4 sm:gap-5 lg:grid-cols-5">
           {/* 对话历史侧边栏 - 仅登录用户显示 */}
           {userId && showHistory && (
-            <Card className="lg:col-span-1 hidden lg:flex flex-col bg-white/80 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 backdrop-blur-md overflow-hidden max-h-full">
+            <Card className="lg:col-span-1 hidden lg:flex flex-col bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700/50 overflow-hidden max-h-full">
               <CardHeader className="border-b border-slate-200 dark:border-slate-700/50 px-4 py-4 shrink-0">
                 <CardTitle className="text-base flex items-center justify-between">
                   <span className="text-slate-900 dark:text-white">对话历史</span>
@@ -734,7 +735,7 @@ export default function AgentChatPage() {
           )}
 
           {/* 聊天区域 */}
-          <Card className={`${userId ? "lg:col-span-3" : "lg:col-span-4"} ${userId && showHistory ? "col-span-1 lg:col-span-3" : "col-span-1 lg:col-span-4"} flex flex-col bg-white/80 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 backdrop-blur-md max-h-full`}>
+          <Card className={`${userId ? "lg:col-span-3" : "lg:col-span-4"} ${userId && showHistory ? "col-span-1 lg:col-span-3" : "col-span-1 lg:col-span-4"} flex flex-col bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700/50 max-h-full`}>
             <CardHeader className="border-b border-slate-200 dark:border-slate-700/50 px-4 sm:px-5 py-3 sm:py-4 shrink-0">
               <div className="flex items-center gap-3">
                 <Avatar className="h-9 w-9 relative">
@@ -887,7 +888,7 @@ export default function AgentChatPage() {
 
           {/* 快捷提问侧边栏 */}
           <div className="hidden lg:block space-y-5 overflow-y-auto max-h-full">
-            <Card className="bg-white/80 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 backdrop-blur-md hover:border-cyan-400/50 dark:hover:border-cyan-500/30 transition-all duration-300">
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700/50 hover:border-cyan-400/50 dark:hover:border-cyan-500/30 transition-all duration-300">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-base text-slate-900 dark:text-white">
                   <div className="relative">
@@ -913,7 +914,7 @@ export default function AgentChatPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-white/80 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 backdrop-blur-md hover:border-violet-400/50 dark:hover:border-violet-500/30 transition-all duration-300">
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700/50 hover:border-violet-400/50 dark:hover:border-violet-500/30 transition-all duration-300">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-base text-slate-900 dark:text-white">
                   <Lightbulb className="h-5 w-5 text-violet-500 dark:text-violet-400" />
@@ -945,7 +946,7 @@ export default function AgentChatPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-white/80 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 backdrop-blur-md hover:border-amber-400/50 dark:hover:border-amber-500/30 transition-all duration-300">
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700/50 hover:border-amber-400/50 dark:hover:border-amber-500/30 transition-all duration-300">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-base text-slate-900 dark:text-white">
                   <TrendingUp className="h-5 w-5 text-amber-500 dark:text-amber-400" />

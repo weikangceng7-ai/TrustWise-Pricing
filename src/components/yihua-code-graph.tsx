@@ -279,6 +279,76 @@ export function YihuaCodeKnowledgeGraph() {
   const [filterType, setFilterType] = useState<NodeType | "all">("all")
   const svgRef = useRef<SVGSVGElement | null>(null)
 
+  // 节点拖拽状态
+  const [nodeOffsets, setNodeOffsets] = useState<Map<string, { x: number; y: number }>>(new Map())
+  const [isDragging, setIsDragging] = useState(false)
+  const dragNodeRef = useRef<{ node: GraphNode; startX: number; startY: number; offsetX: number; offsetY: number } | null>(null)
+
+  // 还原节点位置
+  const handleResetPositions = () => {
+    setNodeOffsets(new Map())
+  }
+
+  // 获取 SVG 坐标
+  const getSvgCoordinates = (e: React.MouseEvent<SVGSVGElement>) => {
+    const svg = svgRef.current
+    if (!svg) return { x: 0, y: 0 }
+    const rect = svg.getBoundingClientRect()
+    const scaleX = 900 / rect.width
+    const scaleY = 700 / rect.height
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    }
+  }
+
+  // 开始拖拽节点
+  const handleNodeMouseDown = (e: React.MouseEvent<SVGGElement>, node: GraphNode, originalX: number, originalY: number) => {
+    e.stopPropagation()
+    const coords = getSvgCoordinates(e as React.MouseEvent<SVGSVGElement>)
+    const currentOffset = nodeOffsets.get(node.id)
+    const currentX = currentOffset ? currentOffset.x : originalX
+    const currentY = currentOffset ? currentOffset.y : originalY
+    dragNodeRef.current = {
+      node,
+      startX: coords.x,
+      startY: coords.y,
+      offsetX: coords.x - currentX,
+      offsetY: coords.y - currentY
+    }
+    setIsDragging(true)
+    setSelectedNode(node)
+  }
+
+  // 拖拽移动 - 限制在边界内
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!isDragging) return
+    const dragInfo = dragNodeRef.current
+    if (!dragInfo) return
+    const coords = getSvgCoordinates(e)
+    // 边界限制：节点半径约 20px，留出边距
+    const margin = 30
+    const newX = Math.max(margin, Math.min(900 - margin, coords.x - dragInfo.offsetX))
+    const newY = Math.max(margin, Math.min(700 - margin, coords.y - dragInfo.offsetY))
+    setNodeOffsets(prev => {
+      const next = new Map(prev)
+      next.set(dragInfo.node.id, { x: newX, y: newY })
+      return next
+    })
+  }
+
+  // 结束拖拽
+  const handleMouseUp = () => {
+    setIsDragging(false)
+    dragNodeRef.current = null
+  }
+
+  // 点击空白处取消选中
+  const handleSvgClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (isDragging) return
+    setSelectedNode(null)
+  }
+
   // 获取外部数据
   const marketData = useMarketDataOverview()
 
@@ -437,13 +507,13 @@ export function YihuaCodeKnowledgeGraph() {
   // 四舍五入到固定小数位，避免 SSR hydration 不匹配
   const round = (n: number, decimals: number = 2) => Number(n.toFixed(decimals))
 
-  // 计算节点位置 - 放射状布局
+  // 计算节点位置 - 放射状布局（优化视觉美感）
   const positions = useMemo(() => {
     const pos = new Map<string, { x: number; y: number; r: number; angle: number }>()
     const W = 900
-    const H = 600
+    const H = 700
     const cx = W / 2
-    const cy = H / 2
+    const cy = H / 2 // 350
 
     // 按类型分组
     const coreNodes = nodes.filter(n => n.type === "core")
@@ -453,51 +523,15 @@ export function YihuaCodeKnowledgeGraph() {
     const ruleNodes = nodes.filter(n => n.type === "rule")
     const appNodes = nodes.filter(n => n.type === "application")
 
-    // 核心节点 - 中心
+    // 核心节点 - 中心，最大最突出
     coreNodes.forEach((n) => {
-      pos.set(n.id, { x: cx, y: cy, r: 24, angle: 0 })
+      pos.set(n.id, { x: cx, y: cy, r: 22, angle: 0 })
     })
 
     // 数据源 - 内环（最靠近核心）
     dataSourceNodes.forEach((n, i) => {
       const angle = (2 * Math.PI * i) / dataSourceNodes.length - Math.PI / 2
-      const radius = 120
-      pos.set(n.id, {
-        x: round(cx + radius * Math.cos(angle)),
-        y: round(cy + radius * Math.sin(angle)),
-        r: 14,
-        angle: angle
-      })
-    })
-
-    // 市场因素 - 第二环
-    marketNodes.forEach((n, i) => {
-      const angle = (2 * Math.PI * i) / marketNodes.length - Math.PI / 2
-      const radius = 200
-      pos.set(n.id, {
-        x: round(cx + radius * Math.cos(angle)),
-        y: round(cy + radius * Math.sin(angle)),
-        r: 14,
-        angle: angle
-      })
-    })
-
-    // 企业经验 - 第三环
-    enterpriseNodes.forEach((n, i) => {
-      const angle = (2 * Math.PI * i) / enterpriseNodes.length - Math.PI / 4
-      const radius = 300
-      pos.set(n.id, {
-        x: round(cx + radius * Math.cos(angle)),
-        y: round(cy + radius * Math.sin(angle)),
-        r: 12,
-        angle: angle
-      })
-    })
-
-    // 制度规则 - 第四环
-    ruleNodes.forEach((n, i) => {
-      const angle = (2 * Math.PI * i) / ruleNodes.length + Math.PI / 6
-      const radius = 380
+      const radius = 110
       pos.set(n.id, {
         x: round(cx + radius * Math.cos(angle)),
         y: round(cy + radius * Math.sin(angle)),
@@ -506,14 +540,68 @@ export function YihuaCodeKnowledgeGraph() {
       })
     })
 
-    // 应用场景 - 第五环（最外层）
-    appNodes.forEach((n, i) => {
-      const angle = (2 * Math.PI * i) / appNodes.length
-      const radius = 440
+    // 市场因素 - 第二环，按类别分组排列（扇区布局），增大间距
+    const marketByCategory: Record<string, GraphNode[]> = {}
+    marketNodes.forEach(n => {
+      const cat = n.category || "other"
+      if (!marketByCategory[cat]) marketByCategory[cat] = []
+      marketByCategory[cat].push(n)
+    })
+    const categories = Object.keys(marketByCategory)
+    const categorySectorAngles: Record<string, { start: number; end: number }> = {}
+    const sectorSize = (2 * Math.PI) / Math.max(categories.length, 1)
+    categories.forEach((cat, i) => {
+      const startAngle = -Math.PI / 2 + i * sectorSize
+      categorySectorAngles[cat] = { start: startAngle, end: startAngle + sectorSize }
+    })
+
+    categories.forEach(cat => {
+      const nodesInCat = marketByCategory[cat]
+      const sector = categorySectorAngles[cat]
+      nodesInCat.forEach((n, i) => {
+        const angle = sector.start + sectorSize * (i + 0.5) / nodesInCat.length
+        const radius = 170
+        pos.set(n.id, {
+          x: round(cx + radius * Math.cos(angle)),
+          y: round(cy + radius * Math.sin(angle)),
+          r: 8,
+          angle: angle
+        })
+      })
+    })
+
+    // 企业经验 - 第三环，均匀分布，间距更大
+    enterpriseNodes.forEach((n, i) => {
+      const angle = (2 * Math.PI * i) / enterpriseNodes.length + Math.PI / 10
+      const radius = 220
       pos.set(n.id, {
         x: round(cx + radius * Math.cos(angle)),
         y: round(cy + radius * Math.sin(angle)),
-        r: 16,
+        r: 7,
+        angle: angle
+      })
+    })
+
+    // 制度规则 - 第四环，交替分布避免重叠
+    ruleNodes.forEach((n, i) => {
+      const angle = (2 * Math.PI * i) / ruleNodes.length - Math.PI / 8 + (i % 2 === 0 ? 0.12 : -0.12)
+      const radius = 270
+      pos.set(n.id, {
+        x: round(cx + radius * Math.cos(angle)),
+        y: round(cy + radius * Math.sin(angle)),
+        r: 6,
+        angle: angle
+      })
+    })
+
+    // 应用场景 - 第五环（最外层），均匀分布
+    appNodes.forEach((n, i) => {
+      const angle = (2 * Math.PI * i) / appNodes.length + Math.PI / 4
+      const radius = 310
+      pos.set(n.id, {
+        x: round(cx + radius * Math.cos(angle)),
+        y: round(cy + radius * Math.sin(angle)),
+        r: 10,
         angle: angle
       })
     })
@@ -786,12 +874,24 @@ export function YihuaCodeKnowledgeGraph() {
           </div>
 
           {/* 知识图谱 */}
-          <div className="rounded-lg border overflow-hidden">
+          <div className="rounded-lg border overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 relative">
+            {/* 还原按钮 */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResetPositions}
+              className="absolute top-2 right-2 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm"
+            >
+              <RefreshCw className="h-4 w-4 mr-1" />
+              还原位置
+            </Button>
             <svg
               ref={svgRef}
-              viewBox="0 0 900 600"
-              className="w-full h-[500px]"
-              style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)" }}
+              viewBox="0 0 900 700"
+              className="w-full h-[600px] bg-transparent"
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
             >
               <defs>
                 {/* 发光效果 */}
@@ -901,11 +1001,13 @@ export function YihuaCodeKnowledgeGraph() {
                 </style>
               </defs>
 
-              {/* 背景装饰圆环 */}
-              <circle cx="450" cy="300" r="180" fill="none" stroke="rgba(59, 130, 246, 0.1)" strokeWidth="1" className="line-pulse" />
-              <circle cx="450" cy="300" r="280" fill="none" stroke="rgba(16, 185, 129, 0.1)" strokeWidth="1" style={{ animationDelay: "0.5s" }} className="line-pulse" />
-              <circle cx="450" cy="300" r="360" fill="none" stroke="rgba(245, 158, 11, 0.1)" strokeWidth="1" style={{ animationDelay: "1s" }} className="line-pulse" />
-              <circle cx="450" cy="300" r="430" fill="none" stroke="rgba(139, 92, 246, 0.1)" strokeWidth="1" style={{ animationDelay: "1.5s" }} className="line-pulse" />
+              {/* 背景装饰圆环 - 与节点布局匹配 */}
+              <rect x="0" y="0" width="900" height="700" fill="transparent" onClick={() => setSelectedNode(null)} style={{ cursor: "default" }} />
+              <circle cx="450" cy="350" r="100" fill="none" stroke="rgba(6, 182, 212, 0.12)" strokeWidth="1" className="line-pulse dark:opacity-100" />
+              <circle cx="450" cy="350" r="155" fill="none" stroke="rgba(59, 130, 246, 0.12)" strokeWidth="1" style={{ animationDelay: "0.5s" }} className="line-pulse dark:opacity-100" />
+              <circle cx="450" cy="350" r="205" fill="none" stroke="rgba(16, 185, 129, 0.12)" strokeWidth="1" style={{ animationDelay: "1s" }} className="line-pulse dark:opacity-100" />
+              <circle cx="450" cy="350" r="250" fill="none" stroke="rgba(245, 158, 11, 0.12)" strokeWidth="1" style={{ animationDelay: "1.5s" }} className="line-pulse dark:opacity-100" />
+              <circle cx="450" cy="350" r="295" fill="none" stroke="rgba(139, 92, 246, 0.12)" strokeWidth="1" style={{ animationDelay: "2s" }} className="line-pulse dark:opacity-100" />
 
               {/* 关系线 */}
               {filteredLinks.map((l, idx) => {
@@ -913,10 +1015,17 @@ export function YihuaCodeKnowledgeGraph() {
                 const t = positions.get(l.target)
                 if (!s || !t) return null
                 const isHighlighted = selectedNode && (l.source === selectedNode.id || l.target === selectedNode.id)
+                // 使用节点偏移位置（如果有）
+                const sOffset = nodeOffsets.get(l.source)
+                const tOffset = nodeOffsets.get(l.target)
+                const sx = sOffset ? sOffset.x : s.x
+                const sy = sOffset ? sOffset.y : s.y
+                const tx = tOffset ? tOffset.x : t.x
+                const ty = tOffset ? tOffset.y : t.y
                 return (
                   <path
                     key={idx}
-                    d={linkPathD(s.x, s.y, t.x, t.y)}
+                    d={linkPathD(sx, sy, tx, ty)}
                     className={`kg-line ${isHighlighted ? "line-flow" : ""}`}
                     stroke={isHighlighted ? "#60A5FA" : getLinkColor(l.type)}
                     strokeWidth={isHighlighted ? 2.5 : Math.max(1, l.weight * 2)}
@@ -934,19 +1043,28 @@ export function YihuaCodeKnowledgeGraph() {
                 const colors = getNodeColor(n.type)
                 const dimmed = isDimmed(n.id)
 
+                // 使用节点偏移位置（如果有）
+                const offset = nodeOffsets.get(n.id)
+                const nodeX = offset ? offset.x : p.x
+                const nodeY = offset ? offset.y : p.y
+
                 return (
                   <g
                     key={n.id}
                     className={`kg-node ${n.type === "core" ? "node-float" : n.type === "market" ? "node-float-slow" : ""}`}
                     style={{ animationDelay: `${nodeIdx * 0.1}s` }}
-                    onClick={() => setSelectedNode(n)}
+                    onMouseDown={(e) => handleNodeMouseDown(e, n, p.x, p.y)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedNode(n)
+                    }}
                   >
                     {/* 选中涟漪 */}
                     {isSelected && (
                       <>
                         <circle
-                          cx={p.x}
-                          cy={p.y}
+                          cx={nodeX}
+                          cy={nodeY}
                           r={p.r + 4}
                           fill="none"
                           stroke={colors.stroke}
@@ -954,8 +1072,8 @@ export function YihuaCodeKnowledgeGraph() {
                           className="ripple"
                         />
                         <circle
-                          cx={p.x}
-                          cy={p.y}
+                          cx={nodeX}
+                          cy={nodeY}
                           r={p.r + 20}
                           fill="none"
                           stroke={colors.stroke}
@@ -967,43 +1085,44 @@ export function YihuaCodeKnowledgeGraph() {
                     )}
                     {/* 节点光晕 */}
                     <circle
-                      cx={p.x}
-                      cy={p.y}
+                      cx={nodeX}
+                      cy={nodeY}
                       r={p.r + 6}
                       fill={colors.glow}
                       opacity={dimmed ? 0.05 : 0.3}
                       className="glow-pulse"
                     />
-                    {/* 节点主体 */}
+                    {/* 节点主体 - 无阴影 */}
                     <circle
-                      cx={p.x}
-                      cy={p.y}
+                      cx={nodeX}
+                      cy={nodeY}
                       r={p.r + (isSelected ? 4 : 0)}
                       fill={colors.fill}
                       stroke={isSelected ? "#fff" : colors.stroke}
                       strokeWidth={isSelected ? 2.5 : 1.5}
                       opacity={dimmed ? 0.15 : 1}
-                      filter="url(#softShadow)"
                     />
                     {/* 高光 */}
                     <circle
-                      cx={p.x - p.r * 0.25}
-                      cy={p.y - p.r * 0.25}
+                      cx={nodeX - p.r * 0.25}
+                      cy={nodeY - p.r * 0.25}
                       r={p.r * 0.3}
                       fill="rgba(255,255,255,0.4)"
                       opacity={dimmed ? 0.05 : 1}
                     />
-                    {/* 标签 */}
+                    {/* 标签 - 智能位置，避免重叠 */}
                     <text
-                      x={p.x}
-                      y={p.y - p.r - 10}
+                      x={nodeX}
+                      y={p.angle > -Math.PI/2 && p.angle < Math.PI/2 ? nodeY - p.r - 14 : nodeY + p.r + 14}
                       textAnchor="middle"
-                      fill="#E2E8F0"
-                      fontSize="11"
+                      dominantBaseline={p.angle > -Math.PI/2 && p.angle < Math.PI/2 ? "auto" : "hanging"}
+                      className="fill-slate-700 dark:fill-slate-100"
+                      fontSize="12"
                       fontWeight="500"
-                      opacity={dimmed ? 0.3 : 1}
+                      opacity={dimmed ? 0.25 : 1}
+                      style={{ pointerEvents: "none" }}
                     >
-                      {n.name.length > 8 ? `${n.name.slice(0, 8)}…` : n.name}
+                      {n.name.length > 5 ? `${n.name.slice(0, 4)}…` : n.name}
                     </text>
                     <title>{`${n.name} - ${n.description}`}</title>
                   </g>

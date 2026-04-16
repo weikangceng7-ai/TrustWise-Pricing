@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { TrendingUp, Package, DollarSign, BarChart3, AlertTriangle, ChevronRight, MessageCircle, FileText, Settings, ArrowRight, ChevronLeft, ChevronRight as ChevronRightIcon, ArrowUpRight, ArrowDownRight, Activity, Zap, Target, Layers, Grid3X3 } from "lucide-react"
+import { TrendingUp, Package, DollarSign, BarChart3, AlertTriangle, ChevronRight, MessageCircle, FileText, Settings, ArrowRight, ChevronLeft, ChevronRight as ChevronRightIcon, ArrowUpRight, ArrowDownRight, Activity, Zap, Target, Layers, Grid3X3, Scale } from "lucide-react"
 import { PriceChart, TimeRange } from "@/components/price-chart"
 import { EnterprisePredictionOverview } from "@/components/enterprise-prediction-chart"
 import { SupplyDemandAnalysis } from "@/components/supply-demand-analysis"
@@ -353,83 +353,302 @@ export default function DashboardPage() {
               <BarChart3 className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
               <h3 className="text-slate-900 dark:text-white font-semibold">价格知识图谱</h3>
             </div>
-            <Link href="/yihua-code-graph" className="text-xs text-cyan-600 dark:text-cyan-400 flex items-center gap-1 hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors">
-              查看详情 <ChevronRight className="h-3 w-3" />
+            <Link href="/yihua-code-graph" className="text-sm text-cyan-600 dark:text-cyan-400 flex items-center gap-1 hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors">
+              查看详情 <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
 
-          {/* 知识图谱可视化区域 */}
-          <div className="relative h-80 rounded-xl bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 dark:from-slate-900/50 dark:via-slate-800/30 dark:to-slate-900/50 border border-slate-200 dark:border-white/5 overflow-hidden">
-            {/* 中心节点 - 价格 */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-              <div className="relative">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-500/30 dark:to-blue-500/30 border-2 border-cyan-300 dark:border-cyan-400/50 flex items-center justify-center backdrop-blur-sm">
-                  <div className="text-center">
-                    <DollarSign className="h-6 w-6 text-cyan-600 dark:text-cyan-400 mx-auto" />
-                    <span className="text-xs text-slate-700 dark:text-white font-medium mt-1 block">价格</span>
-                  </div>
-                </div>
-                <div className="absolute inset-0 rounded-full bg-cyan-300/30 dark:bg-cyan-400/20 animate-ping" />
-              </div>
+          {/* 知识图谱可视化区域 - 更舒展的布局 */}
+          <div className="relative h-[600px] rounded-xl bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 dark:from-slate-900/50 dark:via-slate-800/30 dark:to-slate-900/50 border border-slate-200 dark:border-white/5 overflow-hidden">
+            {/* 背景网格 */}
+            <div className="absolute inset-0 opacity-5 dark:opacity-10">
+              <svg width="100%" height="100%">
+                <defs>
+                  <pattern id="graphGrid" width="50" height="50" patternUnits="userSpaceOnUse">
+                    <path d="M 50 0 L 0 0 0 50" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-slate-400" />
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#graphGrid)" />
+              </svg>
             </div>
 
-            {/* 上方节点 - 供给 */}
-            <div className="absolute top-8 left-1/2 -translate-x-1/2">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-100 to-green-100 dark:from-emerald-500/30 dark:to-green-500/30 border border-emerald-300 dark:border-emerald-400/50 flex items-center justify-center backdrop-blur-sm">
-                <div className="text-center">
-                  <Package className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mx-auto" />
-                  <span className="text-xs text-slate-700 dark:text-white mt-0.5 block">供给</span>
-                </div>
-              </div>
-            </div>
+            {/* 动态连接线 - SVG层 with 流动动画 */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 1 }}>
+              {/* 定义渐变和动画 */}
+              <defs>
+                {/* 流动粒子渐变 - 供给线 */}
+                <linearGradient id="flowGradientSupply" gradientUnits="userSpaceOnUse" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.9" />
+                  <stop offset="50%" stopColor="#10b981" stopOpacity="1">
+                    <animate attributeName="offset" values="0;1;0" dur="3s" repeatCount="indefinite" />
+                  </stop>
+                  <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.9" />
+                </linearGradient>
+                {/* 流动粒子渐变 - 需求线 */}
+                <linearGradient id="flowGradientDemand" gradientUnits="userSpaceOnUse" x1="0%" y1="100%" x2="0%" y2="0%">
+                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.9" />
+                  <stop offset="50%" stopColor="#8b5cf6" stopOpacity="1">
+                    <animate attributeName="offset" values="0;1;0" dur="3.5s" repeatCount="indefinite" />
+                  </stop>
+                  <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.9" />
+                </linearGradient>
+                {/* 流动粒子渐变 - 成本线 */}
+                <linearGradient id="flowGradientCost" gradientUnits="userSpaceOnUse" x1="100%" y1="0%" x2="0%" y2="0%">
+                  <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.9" />
+                  <stop offset="50%" stopColor="#f59e0b" stopOpacity="1">
+                    <animate attributeName="offset" values="0;1;0" dur="4s" repeatCount="indefinite" />
+                  </stop>
+                  <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.9" />
+                </linearGradient>
+                {/* 流动粒子渐变 - 政策线 */}
+                <linearGradient id="flowGradientPolicy" gradientUnits="userSpaceOnUse" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.9" />
+                  <stop offset="50%" stopColor="#06b6d4" stopOpacity="1">
+                    <animate attributeName="offset" values="0;1;0" dur="3.8s" repeatCount="indefinite" />
+                  </stop>
+                  <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.9" />
+                </linearGradient>
 
-            {/* 下方节点 - 需求 */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-500/30 dark:to-purple-500/30 border border-violet-300 dark:border-violet-400/50 flex items-center justify-center backdrop-blur-sm">
-                <div className="text-center">
-                  <TrendingUp className="h-4 w-4 text-violet-600 dark:text-violet-400 mx-auto" />
-                  <span className="text-xs text-slate-700 dark:text-white mt-0.5 block">需求</span>
-                </div>
-              </div>
-            </div>
+                {/* 发光效果 */}
+                <filter id="lineGlow">
+                  <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                  <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                {/* 强发光效果 */}
+                <filter id="strongGlow">
+                  <feGaussianBlur stdDeviation="6" result="coloredBlur" />
+                  <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
 
-            {/* 左侧节点 - 成本 */}
-            <div className="absolute top-1/2 left-8 -translate-y-1/2">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-500/30 dark:to-orange-500/30 border border-amber-300 dark:border-amber-400/50 flex items-center justify-center backdrop-blur-sm">
-                <div className="text-center">
-                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mx-auto" />
-                  <span className="text-xs text-slate-700 dark:text-white mt-0.5 block">成本</span>
-                </div>
-              </div>
-            </div>
+              {/* 供给→价格 - 流动能量线 */}
+              <line x1="50%" y1="12%" x2="50%" y2="38%" stroke="url(#flowGradientSupply)" strokeWidth="4" strokeLinecap="round" filter="url(#lineGlow)">
+                <animate attributeName="stroke-dasharray" values="0,200;200,0;0,200" dur="3s" repeatCount="indefinite" />
+              </line>
+              {/* 流动粒子群 - 4个粒子 */}
+              <circle r="5" fill="#10b981" filter="url(#strongGlow)">
+                <animate attributeName="cx" values="50%;50%" dur="3s" repeatCount="indefinite" begin="0s" />
+                <animate attributeName="cy" values="12%;38%" dur="3s" repeatCount="indefinite" begin="0s" />
+                <animate attributeName="opacity" values="0.8;1;0.8" dur="3s" repeatCount="indefinite" begin="0s" />
+              </circle>
+              <circle r="4" fill="#10b981" filter="url(#strongGlow)">
+                <animate attributeName="cx" values="50%;50%" dur="3s" repeatCount="indefinite" begin="0.75s" />
+                <animate attributeName="cy" values="12%;38%" dur="3s" repeatCount="indefinite" begin="0.75s" />
+                <animate attributeName="opacity" values="0.6;0.9;0.6" dur="3s" repeatCount="indefinite" begin="0.75s" />
+              </circle>
+              <circle r="3" fill="#10b981" filter="url(#strongGlow)">
+                <animate attributeName="cx" values="50%;50%" dur="3s" repeatCount="indefinite" begin="1.5s" />
+                <animate attributeName="cy" values="12%;38%" dur="3s" repeatCount="indefinite" begin="1.5s" />
+                <animate attributeName="opacity" values="0.5;0.8;0.5" dur="3s" repeatCount="indefinite" begin="1.5s" />
+              </circle>
+              <circle r="2" fill="#10b981" filter="url(#strongGlow)">
+                <animate attributeName="cx" values="50%;50%" dur="3s" repeatCount="indefinite" begin="2.25s" />
+                <animate attributeName="cy" values="12%;38%" dur="3s" repeatCount="indefinite" begin="2.25s" />
+                <animate attributeName="opacity" values="0.4;0.7;0.4" dur="3s" repeatCount="indefinite" begin="2.25s" />
+              </circle>
 
-            {/* 右侧节点 - 政策 */}
-            <div className="absolute top-1/2 right-8 -translate-y-1/2">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-rose-100 to-pink-100 dark:from-rose-500/30 dark:to-pink-500/30 border border-rose-300 dark:border-rose-400/50 flex items-center justify-center backdrop-blur-sm">
-                <div className="text-center">
-                  <FileText className="h-4 w-4 text-rose-600 dark:text-rose-400 mx-auto" />
-                  <span className="text-xs text-slate-700 dark:text-white mt-0.5 block">政策</span>
-                </div>
-              </div>
-            </div>
+              {/* 价格→需求 - 流动能量线 */}
+              <line x1="50%" y1="62%" x2="50%" y2="88%" stroke="url(#flowGradientDemand)" strokeWidth="4" strokeLinecap="round" filter="url(#lineGlow)">
+                <animate attributeName="stroke-dasharray" values="0,200;200,0;0,200" dur="3.5s" repeatCount="indefinite" />
+              </line>
+              {/* 流动粒子群 - 4个粒子 */}
+              <circle r="5" fill="#8b5cf6" filter="url(#strongGlow)">
+                <animate attributeName="cx" values="50%;50%" dur="3.5s" repeatCount="indefinite" begin="0s" />
+                <animate attributeName="cy" values="62%;88%" dur="3.5s" repeatCount="indefinite" begin="0s" />
+                <animate attributeName="opacity" values="0.8;1;0.8" dur="3.5s" repeatCount="indefinite" begin="0s" />
+              </circle>
+              <circle r="4" fill="#8b5cf6" filter="url(#strongGlow)">
+                <animate attributeName="cx" values="50%;50%" dur="3.5s" repeatCount="indefinite" begin="0.87s" />
+                <animate attributeName="cy" values="62%;88%" dur="3.5s" repeatCount="indefinite" begin="0.87s" />
+                <animate attributeName="opacity" values="0.6;0.9;0.6" dur="3.5s" repeatCount="indefinite" begin="0.87s" />
+              </circle>
+              <circle r="3" fill="#8b5cf6" filter="url(#strongGlow)">
+                <animate attributeName="cx" values="50%;50%" dur="3.5s" repeatCount="indefinite" begin="1.75s" />
+                <animate attributeName="cy" values="62%;88%" dur="3.5s" repeatCount="indefinite" begin="1.75s" />
+                <animate attributeName="opacity" values="0.5;0.8;0.5" dur="3.5s" repeatCount="indefinite" begin="1.75s" />
+              </circle>
+              <circle r="2" fill="#8b5cf6" filter="url(#strongGlow)">
+                <animate attributeName="cx" values="50%;50%" dur="3.5s" repeatCount="indefinite" begin="2.62s" />
+                <animate attributeName="cy" values="62%;88%" dur="3.5s" repeatCount="indefinite" begin="2.62s" />
+                <animate attributeName="opacity" values="0.4;0.7;0.4" dur="3.5s" repeatCount="indefinite" begin="2.62s" />
+              </circle>
 
-            {/* 连接线 - 从中心到各节点 */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none">
-              {/* 到供给 */}
-              <line x1="50%" y1="50%" x2="50%" y2="20%" stroke="rgba(16, 185, 129, 0.3)" strokeWidth="2" strokeDasharray="4 4" />
-              {/* 到需求 */}
-              <line x1="50%" y1="50%" x2="50%" y2="80%" stroke="rgba(139, 92, 246, 0.3)" strokeWidth="2" strokeDasharray="4 4" />
-              {/* 到成本 */}
-              <line x1="50%" y1="50%" x2="20%" y2="50%" stroke="rgba(245, 158, 11, 0.3)" strokeWidth="2" strokeDasharray="4 4" />
-              {/* 到政策 */}
-              <line x1="50%" y1="50%" x2="80%" y2="50%" stroke="rgba(244, 63, 94, 0.3)" strokeWidth="2" strokeDasharray="4 4" />
+              {/* 成本→价格 - 流动能量线 */}
+              <line x1="12%" y1="50%" x2="38%" y2="50%" stroke="url(#flowGradientCost)" strokeWidth="4" strokeLinecap="round" filter="url(#lineGlow)">
+                <animate attributeName="stroke-dasharray" values="0,200;200,0;0,200" dur="4s" repeatCount="indefinite" />
+              </line>
+              {/* 流动粒子群 - 4个粒子 */}
+              <circle r="5" fill="#f59e0b" filter="url(#strongGlow)">
+                <animate attributeName="cx" values="12%;38%" dur="4s" repeatCount="indefinite" begin="0s" />
+                <animate attributeName="cy" values="50%;50%" dur="4s" repeatCount="indefinite" begin="0s" />
+                <animate attributeName="opacity" values="0.8;1;0.8" dur="4s" repeatCount="indefinite" begin="0s" />
+              </circle>
+              <circle r="4" fill="#f59e0b" filter="url(#strongGlow)">
+                <animate attributeName="cx" values="12%;38%" dur="4s" repeatCount="indefinite" begin="1s" />
+                <animate attributeName="cy" values="50%;50%" dur="4s" repeatCount="indefinite" begin="1s" />
+                <animate attributeName="opacity" values="0.6;0.9;0.6" dur="4s" repeatCount="indefinite" begin="1s" />
+              </circle>
+              <circle r="3" fill="#f59e0b" filter="url(#strongGlow)">
+                <animate attributeName="cx" values="12%;38%" dur="4s" repeatCount="indefinite" begin="2s" />
+                <animate attributeName="cy" values="50%;50%" dur="4s" repeatCount="indefinite" begin="2s" />
+                <animate attributeName="opacity" values="0.5;0.8;0.5" dur="4s" repeatCount="indefinite" begin="2s" />
+              </circle>
+              <circle r="2" fill="#f59e0b" filter="url(#strongGlow)">
+                <animate attributeName="cx" values="12%;38%" dur="4s" repeatCount="indefinite" begin="3s" />
+                <animate attributeName="cy" values="50%;50%" dur="4s" repeatCount="indefinite" begin="3s" />
+                <animate attributeName="opacity" values="0.4;0.7;0.4" dur="4s" repeatCount="indefinite" begin="3s" />
+              </circle>
+
+              {/* 价格→政策 - 流动能量线 */}
+              <line x1="62%" y1="50%" x2="88%" y2="50%" stroke="url(#flowGradientPolicy)" strokeWidth="4" strokeLinecap="round" filter="url(#lineGlow)">
+                <animate attributeName="stroke-dasharray" values="0,200;200,0;0,200" dur="3.8s" repeatCount="indefinite" />
+              </line>
+              {/* 流动粒子群 - 4个粒子 */}
+              <circle r="5" fill="#f43f5e" filter="url(#strongGlow)">
+                <animate attributeName="cx" values="62%;88%" dur="3.8s" repeatCount="indefinite" begin="0s" />
+                <animate attributeName="cy" values="50%;50%" dur="3.8s" repeatCount="indefinite" begin="0s" />
+                <animate attributeName="opacity" values="0.8;1;0.8" dur="3.8s" repeatCount="indefinite" begin="0s" />
+              </circle>
+              <circle r="4" fill="#f43f5e" filter="url(#strongGlow)">
+                <animate attributeName="cx" values="62%;88%" dur="3.8s" repeatCount="indefinite" begin="0.95s" />
+                <animate attributeName="cy" values="50%;50%" dur="3.8s" repeatCount="indefinite" begin="0.95s" />
+                <animate attributeName="opacity" values="0.6;0.9;0.6" dur="3.8s" repeatCount="indefinite" begin="0.95s" />
+              </circle>
+              <circle r="3" fill="#f43f5e" filter="url(#strongGlow)">
+                <animate attributeName="cx" values="62%;88%" dur="3.8s" repeatCount="indefinite" begin="1.9s" />
+                <animate attributeName="cy" values="50%;50%" dur="3.8s" repeatCount="indefinite" begin="1.9s" />
+                <animate attributeName="opacity" values="0.5;0.8;0.5" dur="3.8s" repeatCount="indefinite" begin="1.9s" />
+              </circle>
+              <circle r="2" fill="#f43f5e" filter="url(#strongGlow)">
+                <animate attributeName="cx" values="62%;88%" dur="3.8s" repeatCount="indefinite" begin="2.85s" />
+                <animate attributeName="cy" values="50%;50%" dur="3.8s" repeatCount="indefinite" begin="2.85s" />
+                <animate attributeName="opacity" values="0.4;0.7;0.4" dur="3.8s" repeatCount="indefinite" begin="2.85s" />
+              </circle>
             </svg>
 
-            {/* 关系标签 */}
-            <div className="absolute top-1/3 left-1/2 -translate-x-1/2 text-xs text-slate-500 dark:text-slate-400">影响</div>
-            <div className="absolute bottom-1/3 left-1/2 -translate-x-1/2 text-xs text-slate-500 dark:text-slate-400">驱动</div>
-            <div className="absolute top-1/2 left-1/3 -translate-y-1/2 text-xs text-slate-500 dark:text-slate-400">构成</div>
-            <div className="absolute top-1/2 right-1/3 translate-x-1/2 -translate-y-1/2 text-xs text-slate-500 dark:text-slate-400">调控</div>
+            {/* 中心节点 - 价格 - 呼吸动态与能量脉冲 */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ zIndex: 10 }}>
+              <div className="relative group">
+                {/* 多层能量波纹 */}
+                <div className="absolute -inset-10 rounded-full border border-cyan-400/20 animate-spin" style={{ animationDuration: '20s' }} />
+                <div className="absolute -inset-6 rounded-full bg-cyan-400/10 animate-pulse" style={{ animationDuration: '4s' }} />
+                <div className="absolute -inset-4 rounded-full bg-cyan-400/20 animate-pulse" style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
+                <div className="absolute -inset-3 rounded-full bg-cyan-400/30 animate-pulse" style={{ animationDuration: '2s', animationDelay: '1s' }} />
+
+                {/* 主节点 - 呼吸脉冲 */}
+                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-cyan-200 via-blue-100 to-cyan-100 dark:from-cyan-500/50 dark:via-blue-500/40 dark:to-cyan-500/50 border-3 border-cyan-500 dark:border-cyan-400/70 flex items-center justify-center backdrop-blur-sm shadow-xl shadow-cyan-500/30 dark:shadow-cyan-500/40 animate-pulse" style={{ animationDuration: '2.5s' }}>
+                  <div className="text-center">
+                    <DollarSign className="h-9 w-9 text-cyan-700 dark:text-cyan-200 mx-auto animate-pulse" style={{ animationDuration: '1.5s' }} />
+                    <span className="text-base text-slate-800 dark:text-white font-bold mt-1 block animate-pulse" style={{ animationDuration: '3s' }}>价格</span>
+                  </div>
+                </div>
+
+                {/* 内部能量核心 */}
+                <div className="absolute inset-0 rounded-full flex items-center justify-center">
+                  <div className="w-3 h-3 rounded-full bg-white/90 dark:bg-cyan-300/90 animate-ping" style={{ animationDuration: '2s' }} />
+                </div>
+              </div>
+            </div>
+
+            {/* 上方节点 - 供给 - 波纹能量 */}
+            <div className="absolute top-[8%] left-1/2 -translate-x-1/2" style={{ zIndex: 10 }}>
+              <div className="relative group">
+                {/* 能量波纹 */}
+                <div className="absolute -inset-4 rounded-full border border-emerald-400/30 animate-ping" style={{ animationDuration: '3s' }} />
+                <div className="absolute -inset-3 rounded-full bg-emerald-400/20 animate-pulse" style={{ animationDuration: '2s' }} />
+
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-200 to-green-100 dark:from-emerald-500/50 dark:to-green-500/40 border-2 border-emerald-500 dark:border-emerald-400/60 flex items-center justify-center backdrop-blur-sm shadow-lg shadow-emerald-500/20 animate-pulse" style={{ animationDuration: '2s' }}>
+                  <div className="text-center">
+                    <Package className="h-6 w-6 text-emerald-700 dark:text-emerald-200 mx-auto animate-pulse" style={{ animationDuration: '1.8s' }} />
+                    <span className="text-sm text-slate-800 dark:text-white font-bold mt-1 block animate-pulse" style={{ animationDuration: '2.5s' }}>供给</span>
+                  </div>
+                </div>
+
+                {/* 内部能量点 */}
+                <div className="absolute inset-0 rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 rounded-full bg-white/80 dark:bg-emerald-300/80 animate-ping" style={{ animationDuration: '2.5s' }} />
+                </div>
+              </div>
+            </div>
+
+            {/* 下方节点 - 需求 - 波纹能量 */}
+            <div className="absolute bottom-[8%] left-1/2 -translate-x-1/2" style={{ zIndex: 10 }}>
+              <div className="relative group">
+                {/* 能量波纹 */}
+                <div className="absolute -inset-4 rounded-full border border-violet-400/30 animate-ping" style={{ animationDuration: '3.5s' }} />
+                <div className="absolute -inset-3 rounded-full bg-violet-400/20 animate-pulse" style={{ animationDuration: '2s', animationDelay: '0.3s' }} />
+
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-200 to-purple-100 dark:from-violet-500/50 dark:to-purple-500/40 border-2 border-violet-500 dark:border-violet-400/60 flex items-center justify-center backdrop-blur-sm shadow-lg shadow-violet-500/20 animate-pulse" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }}>
+                  <div className="text-center">
+                    <TrendingUp className="h-6 w-6 text-violet-700 dark:text-violet-200 mx-auto animate-pulse" style={{ animationDuration: '2s' }} />
+                    <span className="text-sm text-slate-800 dark:text-white font-bold mt-1 block animate-pulse" style={{ animationDuration: '3s' }}>需求</span>
+                  </div>
+                </div>
+
+                {/* 内部能量点 */}
+                <div className="absolute inset-0 rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 rounded-full bg-white/80 dark:bg-violet-300/80 animate-ping" style={{ animationDuration: '3s' }} />
+                </div>
+              </div>
+            </div>
+
+            {/* 左侧节点 - 成本 - 波纹能量 */}
+            <div className="absolute top-1/2 left-[8%] -translate-y-1/2" style={{ zIndex: 10 }}>
+              <div className="relative group">
+                {/* 能量波纹 */}
+                <div className="absolute -inset-4 rounded-full border border-amber-400/30 animate-ping" style={{ animationDuration: '4s' }} />
+                <div className="absolute -inset-3 rounded-full bg-amber-400/20 animate-pulse" style={{ animationDuration: '2s', animationDelay: '0.6s' }} />
+
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-200 to-orange-100 dark:from-amber-500/50 dark:to-orange-500/40 border-2 border-amber-500 dark:border-amber-400/60 flex items-center justify-center backdrop-blur-sm shadow-lg shadow-amber-500/20 animate-pulse" style={{ animationDuration: '3s', animationDelay: '0.8s' }}>
+                  <div className="text-center">
+                    <AlertTriangle className="h-6 w-6 text-amber-700 dark:text-amber-200 mx-auto animate-pulse" style={{ animationDuration: '2.2s' }} />
+                    <span className="text-sm text-slate-800 dark:text-white font-bold mt-1 block animate-pulse" style={{ animationDuration: '3.5s' }}>成本</span>
+                  </div>
+                </div>
+
+                {/* 内部能量点 */}
+                <div className="absolute inset-0 rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 rounded-full bg-white/80 dark:bg-amber-300/80 animate-ping" style={{ animationDuration: '3.5s' }} />
+                </div>
+              </div>
+            </div>
+
+            {/* 右侧节点 - 政策 - 波纹能量 */}
+            <div className="absolute top-1/2 right-[8%] -translate-y-1/2" style={{ zIndex: 10 }}>
+              <div className="relative group">
+                {/* 能量波纹 */}
+                <div className="absolute -inset-4 rounded-full border border-rose-400/30 animate-ping" style={{ animationDuration: '3.8s' }} />
+                <div className="absolute -inset-3 rounded-full bg-rose-400/20 animate-pulse" style={{ animationDuration: '2s', animationDelay: '0.9s' }} />
+
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-rose-200 to-pink-100 dark:from-rose-500/50 dark:to-pink-500/40 border-2 border-rose-500 dark:border-rose-400/60 flex items-center justify-center backdrop-blur-sm shadow-lg shadow-rose-500/20 animate-pulse" style={{ animationDuration: '3s', animationDelay: '1s' }}>
+                  <div className="text-center">
+                    <Scale className="h-6 w-6 text-rose-700 dark:text-rose-200 mx-auto animate-pulse" style={{ animationDuration: '2.2s' }} />
+                    <span className="text-sm text-slate-800 dark:text-white font-bold mt-1 block animate-pulse" style={{ animationDuration: '3.5s' }}>政策</span>
+                  </div>
+                </div>
+
+                {/* 内部能量点 */}
+                <div className="absolute inset-0 rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 rounded-full bg-white/80 dark:bg-rose-300/80 animate-ping" style={{ animationDuration: '4s' }} />
+                </div>
+              </div>
+            </div>
+
+                
+            {/* 图谱说明 - 动态指示 */}
+            <div className="absolute bottom-4 right-4 px-4 py-2.5 rounded-lg bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border border-slate-300 dark:border-slate-600 text-sm text-slate-600 dark:text-slate-300 shadow-sm animate-pulse" style={{ zIndex: 15, animationDuration: '3s' }}>
+              <div className="flex items-center gap-2.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-cyan-500 animate-ping" style={{ animationDuration: '1.5s' }} />
+                <span className="animate-pulse" style={{ animationDuration: '2s' }}>能量流动网络</span>
+              </div>
+            </div>
           </div>
         </div>
 

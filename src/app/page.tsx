@@ -22,9 +22,12 @@ import {
   ChevronLeft,
   ChevronRight as ChevronRightIcon,
   Home as HomeIcon,
-  Network
+  Network,
+  Moon,
+  Sun
 } from "lucide-react"
 import Link from "next/link"
+import { useTheme } from "@/components/theme-provider"
 
 // 自定义 hook: 检测元素是否在视口内
 function useInView(options = {}) {
@@ -85,6 +88,7 @@ function ParticleBackground() {
 // 动态图表动画组件
 function AnimatedChart() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const { resolvedTheme, mounted } = useTheme()
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -96,12 +100,15 @@ function AnimatedChart() {
     let animationId: number
     let time = 0
 
+    // 根据主题调整颜色
+    const isDark = !mounted ? true : resolvedTheme === "dark"
+
     const draw = () => {
       time += 0.015
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
       // 绘制网格
-      ctx.strokeStyle = "rgba(6, 182, 212, 0.08)"
+      ctx.strokeStyle = isDark ? "rgba(6, 182, 212, 0.08)" : "rgba(6, 182, 212, 0.12)"
       ctx.lineWidth = 1
       for (let i = 0; i < 25; i++) {
         ctx.beginPath()
@@ -116,9 +123,9 @@ function AnimatedChart() {
 
       // 绘制多条价格曲线
       const curves = [
-        { color: "rgba(6, 182, 212, 0.8)", amplitude: 50, speed: 1, offset: 0 },
-        { color: "rgba(139, 92, 246, 0.5)", amplitude: 30, speed: 0.7, offset: 2 },
-        { color: "rgba(34, 197, 94, 0.4)", amplitude: 20, speed: 0.5, offset: 4 },
+        { color: isDark ? "rgba(6, 182, 212, 0.8)" : "rgba(8, 145, 178, 0.9)", amplitude: 50, speed: 1, offset: 0 },
+        { color: isDark ? "rgba(139, 92, 246, 0.5)" : "rgba(124, 58, 237, 0.6)", amplitude: 30, speed: 0.7, offset: 2 },
+        { color: isDark ? "rgba(34, 197, 94, 0.4)" : "rgba(22, 163, 74, 0.5)", amplitude: 20, speed: 0.5, offset: 4 },
       ]
 
       curves.forEach((curve, idx) => {
@@ -140,9 +147,9 @@ function AnimatedChart() {
 
       // 绘制主曲线渐变填充
       const gradient = ctx.createLinearGradient(0, canvas.height / 2 - 80, 0, canvas.height)
-      gradient.addColorStop(0, "rgba(6, 182, 212, 0.25)")
-      gradient.addColorStop(0.5, "rgba(6, 182, 212, 0.1)")
-      gradient.addColorStop(1, "rgba(6, 182, 212, 0)")
+      gradient.addColorStop(0, isDark ? "rgba(6, 182, 212, 0.25)" : "rgba(8, 145, 178, 0.2)")
+      gradient.addColorStop(0.5, isDark ? "rgba(6, 182, 212, 0.1)" : "rgba(8, 145, 178, 0.08)")
+      gradient.addColorStop(1, isDark ? "rgba(6, 182, 212, 0)" : "rgba(8, 145, 178, 0)")
       ctx.fillStyle = gradient
       ctx.beginPath()
       for (let x = 0; x < canvas.width; x++) {
@@ -164,13 +171,13 @@ function AnimatedChart() {
         const y = canvas.height / 2 + Math.sin((x / 50) + time) * 50 + Math.sin((x / 25) + time * 1.5) * 15
 
         // 外圈发光
-        ctx.fillStyle = "rgba(6, 182, 212, 0.3)"
+        ctx.fillStyle = isDark ? "rgba(6, 182, 212, 0.3)" : "rgba(8, 145, 178, 0.4)"
         ctx.beginPath()
         ctx.arc(x, y, 8, 0, Math.PI * 2)
         ctx.fill()
 
         // 内圈
-        ctx.fillStyle = "rgba(6, 182, 212, 1)"
+        ctx.fillStyle = isDark ? "rgba(6, 182, 212, 1)" : "rgba(8, 145, 178, 1)"
         ctx.beginPath()
         ctx.arc(x, y, 4, 0, Math.PI * 2)
         ctx.fill()
@@ -184,7 +191,7 @@ function AnimatedChart() {
     return () => {
       cancelAnimationFrame(animationId)
     }
-  }, [])
+  }, [resolvedTheme, mounted])
 
   return (
     <canvas
@@ -237,6 +244,7 @@ function AnimatedNumber({ value, suffix = "", duration = 2000 }: { value: string
 function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const { setTheme, resolvedTheme, mounted } = useTheme()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -246,11 +254,17 @@ function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
+  const toggleTheme = () => {
+    setTheme(resolvedTheme === "dark" ? "light" : "dark")
+  }
+
+  const ThemeIcon = !mounted ? Sun : (resolvedTheme === "dark" ? Moon : Sun)
+
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         isScrolled
-          ? "bg-slate-900/98 backdrop-blur-xl border-b border-slate-700/50 shadow-xl shadow-black/20"
+          ? "bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-700/50 shadow-xl shadow-slate-200/20 dark:shadow-black/20"
           : "bg-transparent"
       }`}
     >
@@ -280,6 +294,14 @@ function Navbar() {
 
           {/* Right Actions */}
           <div className="hidden md:flex items-center gap-4">
+            {/* 主题切换按钮 */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+              title={mounted ? (resolvedTheme === "dark" ? "切换浅色模式" : "切换深色模式") : "切换主题"}
+            >
+              <ThemeIcon className="h-5 w-5" />
+            </button>
             <Link
               href="/dashboard"
               className="text-slate-400 hover:text-white transition-colors text-sm font-medium px-4 py-2 hover:bg-white/5 rounded-lg flex items-center gap-1.5"
@@ -322,6 +344,13 @@ function Navbar() {
               <Link href="#about" className="text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm py-2.5 px-3 rounded-lg">
                 关于
               </Link>
+              <button
+                onClick={toggleTheme}
+                className="text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm py-2.5 px-3 rounded-lg flex items-center gap-2"
+              >
+                <ThemeIcon className="h-4 w-4" />
+                {mounted ? (resolvedTheme === "dark" ? "浅色模式" : "深色模式") : "切换主题"}
+              </button>
               <Link href="/login" className="text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm py-2.5 px-3 rounded-lg">
                 登录
               </Link>
@@ -350,8 +379,29 @@ function HeroSection() {
 
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden pt-16">
-      {/* 动态背景 */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
+      {/* 动态背景 - 支持浅色和深色模式 */}
+      {/* 浅色模式背景 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-cyan-50 dark:opacity-0 transition-opacity duration-500">
+        {/* 浅色模式光晕 */}
+        <div
+          className="absolute top-1/4 left-1/3 w-[700px] h-[700px] rounded-full opacity-30"
+          style={{
+            background: 'radial-gradient(circle, rgba(6,182,212,0.25) 0%, rgba(6,182,212,0.1) 40%, transparent 70%)',
+            filter: 'blur(60px)',
+            animation: 'pulse-glow 4s ease-in-out infinite'
+          }}
+        />
+        <div
+          className="absolute top-1/2 right-1/4 w-[500px] h-[500px] rounded-full opacity-20"
+          style={{
+            background: 'radial-gradient(circle, rgba(139,92,246,0.2) 0%, rgba(139,92,246,0.05) 50%, transparent 70%)',
+            filter: 'blur(80px)'
+          }}
+        />
+      </div>
+
+      {/* 深色模式背景 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 opacity-0 dark:opacity-100 transition-opacity duration-500">
         {/* 主光晕 - 带动画 */}
         <div
           className={`absolute top-1/4 left-1/3 w-[700px] h-[700px] rounded-full transition-all duration-1500 ease-out ${isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}
@@ -392,10 +442,10 @@ function HeroSection() {
 
         {/* 渐变遮罩 */}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 via-transparent to-slate-900/30" />
-
-        {/* 粒子背景 */}
-        <ParticleBackground />
       </div>
+
+      {/* 粒子背景 */}
+      <ParticleBackground />
 
       {/* 内容 */}
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-20">
@@ -404,20 +454,20 @@ function HeroSection() {
           <div className="text-left">
             {/* 标签 */}
             <div
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 mb-8 transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-cyan-100 to-blue-100 dark:from-cyan-500/10 dark:to-blue-500/10 border border-cyan-300 dark:border-cyan-500/20 mb-8 transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
             >
-              <Sparkles className="h-4 w-4 text-cyan-400 animate-pulse" />
-              <span className="text-sm text-cyan-300 font-medium tracking-wide">AI 驱动的智能决策</span>
-              <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+              <Sparkles className="h-4 w-4 text-cyan-500 dark:text-cyan-400 animate-pulse" />
+              <span className="text-sm text-cyan-700 dark:text-cyan-300 font-medium tracking-wide">AI 驱动的智能决策</span>
+              <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400 animate-ping" />
             </div>
 
             {/* 主标题 */}
             <div className={`transition-all duration-700 delay-100 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-2 tracking-tight leading-[1.1]">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight leading-[1.1]">
                 智能硫磺价格
               </h1>
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-8 tracking-tight leading-[1.1]">
-                <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-violet-400 bg-clip-text text-transparent animate-gradient">
+                <span className="bg-gradient-to-r from-cyan-600 via-blue-600 to-violet-600 dark:from-cyan-400 dark:via-blue-400 dark:to-violet-400 bg-clip-text text-transparent animate-gradient">
                   预测系统
                 </span>
               </h1>
@@ -425,7 +475,7 @@ function HeroSection() {
 
             {/* 副标题 */}
             <p
-              className={`text-xl text-slate-400 mb-10 max-w-lg leading-relaxed transition-all duration-700 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+              className={`text-xl text-slate-600 dark:text-slate-400 mb-10 max-w-lg leading-relaxed transition-all duration-700 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
             >
               基于 AI 的市场价格分析与采购决策支持平台，
               为化工企业提供精准的价格预测与智能采购建议。
@@ -448,7 +498,7 @@ function HeroSection() {
               </Link>
               <Link
                 href="#features"
-                className="group px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white text-lg font-semibold hover:bg-white/10 hover:border-white/20 transition-all duration-300 flex items-center gap-2"
+                className="group px-8 py-4 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 text-slate-700 dark:text-white text-lg font-semibold hover:bg-slate-200 dark:hover:bg-white/10 hover:border-slate-400 dark:hover:border-white/20 transition-all duration-300 flex items-center gap-2"
               >
                 <Play className="h-5 w-5" />
                 了解更多
@@ -460,30 +510,30 @@ function HeroSection() {
               className={`flex flex-wrap items-center gap-8 transition-all duration-700 delay-500 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
             >
               <div className="flex items-center gap-2 group cursor-default">
-                <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 group-hover:border-cyan-500/50 transition-colors">
-                  <CheckCircle2 className="h-5 w-5 text-cyan-400" />
+                <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-500/20 dark:to-blue-500/20 border border-cyan-200 dark:border-cyan-500/30 group-hover:border-cyan-400 dark:group-hover:border-cyan-500/50 transition-colors">
+                  <CheckCircle2 className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
                 </div>
                 <div>
-                  <div className="text-sm text-slate-400">预测准确率</div>
-                  <div className="text-lg font-bold text-white">95%+</div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400">预测准确率</div>
+                  <div className="text-lg font-bold text-slate-900 dark:text-white">95%+</div>
                 </div>
               </div>
               <div className="flex items-center gap-2 group cursor-default">
-                <div className="p-2 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 border border-violet-500/30 group-hover:border-violet-500/50 transition-colors">
-                  <Users className="h-5 w-5 text-violet-400" />
+                <div className="p-2 rounded-xl bg-gradient-to-br from-violet-100 to-purple-100 dark:from-violet-500/20 dark:to-purple-500/20 border border-violet-200 dark:border-violet-500/30 group-hover:border-violet-400 dark:group-hover:border-violet-500/50 transition-colors">
+                  <Users className="h-5 w-5 text-violet-600 dark:text-violet-400" />
                 </div>
                 <div>
-                  <div className="text-sm text-slate-400">服务企业</div>
-                  <div className="text-lg font-bold text-white">100+</div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400">服务企业</div>
+                  <div className="text-lg font-bold text-slate-900 dark:text-white">100+</div>
                 </div>
               </div>
               <div className="flex items-center gap-2 group cursor-default">
-                <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 border border-emerald-500/30 group-hover:border-emerald-500/50 transition-colors">
-                  <Database className="h-5 w-5 text-emerald-400" />
+                <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-100 to-green-100 dark:from-emerald-500/20 dark:to-green-500/20 border border-emerald-200 dark:border-emerald-500/30 group-hover:border-emerald-400 dark:group-hover:border-emerald-500/50 transition-colors">
+                  <Database className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
-                  <div className="text-sm text-slate-400">历史数据</div>
-                  <div className="text-lg font-bold text-white">10年+</div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400">历史数据</div>
+                  <div className="text-lg font-bold text-slate-900 dark:text-white">10年+</div>
                 </div>
               </div>
             </div>
@@ -493,7 +543,7 @@ function HeroSection() {
           <div
             className={`relative hidden lg:block transition-all duration-1000 delay-400 ${isLoaded ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 translate-x-20 scale-90'}`}
           >
-            <div className="relative p-8 rounded-3xl bg-gradient-to-br from-slate-800/80 to-slate-800/40 border border-slate-700/50 backdrop-blur-xl hover:border-cyan-500/30 transition-colors duration-300 shadow-2xl shadow-black/40">
+            <div className="relative p-8 rounded-3xl bg-gradient-to-br from-white to-slate-50 dark:from-slate-800/80 dark:to-slate-800/40 border border-slate-200 dark:border-slate-700/50 backdrop-blur-xl hover:border-cyan-500/30 dark:hover:border-cyan-500/30 transition-colors duration-300 shadow-2xl shadow-slate-300/40 dark:shadow-black/40">
               {/* 标题栏 */}
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2.5">
@@ -501,29 +551,29 @@ function HeroSection() {
                   <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500" />
                   <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-green-500 to-green-600" />
                 </div>
-                <span className="text-xs text-slate-500 font-medium px-3 py-1 rounded-lg bg-slate-700/50">实时价格预测</span>
+                <span className="text-xs text-slate-500 dark:text-slate-500 font-medium px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-700/50">实时价格预测</span>
               </div>
 
               {/* 动态图表 */}
               <AnimatedChart />
 
               {/* 底部统计 */}
-              <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-700/50">
+              <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-200 dark:border-slate-700/50">
                 <div className="group hover:scale-105 transition-transform cursor-default">
-                  <div className="text-xs text-slate-500 mb-2">当前价格</div>
-                  <div className="text-xl font-bold text-white">¥1,850</div>
-                  <div className="text-xs text-slate-400 mt-1">/吨</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-500 mb-2">当前价格</div>
+                  <div className="text-xl font-bold text-slate-900 dark:text-white">¥1,850</div>
+                  <div className="text-xs text-slate-400 dark:text-slate-400 mt-1">/吨</div>
                 </div>
                 <div className="group hover:scale-105 transition-transform cursor-default">
-                  <div className="text-xs text-slate-500 mb-2">7日预测</div>
-                  <div className="text-xl font-bold text-cyan-400 flex items-center gap-1">
+                  <div className="text-xs text-slate-500 dark:text-slate-500 mb-2">7日预测</div>
+                  <div className="text-xl font-bold text-cyan-600 dark:text-cyan-400 flex items-center gap-1">
                     <TrendingUp className="h-4 w-4" />
                     +3.2%
                   </div>
                 </div>
                 <div className="group hover:scale-105 transition-transform cursor-default">
-                  <div className="text-xs text-slate-500 mb-2">置信度</div>
-                  <div className="text-xl font-bold text-emerald-400">96%</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-500 mb-2">置信度</div>
+                  <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">96%</div>
                 </div>
               </div>
             </div>
@@ -673,21 +723,21 @@ function StatsSection() {
   ]
 
   return (
-    <section ref={sectionRef} className="relative py-20 px-6 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 overflow-hidden">
+    <section ref={sectionRef} className="relative py-20 px-6 bg-gradient-to-r from-slate-100 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 overflow-hidden transition-colors duration-500">
       {/* 背景光效 */}
-      <div className="absolute top-1/2 left-0 w-[500px] h-[300px] bg-cyan-500/10 rounded-full blur-[150px]" />
-      <div className="absolute top-1/2 right-0 w-[500px] h-[300px] bg-violet-500/10 rounded-full blur-[150px]" />
+      <div className="absolute top-1/2 left-0 w-[500px] h-[300px] bg-cyan-500/10 dark:bg-cyan-500/10 rounded-full blur-[150px]" />
+      <div className="absolute top-1/2 right-0 w-[500px] h-[300px] bg-violet-500/10 dark:bg-violet-500/10 rounded-full blur-[150px]" />
 
       <div className="max-w-5xl mx-auto relative">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {stats.map((stat, index) => (
             <div
               key={index}
-              className={`group relative text-center p-8 rounded-2xl bg-gradient-to-br from-slate-800/60 to-slate-800/30 border border-slate-700/30 hover:border-cyan-500/30 transition-all duration-700 overflow-hidden ${isInView ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-12 scale-90'}`}
+              className={`group relative text-center p-8 rounded-2xl bg-gradient-to-br from-white/80 to-slate-50/60 dark:from-slate-800/60 dark:to-slate-800/30 border border-slate-200/30 dark:border-slate-700/30 hover:border-cyan-500/30 transition-all duration-700 overflow-hidden ${isInView ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-12 scale-90'}`}
               style={{ transitionDelay: isInView ? `${stat.delay}ms` : '0ms' }}
             >
               {/* 背景发光 */}
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-blue-500/5 dark:from-cyan-500/5 dark:to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
               {/* 图标 */}
               <div className="relative inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-500 to-cyan-600 mb-5 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300 shadow-xl shadow-cyan-500/30">
@@ -695,15 +745,15 @@ function StatsSection() {
               </div>
 
               {/* 数值 */}
-              <div className="relative text-3xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">
+              <div className="relative text-3xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
                 {isInView ? <AnimatedNumber value={stat.value} duration={2000} /> : stat.value}
               </div>
 
               {/* 标签 */}
-              <div className="relative text-base text-slate-400 mb-1 group-hover:text-slate-300 transition-colors">{stat.label}</div>
+              <div className="relative text-base text-slate-600 dark:text-slate-400 mb-1 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">{stat.label}</div>
 
               {/* 描述 */}
-              <div className="relative text-xs text-slate-500">{stat.desc}</div>
+              <div className="relative text-xs text-slate-500 dark:text-slate-500">{stat.desc}</div>
             </div>
           ))}
         </div>
@@ -808,32 +858,32 @@ function Footer() {
   const { ref: sectionRef, isInView } = useInView()
 
   return (
-    <footer ref={sectionRef} className="py-12 px-6 bg-slate-950 border-t border-slate-800">
+    <footer ref={sectionRef} className="py-12 px-6 bg-slate-950 dark:bg-slate-950 border-t border-slate-800 dark:border-slate-800 transition-colors duration-500">
       <div className="max-w-5xl mx-auto">
         <div className={`flex flex-col md:flex-row items-center justify-between gap-6 transition-all duration-600 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <Link href="/" className="flex items-center gap-3 group">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-transform shadow-lg shadow-cyan-500/30">
               <BarChart3 className="h-4 w-4 text-white" />
             </div>
-            <span className="text-white font-semibold text-lg group-hover:text-cyan-400 transition-colors">SulfurAI</span>
+            <span className="text-white dark:text-white font-semibold text-lg group-hover:text-cyan-400 transition-colors">SulfurAI</span>
           </Link>
 
           <div className="flex items-center gap-8">
-            <Link href="/login" className="text-slate-400 hover:text-white hover:scale-105 transition-all text-sm font-medium">
+            <Link href="/login" className="text-slate-400 dark:text-slate-400 hover:text-white dark:hover:text-white hover:scale-105 transition-all text-sm font-medium">
               登录
             </Link>
-            <Link href="/register" className="text-slate-400 hover:text-white hover:scale-105 transition-all text-sm font-medium">
+            <Link href="/register" className="text-slate-400 dark:text-slate-400 hover:text-white dark:hover:text-white hover:scale-105 transition-all text-sm font-medium">
               注册
             </Link>
             <Link
               href="/dashboard"
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-400 hover:from-cyan-500/30 hover:to-blue-500/30 hover:scale-105 transition-all text-sm font-semibold border border-cyan-500/30 hover:border-cyan-500/50"
+              className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500/20 to-blue-500/20 dark:from-cyan-500/20 dark:to-blue-500/20 text-cyan-400 dark:text-cyan-400 hover:from-cyan-500/30 hover:to-blue-500/30 dark:hover:from-cyan-500/30 dark:hover:to-blue-500/30 hover:scale-105 transition-all text-sm font-semibold border border-cyan-500/30 dark:border-cyan-500/30 hover:border-cyan-500/50 dark:hover:border-cyan-500/50"
             >
               进入系统
             </Link>
           </div>
 
-          <div className="text-slate-500 text-sm">
+          <div className="text-slate-500 dark:text-slate-500 text-sm">
             © 2024 SulfurAI. All rights reserved.
           </div>
         </div>

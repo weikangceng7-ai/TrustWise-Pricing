@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Database, Filter, Brain, BarChart3, Building, Scale, ChevronRight, RefreshCw } from "lucide-react"
+import { Database, Filter, Brain, BarChart3, Building, Scale, ChevronRight, RefreshCw, ArrowRight, ArrowDown, Settings, FileText, Users, Zap, Target, PieChart as PieChartIcon, TrendingUp } from "lucide-react"
 import {
   BarChart,
   Bar,
@@ -98,335 +98,310 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
   const sources = statsResponse?.data?.sources
 
   return (
-    <div className={`bg-white/80 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-slate-200 dark:border-white/10 ${className}`}>
-      <div className="flex items-center gap-2 mb-6">
-        <BarChart3 className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
-        <h3 className="text-slate-900 dark:text-white font-semibold">系统架构</h3>
-        {/* 刷新按钮 */}
+    <div className={`bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl p-8 border border-slate-200 dark:border-slate-700 ${className}`}>
+      {/* 标题栏 */}
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+            <BarChart3 className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white">硫磺价格预测系统架构</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">三阶段数据处理流程</p>
+          </div>
+        </div>
         <button
           onClick={() => refetch()}
           disabled={isFetching}
-          className="ml-auto p-1 rounded hover:bg-slate-100 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
+          className="p-2 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
           title="刷新数据"
         >
-          <RefreshCw className={`h-3.5 w-3.5 text-slate-400 ${isFetching ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 text-slate-600 dark:text-slate-300 ${isFetching ? 'animate-spin' : ''}`} />
         </button>
-        {isLoading && <span className="text-xs text-slate-400">(加载中...)</span>}
       </div>
 
-      {/* 三阶段架构 */}
-      <div className="space-y-4">
-        {/* 第一阶段 - 数据库层 - 主色调：青色#06b6d4 */}
-        <div className="relative">
-          <div className="absolute -left-3 top-0 w-1 h-full bg-linear-to-b from-cyan-500 via-cyan-500 to-cyan-500/30 rounded-full" />
-          <div className="pl-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-full bg-cyan-100 dark:bg-cyan-500/20 flex items-center justify-center">
-                <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400">1</span>
+      {/* 流程图 - 横向布局 */}
+      <div className="flex items-stretch gap-6 overflow-x-auto pb-4">
+        {/* 第一阶段：数据基础 */}
+        <div className="flex-1 min-w-[280px]">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border-2 border-cyan-500 dark:border-cyan-400 shadow-lg shadow-cyan-500/10 overflow-hidden">
+            {/* 阶段标题 */}
+            <div className="bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-sm">1</span>
+                <span className="text-white font-semibold">数据基础</span>
               </div>
-              <h4 className="text-sm font-medium text-cyan-600 dark:text-cyan-400">第一阶段：数据基础</h4>
             </div>
-
-            {/* 三个数据库卡片 */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* 市场资讯库 - 主色调：青色#06b6d4，条形图使用多彩配色 */}
-              <div className="bg-white/80 dark:bg-white/5 rounded-xl p-4 border border-slate-200 dark:border-white/10 hover:border-cyan-400 dark:hover:border-cyan-500/30 transition-all">
-                <div className="flex items-center gap-2 mb-3">
-                  <Database className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-                  <span className="text-sm font-medium text-slate-900 dark:text-white">市场资讯库</span>
+            {/* 内容区 */}
+            <div className="p-4 space-y-3">
+              <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                <Database className="h-4 w-4 text-cyan-500" />
+                <span className="font-medium">市场资讯库</span>
+              </div>
+              <div className="pl-6 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                  <span>价格行情数据</span>
                 </div>
-                <div className="h-32">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                    <BarChart data={marketNewsData} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(100,116,139,0.2)" />
-                      <XAxis type="number" tick={{ fontSize: 10, fill: "#64748b" }} stroke="rgba(100,116,139,0.3)" />
-                      <YAxis
-                        type="category"
-                        dataKey="name"
-                        tick={{ fontSize: 9, fill: "#64748b" }}
-                        stroke="rgba(100,116,139,0.3)"
-                        width={60}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "var(--popover)",
-                          border: "1px solid var(--border)",
-                          borderRadius: "8px",
-                        }}
-                        labelStyle={{ color: "var(--popover-foreground)" }}
-                        itemStyle={{ color: "var(--muted-foreground)" }}
-                        formatter={(value) => [`${value} 条`, "数据量"]}
-                      />
-                      <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                        {marketNewsData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+                  <span>供需动态数据</span>
                 </div>
-                <div className="mt-2 text-center">
-                  <span className="text-xs text-slate-400">共 4,208 条数据</span>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  <span>政策法规数据</span>
                 </div>
               </div>
 
-              {/* 企业经验库 - 主色调：紫罗兰#8b5cf6，饼图使用多彩配色 */}
-              <div className="bg-white/80 dark:bg-white/5 rounded-xl p-4 border border-slate-200 dark:border-white/10 hover:border-violet-400 dark:hover:border-violet-500/30 transition-all">
-                <div className="flex items-center gap-2 mb-3">
-                  <Building className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-                  <span className="text-sm font-medium text-slate-900 dark:text-white">企业经验库</span>
+              <div className="border-t border-slate-200 dark:border-slate-700 my-2" />
+
+              <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                <Building className="h-4 w-4 text-violet-500" />
+                <span className="font-medium">企业经验库</span>
+              </div>
+              <div className="pl-6 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span>采购案例数据</span>
                 </div>
-                <div className="h-32">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                    <RechartsPie>
-                      <Pie
-                        data={enterpriseData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={25}
-                        outerRadius={45}
-                        paddingAngle={2}
-                        dataKey="value"
-                      >
-                        {enterpriseData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "var(--popover)",
-                          border: "1px solid var(--border)",
-                          borderRadius: "8px",
-                        }}
-                        formatter={(value) => [`${value}%`, "占比"]}
-                      />
-                      <Legend
-                        verticalAlign="bottom"
-                        height={20}
-                        formatter={(value) => <span className="text-xs text-slate-500 dark:text-slate-400">{value}</span>}
-                      />
-                    </RechartsPie>
-                  </ResponsiveContainer>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                  <span>供应商管理</span>
                 </div>
               </div>
 
-              {/* 制度规则库 - 主色调：琥珀色#f59e0b，条形图使用COLORS循环配色 */}
-              <div className="bg-white/80 dark:bg-white/5 rounded-xl p-4 border border-slate-200 dark:border-white/10 hover:border-amber-400 dark:hover:border-amber-500/30 transition-all">
-                <div className="flex items-center gap-2 mb-3">
-                  <Scale className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  <span className="text-sm font-medium text-slate-900 dark:text-white">制度规则库</span>
+              <div className="border-t border-slate-200 dark:border-slate-700 my-2" />
+
+              <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                <Scale className="h-4 w-4 text-amber-500" />
+                <span className="font-medium">制度规则库</span>
+              </div>
+              <div className="pl-6 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                  <span>采购制度规则</span>
                 </div>
-                <div className="h-32">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                    <BarChart data={rulesData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(100,116,139,0.2)" />
-                      <XAxis
-                        dataKey="name"
-                        tick={{ fontSize: 9, fill: "#64748b" }}
-                        stroke="rgba(100,116,139,0.3)"
-                        angle={-20}
-                        textAnchor="end"
-                        height={40}
-                      />
-                      <YAxis tick={{ fontSize: 10, fill: "#64748b" }} stroke="rgba(100,116,139,0.3)" />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "var(--popover)",
-                          border: "1px solid var(--border)",
-                          borderRadius: "8px",
-                        }}
-                        formatter={(value) => [`${value} 项`, "数量"]}
-                      />
-                      <Bar dataKey="count" fill="#f59e0b" radius={[4, 4, 0, 0]}>
-                        {rulesData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="mt-2 text-center">
-                  <span className="text-xs text-slate-400">198 项制度</span>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
+                  <span>质量标准规范</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 连接线 */}
-        <div className="flex justify-center py-2">
-          <div className="w-0.5 h-8 bg-linear-to-b from-cyan-500 to-violet-500" />
+        {/* 连接线 1→2 */}
+        <div className="flex items-center justify-center w-12">
+          <div className="flex items-center gap-1">
+            <div className="w-8 h-0.5 bg-gradient-to-r from-cyan-500 to-violet-500 rounded-full" />
+            <ArrowRight className="h-5 w-5 text-violet-500" />
+          </div>
         </div>
 
-        {/* 第二阶段 - 数据处理层 - 主色调：紫罗兰#8b5cf6 */}
-        <div className="relative">
-          <div className="absolute -left-3 top-0 w-1 h-full bg-linear-to-b from-violet-500 via-violet-500 to-violet-500/30 rounded-full" />
-          <div className="pl-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center">
-                <span className="text-xs font-bold text-violet-600 dark:text-violet-400">2</span>
+        {/* 第二阶段：数据处理 */}
+        <div className="flex-1 min-w-[280px]">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border-2 border-violet-500 dark:border-violet-400 shadow-lg shadow-violet-500/10 overflow-hidden">
+            {/* 阶段标题 */}
+            <div className="bg-gradient-to-r from-violet-500 to-violet-600 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-sm">2</span>
+                <span className="text-white font-semibold">数据处理</span>
               </div>
-              <h4 className="text-sm font-medium text-violet-600 dark:text-violet-400">第二阶段：数据处理</h4>
-              {/* 刷新按钮 */}
-              <button
-                onClick={() => refetch()}
-                disabled={isFetching}
-                className="ml-auto p-1 rounded hover:bg-slate-100 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
-                title="刷新数据"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 text-slate-400 ${isFetching ? 'animate-spin' : ''}`} />
-              </button>
             </div>
+            {/* 内容区 */}
+            <div className="p-4 space-y-3">
+              <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                <Filter className="h-4 w-4 text-violet-500" />
+                <span className="font-medium">数据清洗</span>
+              </div>
+              <div className="pl-6 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                  <span>去重处理</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                  <span>格式标准化</span>
+                </div>
+              </div>
 
-            {/* 数据处理统计卡片 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              {/* 处理进度环形图 - 颜色：灰色#64748b(原始)、青色#06b6d4(已清洗)、紫罗兰#8b5cf6(已标注)、翡翠绿#10b981(模型训练) */}
-              <div className="bg-white/80 dark:bg-white/5 rounded-xl p-4 border border-slate-200 dark:border-white/10 hover:border-violet-400 dark:hover:border-violet-500/30 transition-all">
-                <div className="flex items-center gap-2 mb-3">
-                  <Filter className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-                  <span className="text-sm font-medium text-slate-900 dark:text-white">数据清洗进度</span>
-                  {isLoading && <span className="text-xs text-slate-400">(加载中...)</span>}
+              <div className="border-t border-slate-200 dark:border-slate-700 my-2" />
+
+              <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                <FileText className="h-4 w-4 text-blue-500" />
+                <span className="font-medium">数据标注</span>
+              </div>
+              <div className="pl-6 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+                  <span>分类标签</span>
                 </div>
-                <div className="h-32">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                    <RechartsPie>
-                      <Pie
-                        data={dataProcessingStats}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={30}
-                        outerRadius={50}
-                        paddingAngle={3}
-                        dataKey="value"
-                      >
-                        {dataProcessingStats.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "var(--popover)",
-                          border: "1px solid var(--border)",
-                          borderRadius: "8px",
-                        }}
-                        formatter={(value) => [`${(value as number)?.toLocaleString() ?? 0} 条`, "数据量"]}
-                      />
-                      <Legend
-                        verticalAlign="bottom"
-                        height={20}
-                        formatter={(value) => <span className="text-xs text-slate-500 dark:text-slate-400">{value}</span>}
-                      />
-                    </RechartsPie>
-                  </ResponsiveContainer>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span>质量评估</span>
                 </div>
-                {/* 数据源信息 */}
-                {sources && (
-                  <div className="mt-2 pt-2 border-t border-slate-200 dark:border-white/5">
-                    <div className="flex justify-between text-xs text-slate-500">
-                      <span>价格数据: {sources.prices.total} 条</span>
-                      <span>库存数据: {sources.inventory.total} 条</span>
-                    </div>
+              </div>
+
+              <div className="border-t border-slate-200 dark:border-slate-700 my-2" />
+
+              <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                <Settings className="h-4 w-4 text-emerald-500" />
+                <span className="font-medium">模型训练</span>
+              </div>
+              <div className="pl-6 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  <span>训练集构建</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                  <span>模型验证</span>
+                </div>
+              </div>
+
+              {/* 指标展示 */}
+              <div className="border-t border-slate-200 dark:border-slate-700 my-2" />
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-cyan-50 dark:bg-cyan-500/10 rounded-lg p-2 text-center">
+                  <div className="text-sm font-bold text-cyan-600 dark:text-cyan-400">
+                    {metrics?.utilizationRate ?? '--'}{metrics ? '%' : ''}
                   </div>
-                )}
-              </div>
-
-              {/* 处理效率对比图 - 颜色：灰色#64748b(处理前)、蓝色#3b82f6(处理后) */}
-              <div className="bg-white/80 dark:bg-white/5 rounded-xl p-4 border border-slate-200 dark:border-white/10 hover:border-blue-400 dark:hover:border-blue-500/30 transition-all">
-                <div className="flex items-center gap-2 mb-3">
-                  <BarChart3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  <span className="text-sm font-medium text-slate-900 dark:text-white">处理效率分析</span>
-                  {isLoading && <span className="text-xs text-slate-400">(加载中...)</span>}
+                  <div className="text-xs text-slate-500">利用率</div>
                 </div>
-                <div className="h-32">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                    <BarChart data={processingEfficiency} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(100,116,139,0.2)" />
-                      <XAxis type="number" tick={{ fontSize: 10, fill: "#64748b" }} stroke="rgba(100,116,139,0.3)" />
-                      <YAxis
-                        type="category"
-                        dataKey="stage"
-                        tick={{ fontSize: 10, fill: "#64748b" }}
-                        stroke="rgba(100,116,139,0.3)"
-                        width={50}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "var(--popover)",
-                          border: "1px solid var(--border)",
-                          borderRadius: "8px",
-                        }}
-                        labelStyle={{ color: "var(--popover-foreground)" }}
-                        itemStyle={{ color: "var(--muted-foreground)" }}
-                      />
-                      <Bar dataKey="before" fill="#64748b" name="处理前" radius={[0, 0, 0, 0]} />
-                      <Bar dataKey="after" fill="#3b82f6" name="处理后" radius={[0, 4, 4, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="bg-violet-50 dark:bg-violet-500/10 rounded-lg p-2 text-center">
+                  <div className="text-sm font-bold text-violet-600 dark:text-violet-400">
+                    {metrics?.labelingRate ?? '--'}{metrics ? '%' : ''}
+                  </div>
+                  <div className="text-xs text-slate-500">标注率</div>
                 </div>
-              </div>
-            </div>
-
-            {/* 处理能力指标 - 颜色：青色#06b6d4(数据利用率)、紫罗兰#8b5cf6(标注完成率)、翡翠绿#10b981(模型准确率) */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-white/80 dark:bg-white/5 rounded-lg p-3 border border-slate-200 dark:border-white/10 text-center">
-                <div className="text-lg font-bold text-cyan-600 dark:text-cyan-400">
-                  {metrics?.utilizationRate ?? '...'}{metrics ? '%' : ''}
+                <div className="bg-emerald-50 dark:bg-emerald-500/10 rounded-lg p-2 text-center">
+                  <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                    {metrics?.modelAccuracy ?? '--'}{metrics ? '%' : ''}
+                  </div>
+                  <div className="text-xs text-slate-500">准确率</div>
                 </div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">数据利用率</div>
-              </div>
-              <div className="bg-white/80 dark:bg-white/5 rounded-lg p-3 border border-slate-200 dark:border-white/10 text-center">
-                <div className="text-lg font-bold text-violet-600 dark:text-violet-400">
-                  {metrics?.labelingRate ?? '...'}{metrics ? '%' : ''}
-                </div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">标注完成率</div>
-              </div>
-              <div className="bg-white/80 dark:bg-white/5 rounded-lg p-3 border border-slate-200 dark:border-white/10 text-center">
-                <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                  {metrics?.modelAccuracy ?? '...'}{metrics ? '%' : ''}
-                </div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">模型准确率</div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 连接线 */}
-        <div className="flex justify-center py-2">
-          <div className="w-0.5 h-8 bg-linear-to-b from-violet-500 to-emerald-500" />
+        {/* 连接线 2→3 */}
+        <div className="flex items-center justify-center w-12">
+          <div className="flex items-center gap-1">
+            <div className="w-8 h-0.5 bg-gradient-to-r from-violet-500 to-emerald-500 rounded-full" />
+            <ArrowRight className="h-5 w-5 text-emerald-500" />
+          </div>
         </div>
 
-        {/* 第三阶段 - AI Agent 层 - 主色调：翡翠绿#10b981 */}
-        <div className="relative">
-          <div className="absolute -left-3 top-0 w-1 h-full bg-linear-to-b from-emerald-500 via-emerald-500 to-emerald-500/30 rounded-full" />
-          <div className="pl-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">3</span>
+        {/* 第三阶段：AI智能体 */}
+        <div className="flex-1 min-w-[280px]">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border-2 border-emerald-500 dark:border-emerald-400 shadow-lg shadow-emerald-500/10 overflow-hidden">
+            {/* 阶段标题 */}
+            <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-sm">3</span>
+                <span className="text-white font-semibold">AI 智能体</span>
               </div>
-              <h4 className="text-sm font-medium text-emerald-600 dark:text-emerald-400">第三阶段：AI 智能体中心</h4>
             </div>
+            {/* 内容区 */}
+            <div className="p-4 space-y-3">
+              <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                <Brain className="h-4 w-4 text-emerald-500" />
+                <span className="font-medium">智能决策助手</span>
+              </div>
+              <div className="pl-6 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                  <span>价格预测分析</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+                  <span>采购决策建议</span>
+                </div>
+              </div>
 
-            <Link href="/agent-chat" className="block">
-              <div className="bg-white/80 dark:bg-white/5 rounded-xl p-4 border border-slate-200 dark:border-white/10 hover:border-emerald-400 dark:hover:border-emerald-500/30 transition-all cursor-pointer group">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-linear-to-br from-emerald-100 dark:from-emerald-500/30 to-cyan-100 dark:to-cyan-500/30 border border-emerald-300 dark:border-emerald-400/50 flex items-center justify-center">
-                      <Brain className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">智能决策助手</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">智能决策、自动化采购、风险预警</div>
-                    </div>
-                  </div>
+              <div className="border-t border-slate-200 dark:border-slate-700 my-2" />
+
+              <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                <Target className="h-4 w-4 text-blue-500" />
+                <span className="font-medium">风险预警系统</span>
+              </div>
+              <div className="pl-6 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  <span>异常波动监测</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                  <span>风险等级评估</span>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-200 dark:border-slate-700 my-2" />
+
+              <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                <PieChartIcon className="h-4 w-4 text-amber-500" />
+                <span className="font-medium">报告生成</span>
+              </div>
+              <div className="pl-6 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span>市场分析报告</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                  <span>决策建议报告</span>
+                </div>
+              </div>
+
+              {/* 快速入口 */}
+              <div className="border-t border-slate-200 dark:border-slate-700 my-2" />
+              <Link href="/agent-chat" className="block">
+                <div className="flex items-center justify-between p-2 rounded-lg bg-gradient-to-r from-emerald-50 to-cyan-50 dark:from-emerald-500/10 dark:to-cyan-500/10 hover:from-emerald-100 hover:to-cyan-100 dark:hover:from-emerald-500/20 dark:hover:to-cyan-500/20 transition-colors cursor-pointer group">
                   <div className="flex items-center gap-2">
-                    <div className="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-500/30">
-                      <span className="text-xs text-emerald-700 dark:text-emerald-400">已激活</span>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+                    <Zap className="h-4 w-4 text-emerald-500" />
+                    <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">立即体验</span>
                   </div>
+                  <ChevronRight className="h-4 w-4 text-emerald-500 group-hover:translate-x-1 transition-transform" />
                 </div>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* 连接线 3→应用 */}
+        <div className="flex items-center justify-center w-12">
+          <div className="flex items-center gap-1">
+            <div className="w-8 h-0.5 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full" />
+            <ArrowRight className="h-5 w-5 text-blue-500" />
+          </div>
+        </div>
+
+        {/* 第四阶段：应用输出 */}
+        <div className="flex-1 min-w-[200px]">
+          <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl p-4 shadow-lg shadow-blue-500/20 text-white h-full flex flex-col">
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp className="h-5 w-5" />
+              <span className="font-semibold">智能应用</span>
+            </div>
+            <div className="space-y-2 flex-1">
+              <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
+                <Users className="h-4 w-4" />
+                <span className="text-sm">采购决策</span>
               </div>
-            </Link>
+              <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
+                <Target className="h-4 w-4" />
+                <span className="text-sm">风险预警</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
+                <FileText className="h-4 w-4" />
+                <span className="text-sm">分析报告</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
+                <BarChart3 className="h-4 w-4" />
+                <span className="text-sm">市场洞察</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
