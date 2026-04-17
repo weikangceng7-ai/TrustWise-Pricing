@@ -1,13 +1,10 @@
 "use client"
 
 import { useState, useCallback, useRef } from "react"
+import { generateId } from "@/lib/utils"
+import type { ChatMessage } from "@/lib/chat-types"
 
-export interface ChatMessage {
-  id: string
-  role: "user" | "agent"
-  content: string
-  timestamp: Date
-}
+export { type ChatMessage }
 
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -30,12 +27,9 @@ export function useChat() {
       abortControllerRef.current.abort()
     }
 
-    // 生成唯一 ID
-    const generateId = () => `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
-
     // 添加用户消息
     const userMessage: ChatMessage = {
-      id: generateId(),
+      id: generateId("msg"),
       role: "user",
       content: content.trim(),
       timestamp: new Date(),
@@ -46,7 +40,7 @@ export function useChat() {
     setError(null)
 
     // 创建临时消息用于流式更新
-    const agentMessageId = generateId()
+    const agentMessageId = generateId("msg")
     const tempAgentMessage: ChatMessage = {
       id: agentMessageId,
       role: "agent",
@@ -116,7 +110,7 @@ export function useChat() {
 
       // 添加错误消息
       const errorMessageObj: ChatMessage = {
-        id: generateId(),
+        id: generateId("msg"),
         role: "agent",
         content: `抱歉，发生了错误：${errorMessage}。请稍后重试。`,
         timestamp: new Date(),

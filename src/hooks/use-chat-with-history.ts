@@ -1,36 +1,10 @@
 "use client"
 
 import { useState, useCallback, useRef, useEffect } from "react"
+import { generateId } from "@/lib/utils"
+import type { ChatMessage, Conversation, MessageContent, TextContent, ImageContent } from "@/lib/chat-types"
 
-export interface ImageContent {
-  type: "image_url"
-  imageUrl: {
-    url: string
-  }
-}
-
-export interface TextContent {
-  type: "text"
-  text: string
-}
-
-export type MessageContent = string | (TextContent | ImageContent)[]
-
-export interface ChatMessage {
-  id: string
-  role: "user" | "agent"
-  content: string
-  timestamp: Date
-  conversationId?: string
-  images?: string[]
-}
-
-export interface Conversation {
-  id: string
-  title: string
-  createdAt: Date
-  updatedAt: Date
-}
+export { type ChatMessage, type Conversation, type MessageContent, type TextContent, type ImageContent }
 
 interface UseChatWithHistoryOptions {
   userId?: string
@@ -53,8 +27,6 @@ export function useChatWithHistory(options: UseChatWithHistoryOptions = {}) {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
-
-  const generateId = () => `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
 
   // 加载对话列表
   const loadConversations = useCallback(async () => {

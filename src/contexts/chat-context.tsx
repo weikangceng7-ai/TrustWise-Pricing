@@ -1,36 +1,10 @@
 "use client"
 
 import { createContext, useContext, useCallback, useRef, useState, useEffect, ReactNode } from "react"
+import { generateId } from "@/lib/utils"
+import type { ChatMessage, Conversation, MessageContent, TextContent, ImageContent } from "@/lib/chat-types"
 
-export interface ImageContent {
-  type: "image_url"
-  imageUrl: {
-    url: string
-  }
-}
-
-export interface TextContent {
-  type: "text"
-  text: string
-}
-
-export type MessageContent = string | (TextContent | ImageContent)[]
-
-export interface ChatMessage {
-  id: string
-  role: "user" | "agent"
-  content: string
-  timestamp: Date
-  conversationId?: string
-  images?: string[]
-}
-
-export interface Conversation {
-  id: string
-  title: string
-  createdAt: Date
-  updatedAt: Date
-}
+export { type ChatMessage, type Conversation, type MessageContent, type TextContent, type ImageContent }
 
 interface ChatContextType {
   messages: ChatMessage[]
@@ -67,8 +41,6 @@ interface ChatProviderProps {
   children: ReactNode
   userId?: string
 }
-
-const generateId = () => `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
 
 export function ChatProvider({ children, userId }: ChatProviderProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -213,7 +185,7 @@ export function ChatProvider({ children, userId }: ChatProviderProps) {
     }
 
     const userMessage: ChatMessage = {
-      id: generateId(),
+      id: generateId("msg"),
       role: "user",
       content: content.trim(),
       timestamp: new Date(),
@@ -236,7 +208,7 @@ export function ChatProvider({ children, userId }: ChatProviderProps) {
       await saveMessage(conversationId, "user", content.trim())
     }
 
-    const agentMessageId = generateId()
+    const agentMessageId = generateId("msg")
     const tempAgentMessage: ChatMessage = {
       id: agentMessageId,
       role: "agent",
@@ -336,7 +308,7 @@ export function ChatProvider({ children, userId }: ChatProviderProps) {
       setError(errorMessage)
 
       const errorMessageObj: ChatMessage = {
-        id: generateId(),
+        id: generateId("msg"),
         role: "agent",
         content: `抱歉，发生了错误：${errorMessage}。请稍后重试。`,
         timestamp: new Date(),
@@ -363,7 +335,7 @@ export function ChatProvider({ children, userId }: ChatProviderProps) {
 
     setMessages((prev) => prev.filter((m) => m.id !== messageId))
 
-    const agentMessageId = generateId()
+    const agentMessageId = generateId("msg")
     const tempAgentMessage: ChatMessage = {
       id: agentMessageId,
       role: "agent",
