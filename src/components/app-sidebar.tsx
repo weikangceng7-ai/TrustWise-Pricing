@@ -218,9 +218,9 @@ export function AppSidebar() {
                 </svg>
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight relative">
-                <span className="truncate font-semibold text-slate-900 dark:text-white">硫磺价格预测</span>
+                <span className="truncate font-semibold text-slate-900 dark:text-white">硫磺督价与采购</span>
                 <span className="truncate text-xs text-slate-500 dark:text-slate-400">
-                  决策辅助系统
+                  智能决策系统
                 </span>
               </div>
             </SidebarMenuButton>

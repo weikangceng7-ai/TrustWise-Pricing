@@ -55,7 +55,7 @@ export function LoginClient() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">硫磺价格预测系统</CardTitle>
+          <CardTitle className="text-2xl">硫磺督价与采购智能决策系统</CardTitle>
           <CardDescription>登录您的账户以继续</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>

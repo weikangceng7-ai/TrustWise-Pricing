@@ -119,55 +119,6 @@ export async function generateReportDocument(report: Report): Promise<string> {
   return fileName
 }
 
-export async function generateReportPDF(report: Report): Promise<string> {
-  const { jsPDF } = await import("jspdf")
-  const { default: autoTable } = await import("jspdf-autotable")
-
-  const doc = new jsPDF()
-  const now = new Date()
-  const dateStr = now.toLocaleString("zh-CN")
-
-  doc.setFontSize(18)
-  doc.text(report.title, 105, 20, { align: "center" })
-
-  doc.setFontSize(10)
-  doc.text(`报告日期: ${report.reportDate}`, 14, 35)
-  doc.text(`生成时间: ${dateStr}`, 14, 42)
-
-  doc.setFontSize(14)
-  doc.text("报告摘要", 14, 55)
-
-  doc.setFontSize(10)
-  const summaryLines = doc.splitTextToSize(report.summary, 180)
-  doc.text(summaryLines, 14, 65)
-
-  const summaryHeight = summaryLines.length * 6 + 10
-
-  doc.setFontSize(14)
-  doc.text("关键指标", 14, 65 + summaryHeight)
-
-  autoTable(doc, {
-    startY: 75 + summaryHeight,
-    head: [["指标", "数值"]],
-    body: [
-      ["价格趋势", report.priceTrend || "未知"],
-      ["风险等级", report.riskLevel || "未知"],
-      ["采购建议", report.recommendation || "无"],
-    ],
-    theme: "striped",
-    headStyles: { fillColor: [41, 128, 185] },
-  })
-
-  doc.setFontSize(8)
-  doc.text("报告由硫磺采购决策助手自动生成", 105, 285, { align: "center" })
-
-  const fileName = `${report.title}_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}.pdf`
-
-  doc.save(fileName)
-
-  return fileName
-}
-
 export async function generateReportExcel(report: Report): Promise<string> {
   const XLSX = await import("xlsx")
   const now = new Date()

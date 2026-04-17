@@ -71,7 +71,7 @@ export function RegisterClient() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">创建账户</CardTitle>
-          <CardDescription>注册以使用硫磺价格预测系统</CardDescription>
+          <CardDescription>注册以使用硫磺督价与采购智能决策系统</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">

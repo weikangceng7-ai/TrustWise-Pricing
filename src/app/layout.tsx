@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "硫磺价格预测与决策辅助系统",
-  description: "基于 AI 的硫磺价格预测与采购决策支持平台",
+  title: "硫磺督价与采购智能决策系统",
+  description: "基于 AI 的硫磺价格督价与采购决策支持平台",
   icons: {
     icon: "/logo.svg",
   },

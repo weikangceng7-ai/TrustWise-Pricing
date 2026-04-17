@@ -49,7 +49,7 @@ import {
   PieChart,
 } from "lucide-react"
 import { useReports } from "@/hooks/use-reports"
-import { generateReportDocument, generateReportPDF, generateReportExcel } from "@/lib/report-export"
+import { generateReportDocument, generateReportExcel } from "@/lib/report-export"
 import type { Report } from "@/hooks/use-reports"
 
 const trendConfig: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
@@ -130,7 +130,7 @@ function ReportDetailDialog({
   report: Report | null
   open: boolean
   onOpenChange: (open: boolean) => void
-  onExport: (format: "word" | "pdf" | "excel") => void
+  onExport: (format: "word" | "excel") => void
 }) {
   if (!report) return null
 
@@ -146,24 +146,23 @@ function ReportDetailDialog({
             <FileText className="h-5 w-5" />
             {report.title}
           </DialogTitle>
-          <DialogDescription className="flex items-center gap-4">
-            <span className="flex items-center gap-1">
-              <Calendar className="h-4 w-4" />
-              {report.reportDate}
-            </span>
-            {report.priceTrend && (
-              <Badge variant="outline" className="flex items-center gap-1">
-                <TrendIcon className={`h-3 w-3 ${trendColor}`} />
-                {report.priceTrend}
-              </Badge>
-            )}
-            {report.riskLevel && (
-              <Badge variant="outline" className={riskConfig[report.riskLevel]?.bg || ""}>
-                风险: {report.riskLevel}
-              </Badge>
-            )}
+          <DialogDescription>
+            {report.reportDate}
           </DialogDescription>
         </DialogHeader>
+        <div className="flex items-center gap-2 flex-wrap">
+          {report.priceTrend && (
+            <Badge variant="outline" className="flex items-center gap-1">
+              <TrendIcon className={`h-3 w-3 ${trendColor}`} />
+              {report.priceTrend}
+            </Badge>
+          )}
+          {report.riskLevel && (
+            <Badge variant="outline" className={riskConfig[report.riskLevel]?.bg || ""}>
+              风险: {report.riskLevel}
+            </Badge>
+          )}
+        </div>
 
         <ScrollArea className="flex-1 pr-4">
           <div className="space-y-4">
@@ -221,10 +220,6 @@ function ReportDetailDialog({
               <FileDown className="h-4 w-4 mr-1" />
               Word
             </Button>
-            <Button variant="outline" size="sm" onClick={() => onExport("pdf")}>
-              <FileDown className="h-4 w-4 mr-1" />
-              PDF
-            </Button>
             <Button variant="outline" size="sm" onClick={() => onExport("excel")}>
               <FileDown className="h-4 w-4 mr-1" />
               Excel
@@ -243,7 +238,7 @@ function ReportCard({
 }: {
   report: Report
   onView: () => void
-  onExport: (format: "word" | "pdf" | "excel") => void
+  onExport: (format: "word" | "excel") => void
 }) {
   const TrendIcon = trendConfig[report.priceTrend || "稳定"]?.icon || Minus
   const trendColor = trendConfig[report.priceTrend || "稳定"]?.color || "text-gray-500"
@@ -330,12 +325,10 @@ export default function ReportsPage() {
     setDetailOpen(true)
   }
 
-  const handleExport = async (report: Report, format: "word" | "pdf" | "excel") => {
+  const handleExport = async (report: Report, format: "word" | "excel") => {
     try {
       if (format === "word") {
         await generateReportDocument(report)
-      } else if (format === "pdf") {
-        await generateReportPDF(report)
       } else {
         await generateReportExcel(report)
       }

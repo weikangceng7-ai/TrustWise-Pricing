@@ -102,7 +102,7 @@ export async function sendSmsVerificationCode(phone: string): Promise<{ success:
     const client = Twilio(accountSid, authToken)
 
     await client.messages.create({
-      body: `【硫磺价格预测系统】您的验证码是 ${code}，${Math.floor(CODE_EXPIRY_SECONDS / 60)}分钟内有效。`,
+      body: `【硫磺督价与采购智能决策系统】您的验证码是 ${code}，${Math.floor(CODE_EXPIRY_SECONDS / 60)}分钟内有效。`,
       from: fromPhone,
       to: phone,
     })

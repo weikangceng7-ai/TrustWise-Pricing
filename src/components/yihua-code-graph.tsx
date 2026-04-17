@@ -14,7 +14,7 @@ const CACHE_DURATION_MS = 10 * 60 * 1000
 // localStorage key
 const CACHE_KEY = "yihua-knowledge-graph-cache"
 
-// 硫磺价格预测知识图谱数据 - 第一阶段：市场资讯库、企业经验库、制度规则库
+// 硫磺督价与采购智能决策知识图谱数据 - 第一阶段：市场资讯库、企业经验库、制度规则库
 const KNOWLEDGE_DATA = {
   // 核心实体：硫磺价格
   core: [
@@ -691,7 +691,7 @@ export function YihuaCodeKnowledgeGraph() {
             <div>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Network className="h-5 w-5" />
-                硫磺价格预测知识图谱
+                硫磺督价与采购智能决策知识图谱
               </CardTitle>
               <CardDescription>
                 第一阶段：市场资讯库、企业经验库、制度规则库

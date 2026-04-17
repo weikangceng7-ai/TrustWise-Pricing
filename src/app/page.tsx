@@ -464,11 +464,11 @@ function HeroSection() {
             {/* 主标题 */}
             <div className={`transition-all duration-700 delay-100 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight leading-[1.1]">
-                智能硫磺价格
+                硫磺督价与采购
               </h1>
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-8 tracking-tight leading-[1.1]">
                 <span className="bg-gradient-to-r from-cyan-600 via-blue-600 to-violet-600 dark:from-cyan-400 dark:via-blue-400 dark:to-violet-400 bg-clip-text text-transparent animate-gradient">
-                  预测系统
+                  智能决策系统
                 </span>
               </h1>
             </div>

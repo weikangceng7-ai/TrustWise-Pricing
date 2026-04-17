@@ -106,7 +106,7 @@ export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProp
             <BarChart3 className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h3 className="text-xl font-semibold text-slate-900 dark:text-white">硫磺价格预测系统架构</h3>
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white">硫磺督价与采购智能决策系统架构</h3>
             <p className="text-sm text-slate-500 dark:text-slate-400">三阶段数据处理流程</p>
           </div>
         </div>

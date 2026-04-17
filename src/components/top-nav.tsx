@@ -81,7 +81,7 @@ export function TopNav() {
         </div>
         <div className="space-y-0.5">
           <h1 className="text-lg font-semibold bg-linear-to-r from-slate-900 dark:from-white to-slate-600 dark:to-slate-300 bg-clip-text text-transparent">
-            硫磺价格预测与决策辅助系统
+            硫磺督价与采购智能决策系统
           </h1>
           <div className="flex items-center gap-2">
             <div className="h-px w-12 bg-linear-to-r from-cyan-500 to-transparent" />

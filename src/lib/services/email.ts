@@ -90,7 +90,7 @@ export async function sendEmailVerificationCode(email: string): Promise<{ succes
       await resend.emails.send({
         from: emailFrom,
         to: email,
-        subject: "【硫磺价格预测系统】邮箱验证码",
+        subject: "【硫磺督价与采购智能决策系统】邮箱验证码",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #333; text-align: center;">邮箱验证</h2>
@@ -150,7 +150,7 @@ export async function sendPasswordResetEmail(
       await resend.emails.send({
         from: emailFrom,
         to: email,
-        subject: "【硫磺价格预测系统】重置密码",
+        subject: "【硫磺督价与采购智能决策系统】重置密码",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #333; text-align: center;">重置密码</h2>
@@ -198,12 +198,12 @@ export async function sendWelcomeEmail(email: string, name: string): Promise<voi
       await resend.emails.send({
         from: emailFrom,
         to: email,
-        subject: "欢迎加入硫磺价格预测系统",
+        subject: "欢迎加入硫磺督价与采购智能决策系统",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #333; text-align: center;">欢迎，${name}！</h2>
             <p style="color: #666; text-align: center;">
-              感谢您注册硫磺价格预测决策辅助系统。
+              感谢您注册硫磺督价与采购智能决策系统。
             </p>
             <p style="color: #666; text-align: center;">
               您现在可以使用以下功能：
