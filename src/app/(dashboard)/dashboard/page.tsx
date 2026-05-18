@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { TrendingUp, Package, DollarSign, BarChart3, AlertTriangle, ChevronRight, MessageCircle, FileText, Settings, ArrowRight, ChevronLeft, ChevronRight as ChevronRightIcon, ArrowUpRight, ArrowDownRight, Activity, Zap, Target, Layers, Grid3X3, Scale } from "lucide-react"
+import { TrendingUp, Package, DollarSign, BarChart3, AlertTriangle, ChevronRight, ChevronLeft, FileText, ArrowRight, ArrowUpRight, Activity, Zap, Target, Layers, Scale } from "lucide-react"
 import { PriceChart, TimeRange } from "@/components/price-chart"
 import { EnterprisePredictionOverview } from "@/components/enterprise-prediction-chart"
 import { SupplyDemandAnalysis } from "@/components/supply-demand-analysis"
@@ -146,7 +146,7 @@ function ReportCarousel() {
             onClick={goToNext}
             className="p-1.5 rounded-lg bg-white/50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition-colors"
           >
-            <ChevronRightIcon className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+            <ChevronRight className="h-4 w-4 text-slate-600 dark:text-slate-400" />
           </button>
           <Link
             href="/reports"
@@ -163,8 +163,6 @@ function ReportCarousel() {
 
 export default function DashboardPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>("week")
-  const [currentPageIndex, setCurrentPageIndex] = useState(0)
-  const PAGE_COUNT = 3
   const bgImage = getBackgroundImage("dashboardBackground")
 
   return (
@@ -679,107 +677,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 底部浮动导航栏 - 多页滑动设计 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-[#0a0a1a]/95 backdrop-blur-xl border-t border-slate-200 dark:border-white/10 z-50">
-        <div className="max-w-lg mx-auto px-4 py-3">
-          {/* 顶部滑动指示器 */}
-          <div className="flex items-center justify-center gap-1.5 mb-3">
-            <button
-              onClick={() => setCurrentPageIndex((prev) => (prev - 1 + PAGE_COUNT) % PAGE_COUNT)}
-              className="p-1 rounded-full bg-white/80 dark:bg-slate-800/80 shadow-sm hover:bg-white dark:hover:bg-slate-700 transition-colors"
-            >
-              <ChevronLeft className="h-3.5 w-3.5 text-slate-600 dark:text-slate-300" />
-            </button>
-            <div className="flex items-center gap-1.5">
-              {Array.from({ length: PAGE_COUNT }).map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentPageIndex(idx)}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    currentPageIndex === idx
-                      ? "w-8 bg-cyan-500"
-                      : "w-2 bg-slate-300 dark:bg-slate-600"
-                  }`}
-                />
-              ))}
-            </div>
-            <button
-              onClick={() => setCurrentPageIndex((prev) => (prev + 1) % PAGE_COUNT)}
-              className="p-1 rounded-full bg-white/80 dark:bg-slate-800/80 shadow-sm hover:bg-white dark:hover:bg-slate-700 transition-colors"
-            >
-              <ChevronRightIcon className="h-3.5 w-3.5 text-slate-600 dark:text-slate-300" />
-            </button>
-          </div>
-
-          {/* 底部导航图标 */}
-          <div className="flex items-center justify-around">
-            <button
-              onClick={() => setCurrentPageIndex(0)}
-              className="flex flex-col items-center gap-1 group"
-            >
-              <div className={`p-2 rounded-xl transition-colors ${
-                currentPageIndex === 0
-                  ? "bg-cyan-100 dark:bg-cyan-500/20"
-                  : "group-hover:bg-slate-100 dark:group-hover:bg-white/10"
-              }`}>
-                <BarChart3 className={`h-5 w-5 transition-colors ${
-                  currentPageIndex === 0
-                    ? "text-cyan-600 dark:text-cyan-400"
-                    : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300"
-                }`} />
-              </div>
-              <span className={`text-xs transition-colors ${
-                currentPageIndex === 0
-                  ? "text-cyan-600 dark:text-cyan-400"
-                  : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300"
-              }`}>首页</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentPageIndex(1)}
-              className="flex flex-col items-center gap-1 group"
-            >
-              <div className={`p-2 rounded-xl transition-colors ${
-                currentPageIndex === 1
-                  ? "bg-violet-100 dark:bg-violet-500/20"
-                  : "group-hover:bg-slate-100 dark:group-hover:bg-white/10"
-              }`}>
-                <Grid3X3 className={`h-5 w-5 transition-colors ${
-                  currentPageIndex === 1
-                    ? "text-violet-600 dark:text-violet-400"
-                    : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300"
-                }`} />
-              </div>
-              <span className={`text-xs transition-colors ${
-                currentPageIndex === 1
-                  ? "text-violet-600 dark:text-violet-400"
-                  : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300"
-              }`}>图谱</span>
-            </button>
-
-            <Link href="/agent-chat" className="flex flex-col items-center gap-1 group">
-              <div className="p-2 rounded-xl group-hover:bg-slate-100 dark:group-hover:bg-white/10 transition-colors">
-                <MessageCircle className="h-5 w-5 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
-              </div>
-              <span className="text-xs text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">对话</span>
-            </Link>
-
-            <Link href="/reports" className="flex flex-col items-center gap-1 group">
-              <div className="p-2 rounded-xl group-hover:bg-slate-100 dark:group-hover:bg-white/10 transition-colors">
-                <FileText className="h-5 w-5 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
-              </div>
-              <span className="text-xs text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">报告</span>
-            </Link>
-
-            <Link href="/settings" className="flex flex-col items-center gap-1 group">
-              <div className="p-2 rounded-xl group-hover:bg-slate-100 dark:group-hover:bg-white/10 transition-colors">
-                <Settings className="h-5 w-5 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
-              </div>
-              <span className="text-xs text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">设置</span>
-            </Link>
-          </div>
-        </div>
       </div>
-    </div>
   )
 }
