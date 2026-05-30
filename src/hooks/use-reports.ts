@@ -13,6 +13,7 @@ export interface Report {
   priceTrend: string | null
   riskLevel: string | null
   createdAt: Date
+  price?: number // 价格数据（元/吨），用于图表展示
 }
 
 export interface ReportStats {

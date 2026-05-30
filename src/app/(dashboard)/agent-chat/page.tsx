@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useMemo, memo } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -30,6 +31,7 @@ import { generateChatReport } from "@/lib/report-generator"
 import { AuthDialog } from "@/components/auth-dialog"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import { Suspense } from "react"
 
 // 自定义 Markdown 组件 - 增强表格和可视化效果
 const markdownComponents = {
@@ -474,7 +476,8 @@ function ConversationItem({
   )
 }
 
-export default function AgentChatPage() {
+function AgentChatPage() {
+  const searchParams = useSearchParams()
   const [userId, setUserId] = useState<string | undefined>()
   const [copiedId, setCopiedId] = useState<string | undefined>()
   const [showAuthDialog, setShowAuthDialog] = useState(false)
@@ -499,6 +502,17 @@ export default function AgentChatPage() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [showHistory, setShowHistory] = useState(true)
   const [showArchitecture, setShowArchitecture] = useState(false)
+  const hasAppliedUrlPrompt = useRef(false)
+
+  useEffect(() => {
+    if (hasAppliedUrlPrompt.current) return
+    const promptFromUrl = searchParams.get("prompt")
+    if (promptFromUrl) {
+      // 使用 setTimeout 避免 effect 内同步 setState
+      setTimeout(() => setInputValue(promptFromUrl), 0)
+      hasAppliedUrlPrompt.current = true
+    }
+  }, [searchParams])
 
   // 处理图片上传
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -983,3 +997,17 @@ export default function AgentChatPage() {
     </div>
   )
 }
+
+function AgentChatPageWrapper() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-indigo-50/50 to-violet-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950">
+        <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+      </div>
+    }>
+      <AgentChatPage />
+    </Suspense>
+  )
+}
+
+export default AgentChatPageWrapper

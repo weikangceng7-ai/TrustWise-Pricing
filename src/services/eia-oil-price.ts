@@ -3,9 +3,17 @@
  * API 文档: https://www.eia.gov/opendata/v1/documentation
  */
 
-// EIA API 配置 - 从环境变量读取
-const EIA_API_KEY = process.env.EIA_API_KEY || ""
+// EIA API 配置
 const EIA_BASE_URL = "https://api.eia.gov/v2"
+
+// 动态获取 API Key（避免模块加载时环境变量未初始化的问题）
+function getEiaApiKey(): string {
+  const key = process.env.EIA_API_KEY || ""
+  if (!key) {
+    console.warn("EIA_API_KEY 未配置，请检查 .env.local 文件")
+  }
+  return key
+}
 
 // 原油价格数据类型
 export interface OilPriceData {
@@ -64,22 +72,31 @@ async function fetchOilPrice(series: string, days: number): Promise<OilPriceData
   const endDate = new Date().toISOString().split("T")[0]
   const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
 
-  const url = new URL(`${EIA_BASE_URL}/petroleum/pri/spt/data/`)
-  url.searchParams.set("api_key", EIA_API_KEY)
-  url.searchParams.set("frequency", "daily")
-  url.searchParams.set("facets[series][]", series)
-  url.searchParams.set("start", startDate)
-  url.searchParams.set("end", endDate)
-  url.searchParams.set("sort[0][column]", "period")
-  url.searchParams.set("sort[0][direction]", "desc")
-  url.searchParams.set("length", String(days + 10)) // 多取几天防止非交易日
+  const apiKey = getEiaApiKey()
+  // 手动构建 URL 参数字符串（避免 URLSearchParams 对 [] 括号的过度编码）
+  // 注意：EIA API v2 需要添加 data[]=value 参数才能返回价格数值
+  const params = [
+    `api_key=${encodeURIComponent(apiKey)}`,
+    `frequency=daily`,
+    `facets[series][]=${encodeURIComponent(series)}`,
+    `start=${encodeURIComponent(startDate)}`,
+    `end=${encodeURIComponent(endDate)}`,
+    `sort[0][column]=period`,
+    `sort[0][direction]=desc`,
+    `length=${days + 10}`,
+    `data[]=value`,
+  ].join("&")
+
+  const url = `${EIA_BASE_URL}/petroleum/pri/spt/data/?${params}`
 
   try {
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       next: { revalidate: 3600 }, // 缓存 1 小时
     })
 
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error("EIA API 错误响应:", errorText)
       throw new Error(`EIA API 请求失败: ${response.status}`)
     }
 

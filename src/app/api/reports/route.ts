@@ -5,11 +5,13 @@ import type { ReportFilters } from "@/services/reports"
 // 动态报告生成 API
 export const maxDuration = 30
 
+// 价格基准值（基于真实市场数据）
+const PRICE_BASE = 885 // 元/吨基准价格
+
 // 生成动态报告数据的函数
 function generateDynamicReports(filters?: ReportFilters) {
   const now = new Date()
   const year = now.getFullYear()
-  const month = now.getMonth() + 1
 
   const reports: Array<{
     id: number
@@ -20,21 +22,31 @@ function generateDynamicReports(filters?: ReportFilters) {
     priceTrend: string | null
     riskLevel: string | null
     createdAt: Date
+    price: number // 价格数据
   }> = []
+
+  // 根据日期计算价格（模拟真实价格走势）
+  const calculatePriceForDate = (date: Date, trend: string): number => {
+    const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / (24 * 60 * 60 * 1000))
+    // 基于日期的价格波动
+    const baseVariation = (dayOfYear % 30) * 2 // 模拟月度周期波动
+    const trendAdjust = trend === "上涨" ? 30 : trend === "小幅上涨" ? 15 : trend === "下跌" ? -30 : trend === "小幅下跌" ? -15 : 0
+    return PRICE_BASE + baseVariation + trendAdjust + Math.floor(Math.random() * 20 - 10)
+  }
 
   // 报告模板
   const templates = [
     {
       prefix: "硫磺采购周报",
       type: "weekly",
-      summaryTemplate: (date: Date, trend: string) =>
-        `【市场概况】本周硫磺市场呈现${trend === "上涨" ? "上行" : trend === "下跌" ? "下行" : "稳定"}态势，国内硫磺均价报${Math.floor(1150 + Math.random() * 80)}元/吨。【供需分析】供应端：主要进口来源国出货稳定，港口到货量约${Math.floor(25 + Math.random() * 15)}万吨。需求端：磷肥企业开工率维持在${Math.floor(70 + Math.random() * 15)}%。【价格走势】中东FOB报价$${Math.floor(120 + Math.random() * 20)}-${Math.floor(130 + Math.random() * 20)}/吨。【库存情况】主要港口库存约${Math.floor(40 + Math.random() * 20)}万吨。【后市研判】预计短期内价格将维持${trend === "上涨" ? "高位震荡" : trend === "下跌" ? "下行压力" : "稳定运行"}。`,
+      summaryTemplate: (date: Date, trend: string, price: number) =>
+        `【市场概况】本周硫磺市场呈现${trend === "上涨" ? "上行" : trend === "下跌" ? "下行" : "稳定"}态势，国内硫磺均价报${price}元/吨。【供需分析】供应端：主要进口来源国出货稳定，港口到货量约${Math.floor(25 + Math.random() * 15)}万吨。需求端：磷肥企业开工率维持在${Math.floor(70 + Math.random() * 15)}%。【价格走势】中东FOB报价$${Math.floor(120 + Math.random() * 20)}-${Math.floor(130 + Math.random() * 20)}/吨。【库存情况】主要港口库存约${Math.floor(40 + Math.random() * 20)}万吨。【后市研判】预计短期内价格将维持${trend === "上涨" ? "高位震荡" : trend === "下跌" ? "下行压力" : "稳定运行"}。`,
     },
     {
       prefix: "硫磺市场月报",
       type: "monthly",
-      summaryTemplate: (date: Date, trend: string) =>
-        `【月度概览】${date.getMonth() + 1}月份硫磺市场整体呈现${trend === "上涨" ? "偏强" : trend === "下跌" ? "偏弱" : "平稳"}态势，月均价${Math.floor(1150 + Math.random() * 80)}元/吨。【供需分析】供应端：本月进口总量约${Math.floor(100 + Math.random() * 50)}万吨。需求端：磷肥产量环比${Math.random() > 0.5 ? "增加" : "持平"}。【价格走势】月内价格波动幅度${Math.floor(2 + Math.random() * 8)}%。【库存变化】月末库存约${Math.floor(40 + Math.random() * 20)}万吨。【后市展望】下月预计价格将${trend === "上涨" ? "继续上行" : trend === "下跌" ? "有所回调" : "维持稳定"}。`,
+      summaryTemplate: (date: Date, trend: string, price: number) =>
+        `【月度概览】${date.getMonth() + 1}月份硫磺市场整体呈现${trend === "上涨" ? "偏强" : trend === "下跌" ? "偏弱" : "平稳"}态势，月均价${price}元/吨。【供需分析】供应端：本月进口总量约${Math.floor(100 + Math.random() * 50)}万吨。需求端：磷肥产量环比${Math.random() > 0.5 ? "增加" : "持平"}。【价格走势】月内价格波动幅度${Math.floor(2 + Math.random() * 8)}%。【库存变化】月末库存约${Math.floor(40 + Math.random() * 20)}万吨。【后市展望】下月预计价格将${trend === "上涨" ? "继续上行" : trend === "下跌" ? "有所回调" : "维持稳定"}。`,
     },
   ]
 
@@ -55,6 +67,7 @@ function generateDynamicReports(filters?: ReportFilters) {
       const trend = trends[Math.floor(Math.random() * trends.length)]
       const risk = risks[Math.floor(Math.random() * risks.length)]
       const rec = recommendations[Math.floor(Math.random() * recommendations.length)]
+      const price = calculatePriceForDate(date, trend)
 
       const dateStr = date.toISOString().split('T')[0]
       const reportMonth = date.getMonth() + 1
@@ -64,27 +77,31 @@ function generateDynamicReports(filters?: ReportFilters) {
         id: reports.length + 1,
         title: `${date.getFullYear()}年${reportMonth}月${template.type === "weekly" ? `第${weekNum}周` : ""}${template.prefix}`,
         reportDate: dateStr,
-        summary: template.summaryTemplate(date, trend),
+        summary: template.summaryTemplate(date, trend, price),
         recommendation: rec,
         priceTrend: trend,
         riskLevel: risk,
         createdAt: date,
+        price: price, // 使用计算出的价格
       })
     }
   }
 
   // 添加固定的历史重要报告
+  const lastYearPrice = 1128 // 去年均价
   reports.push({
     id: 1000,
     title: `${year - 1}年年度采购总结报告`,
     reportDate: `${year - 1}-12-31`,
-    summary: `【年度概况】${year - 1}年硫磺采购总量约1450万吨，同比增加5.2%；采购均价1128元/吨，同比下降4.3%。【成本分析】全年采购总成本约163.6亿元，同比下降2.1%，节约成本约3.5亿元。【供应商表现】前五大供应商采购占比78%。【价格波动】年内最高价1220元/吨，最低价1050元/吨。【改进建议】优化供应商结构，加强价格预测能力。`,
+    summary: `【年度概况】${year - 1}年硫磺采购总量约1450万吨，同比增加5.2%；采购均价${lastYearPrice}元/吨，同比下降4.3%。【成本分析】全年采购总成本约163.6亿元，同比下降2.1%，节约成本约3.5亿元。【供应商表现】前五大供应商采购占比78%。【价格波动】年内最高价1220元/吨，最低价1050元/吨。【改进建议】优化供应商结构，加强价格预测能力。`,
     recommendation: "按需采购",
     priceTrend: "稳定",
     riskLevel: "低",
     createdAt: new Date(`${year - 1}-12-31`),
+    price: lastYearPrice,
   })
 
+  const strategyPrice = 1175 // 策略报告价格
   reports.push({
     id: 1001,
     title: `${year}年采购策略规划报告`,
@@ -94,6 +111,7 @@ function generateDynamicReports(filters?: ReportFilters) {
     priceTrend: "稳定",
     riskLevel: "中等",
     createdAt: new Date(`${year}-01-15`),
+    price: strategyPrice,
   })
 
   // 按日期排序（最新在前）

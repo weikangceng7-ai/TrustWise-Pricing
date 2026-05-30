@@ -189,6 +189,25 @@ export const enterprisePricePredictions = pgTable("enterprise_price_predictions"
   createdAt: timestamp("created_at").defaultNow(),
 })
 
+// 多维度价格数据表（用于价格走势图分类展示）
+export const multiDimensionalPrices = pgTable(
+  "multi_dimensional_prices",
+  {
+    id: serial("id").primaryKey(),
+    date: date("date").notNull(), // 日期
+    category: varchar("category", { length: 30 }).notNull(), // 分类: supply/demand/middle-east-cob/port-inventory/domestic/market-news
+    categoryName: varchar("category_name", { length: 50 }).notNull(), // 分类名称
+    price: varchar("price", { length: 20 }), // 价格
+    value: varchar("value", { length: 20 }), // 数值（库存量万吨、价格指数等）
+    changeValue: varchar("change_value", { length: 20 }), // 涨跌值
+    changePercent: varchar("change_percent", { length: 20 }), // 涨跌幅百分比
+    source: varchar("source", { length: 200 }), // 数据来源
+    note: text("note"), // 备注
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [uniqueIndex("multi_dimensional_prices_date_category_uidx").on(t.date, t.category)],
+)
+
 // 企业信息表
 export const enterprises = pgTable("enterprises", {
   id: serial("id").primaryKey(),
@@ -244,5 +263,7 @@ export type Notification = typeof notifications.$inferSelect
 export type NewNotification = typeof notifications.$inferInsert
 export type EnterprisePricePrediction = typeof enterprisePricePredictions.$inferSelect
 export type NewEnterprisePricePrediction = typeof enterprisePricePredictions.$inferInsert
+export type MultiDimensionalPrice = typeof multiDimensionalPrices.$inferSelect
+export type NewMultiDimensionalPrice = typeof multiDimensionalPrices.$inferInsert
 export type Enterprise = typeof enterprises.$inferSelect
 export type NewEnterprise = typeof enterprises.$inferInsert
