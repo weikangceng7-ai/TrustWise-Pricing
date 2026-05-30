@@ -91,7 +91,8 @@ const COLOR_STYLES: Record<string, {
   },
 }
 
-const navItems = [
+// 主导航项
+const mainNavItems = [
   {
     title: "仪表盘",
     url: "/dashboard",
@@ -99,6 +100,10 @@ const navItems = [
     description: "数据概览与价格趋势",
     color: "cyan",
   },
+]
+
+// 子导航项（仪表盘下的功能模块）
+const subNavItems = [
   {
     title: "价格预测知识图谱",
     url: "/yihua-code-graph",
@@ -230,13 +235,14 @@ export function AppSidebar() {
 
       {/* Sidebar Content */}
       <SidebarContent>
+        {/* 仪表盘主文件夹 */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-wide uppercase px-2">
             导航菜单
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => {
+              {mainNavItems.map((item) => {
                 const isActive = pathname === item.url || pathname.startsWith(item.url + "/")
                 const styles = COLOR_STYLES[item.color]
                 return (
@@ -259,6 +265,46 @@ export function AppSidebar() {
                       </div>
                       <span className={`font-medium ${isActive ? styles.text : 'text-slate-700 dark:text-slate-300'}`}>{item.title}</span>
                       <ChevronRight className={`ml-auto size-3.5 transition-transform duration-300 ${
+                        isActive ? 'rotate-90 opacity-100' : 'opacity-0 group-hover:opacity-100'
+                      }`} />
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* 仪表盘子文件夹 */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs font-medium text-slate-400 dark:text-slate-500 px-2 ml-4">
+            功能模块
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {subNavItems.map((item) => {
+                const isActive = pathname === item.url
+                const styles = COLOR_STYLES[item.color]
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      render={<Link href={item.url} />}
+                      isActive={isActive}
+                      tooltip={item.description}
+                      className={`group relative transition-all duration-300 ml-3 ${
+                        isActive
+                          ? `${styles.bg} ${styles.border} shadow-lg ${styles.shadow}`
+                          : 'hover:bg-slate-100 dark:hover:bg-slate-800/50 border-transparent'
+                      }`}
+                    >
+                      <div className="relative">
+                        {isActive ? (
+                          <div className={`absolute inset-0 ${styles.glow} blur-lg`} />
+                        ) : null}
+                        <item.icon className={`relative size-4 ${isActive ? styles.text : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors'}`} />
+                      </div>
+                      <span className={`font-medium text-sm ${isActive ? styles.text : 'text-slate-600 dark:text-slate-400'}`}>{item.title}</span>
+                      <ChevronRight className={`ml-auto size-3 transition-transform duration-300 ${
                         isActive ? 'rotate-90 opacity-100' : 'opacity-0 group-hover:opacity-100'
                       }`} />
                     </SidebarMenuButton>
