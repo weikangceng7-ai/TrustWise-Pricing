@@ -13,43 +13,41 @@ import { useQuery } from "@tanstack/react-query"
 import { useTheme } from "@/components/theme-provider"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { X, TrendingUp, Factory, Globe, BarChart3, Newspaper, Loader2 } from "lucide-react"
+import { X, TrendingUp, Factory, Globe, BarChart3, Package, Loader2 } from "lucide-react"
 
-// 多维度价格数据类型
-
-// 价格分类配置（精简为4个核心分类）
+// 价格分类配置（改为采购报告数据分类）
 const PRICE_CATEGORIES = [
   {
-    id: "supply",
-    name: "供应端价格",
-    icon: Factory,
-    description: "原油成本传导价格",
-    color: "cyan",
-    unit: "元/吨",
-  },
-  {
-    id: "middle-east-cob",
-    name: "中东COB报价",
-    icon: Globe,
-    description: "国际基准FOB价格",
-    color: "amber",
-    unit: "美元/吨",
-  },
-  {
-    id: "domestic",
-    name: "国内均价",
-    icon: BarChart3,
-    description: "国内市场综合价格",
+    id: "sulfur-price",
+    name: "国内硫磺均价",
+    icon: TrendingUp,
+    description: "硫磺市场价格走势",
     color: "rose",
     unit: "元/吨",
   },
   {
-    id: "market-news",
-    name: "市场动态指数",
-    icon: Newspaper,
-    description: "原油波动率指标",
-    color: "blue",
-    unit: "指数",
+    id: "oil-price",
+    name: "WTI原油现货",
+    icon: Globe,
+    description: "原油成本价格",
+    color: "amber",
+    unit: "美元/桶",
+  },
+  {
+    id: "port-inventory",
+    name: "主要港口库存",
+    icon: Package,
+    description: "港口库存水平",
+    color: "emerald",
+    unit: "万吨",
+  },
+  {
+    id: "port-arrival",
+    name: "港口到货量",
+    icon: Factory,
+    description: "港口到货数量",
+    color: "cyan",
+    unit: "万吨",
   },
 ]
 
@@ -62,19 +60,12 @@ const CATEGORY_COLORS: Record<string, string> = {
   blue: "#3b82f6",
 }
 
-// 多维度价格数据类型
-interface MultiDimensionalPriceData {
-  id: number
-  date: string
-  category: string
-  categoryName: string
-  price: number | null
-  value: number | null
-  changeValue: number | null
-  changePercent: number | null
-  source: string | null
-  note: string | null
-  createdAt: string | null
+// 报告摘要解析正则
+const REPORT_PATTERNS = {
+  SULFUR_PRICE: /国内硫磺均价报(\d+)元\/吨/,
+  WEEKLY_CHANGE: /较上周([上涨下跌]+)([\d.]+)%/,
+  PORT_ARRIVAL: /港口到货量约(\d+)万吨/,
+  MARKET_OVERVIEW: /市场概况/,
 }
 
 // 固定 Tooltip 组件
@@ -151,19 +142,115 @@ function PinnedTooltip({
 export function ReportsPriceChart() {
   const { resolvedTheme, mounted } = useTheme()
   const [pinnedTooltip, setPinnedTooltip] = useState<{ date: string; price: number; changePercent: number | null; source: string | null; note: string | null; x: number; y: number } | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState<string>("supply")
+  const [selectedCategory, setSelectedCategory] = useState<string>("sulfur-price")
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // 获取多维度价格数据
-  const { data: priceData, isLoading, error } = useQuery({
-    queryKey: ["multi-dimensional-prices", selectedCategory],
+  // 获取报告数据并解析出具体数值
+  // 使用 staleTime 缓存 1 分钟，避免频繁刷新
+  const { data: reportsData, isLoading: reportsLoading } = useQuery({
+    queryKey: ["reports-chart"],
     queryFn: async () => {
-      const res = await fetch(`/api/multi-dimensional-prices?category=${selectedCategory}&limit=90`)
+      const res = await fetch(`/api/reports`)
       const json = await res.json()
-      return json.data as MultiDimensionalPriceData[]
+      return json.data as any[]
     },
-    refetchInterval: 300000, // 5分钟刷新一次
+    staleTime: 60 * 1000,
   })
+
+  // 预加载原油价格数据（不按需加载）
+  const { data: oilData } = useQuery({
+    queryKey: ["oil-price-chart"],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`/api/external-data/akshare?type=oil`)
+        if (!res.ok) return []
+        const json = await res.json()
+        return json.data?.history || []
+      } catch {
+        return []
+      }
+    },
+    staleTime: 60 * 1000,
+  })
+
+  // 预加载库存数据（不按需加载）
+  const { data: inventoryData } = useQuery({
+    queryKey: ["inventory-chart"],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`/api/inventory?limit=60`)
+        if (!res.ok) return []
+        const json = await res.json()
+        return json.data || []
+      } catch {
+        return []
+      }
+    },
+    staleTime: 60 * 1000,
+  })
+
+  // 根据分类构建图表数据
+  const priceData = useCallback((): Array<{ date: string; price: number; changePercent: number | null; source: string | null; note: string | null }> => {
+    if (!reportsData) return []
+
+    if (selectedCategory === "sulfur-price") {
+      // 从报告中解析硫磺均价
+      return reportsData.map((report: any) => {
+        const match = report.summary?.match(REPORT_PATTERNS.SULFUR_PRICE)
+        const price = match ? parseInt(match[1]) : report.price || 0
+        const changeMatch = report.summary?.match(REPORT_PATTERNS.WEEKLY_CHANGE)
+        const changePercent = changeMatch ? parseFloat(changeMatch[2]) * (changeMatch[1] === "下跌" ? -1 : 1) : null
+        return {
+          date: report.reportDate,
+          price,
+          changePercent,
+          source: report.summary?.match(REPORT_PATTERNS.MARKET_OVERVIEW) ? "采购报告" : null,
+          note: report.title,
+        }
+      }).reverse()
+    }
+
+    if (selectedCategory === "oil-price" && oilData) {
+      // 原油历史数据
+      return oilData.map((item: any) => ({
+        date: item.date,
+        price: item.value,
+        changePercent: item.changePercent,
+        source: "FRED API",
+        note: "WTI原油现货",
+      }))
+    }
+
+    if (selectedCategory === "port-inventory" && inventoryData) {
+      // 库存历史数据
+      return inventoryData.map((item: any) => ({
+        date: item.date,
+        price: parseFloat(item.inventory),
+        changePercent: null,
+        source: "PostgreSQL",
+        note: "港口库存",
+      })).reverse()
+    }
+
+    if (selectedCategory === "port-arrival") {
+      // 从报告中解析港口到货量
+      return reportsData.map((report: any) => {
+        const match = report.summary?.match(REPORT_PATTERNS.PORT_ARRIVAL)
+        const price = match ? parseInt(match[1]) : 30
+        return {
+          date: report.reportDate,
+          price,
+          changePercent: null,
+          source: "采购报告估算",
+          note: report.title,
+        }
+      }).reverse()
+    }
+
+    return []
+  }, [reportsData, oilData, inventoryData, selectedCategory])
+
+  const isLoading = reportsLoading
 
   // 点击外部关闭固定的 tooltip
   const handleCloseTooltip = useCallback(() => {
@@ -215,13 +302,7 @@ export function ReportsPriceChart() {
   const tooltipBorder = isDark ? "#334155" : "#e2e8f0"
 
   // 图表数据
-  const chartData = priceData?.filter(item => item.price !== null).map(item => ({
-    date: item.date,
-    price: item.price,
-    changePercent: item.changePercent,
-    source: item.source,
-    note: item.note,
-  })) || []
+  const chartData = priceData().filter(item => item.price !== null && item.price > 0)
 
   return (
     <div className="flex gap-4">
@@ -286,10 +367,6 @@ export function ReportsPriceChart() {
           {isLoading ? (
             <div className="h-[400px] w-full flex items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : error ? (
-            <div className="h-[400px] w-full flex items-center justify-center">
-              <p className="text-sm text-muted-foreground">数据加载失败，请稍后刷新</p>
             </div>
           ) : chartData.length === 0 ? (
             <div className="h-[400px] w-full flex items-center justify-center">

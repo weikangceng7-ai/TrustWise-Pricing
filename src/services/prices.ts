@@ -76,3 +76,92 @@ export async function getInventorySummary() {
     date: latest.date,
   }
 }
+
+/**
+ * 通用函数：找到最接近目标日期的记录
+ */
+function findClosestByDate<T extends { date: string | Date }>(
+  records: T[],
+  targetDate: string
+): T | null {
+  if (records.length === 0) return null
+
+  const target = new Date(targetDate)
+  let closest = records[0]
+  let minDiff = Infinity
+
+  for (const r of records) {
+    const diff = Math.abs(new Date(r.date).getTime() - target.getTime())
+    if (diff < minDiff) {
+      minDiff = diff
+      closest = r
+    }
+  }
+
+  return closest
+}
+
+/**
+ * 获取指定日期的价格数据
+ */
+export async function getPriceByDate(targetDate: string) {
+  if (!db) return null
+
+  try {
+    const prices = await db.select().from(sulfurPrices).orderBy(desc(sulfurPrices.date)).limit(60)
+    const closestPrice = findClosestByDate(prices, targetDate)
+
+    if (!closestPrice) return null
+
+    // Calculate average price from available data
+    const avgPrice = prices.length > 0
+      ? (prices.reduce((sum, p) => sum + Number(p.mainPrice || 0), 0) / prices.length).toFixed(2)
+      : null
+
+    return {
+      currentPrice: closestPrice.mainPrice,
+      minPrice: closestPrice.minPrice,
+      maxPrice: closestPrice.maxPrice,
+      avgPrice,
+      changeValue: closestPrice.changeValue,
+      changePercent: closestPrice.changePercent,
+      date: closestPrice.date,
+      market: closestPrice.market,
+      specification: closestPrice.specification,
+    }
+  } catch (error) {
+    console.error("获取指定日期价格失败:", error)
+    return null
+  }
+}
+
+/**
+ * 获取指定日期的库存数据
+ */
+export async function getInventoryByDate(targetDate: string) {
+  if (!db) return null
+
+  try {
+    const inventory = await db.select().from(portInventory).orderBy(desc(portInventory.date)).limit(60)
+    const closestInventory = findClosestByDate(inventory, targetDate)
+
+    if (!closestInventory) return null
+
+    // 计算该日期前30天的平均库存
+    const target = new Date(targetDate)
+    const relevantInventory = inventory.filter(i => new Date(i.date) <= target)
+    const avgInventory = relevantInventory.length > 0
+      ? relevantInventory.slice(0, 30).reduce((sum, i) => sum + Number(i.inventory || 0), 0) / Math.min(relevantInventory.length, 30)
+      : Number(closestInventory.inventory)
+
+    return {
+      currentInventory: closestInventory.inventory,
+      avgInventory: avgInventory.toFixed(2),
+      currentPrice: closestInventory.price,
+      date: closestInventory.date,
+    }
+  } catch (error) {
+    console.error("获取指定日期库存失败:", error)
+    return null
+  }
+}

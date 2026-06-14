@@ -2,7 +2,7 @@
 import { nanoid } from "nanoid"
 import { db } from "@/db"
 import { apiKeys, apiQuotas, type ApiKey, type ApiQuota } from "@/db/schema"
-import { eq } from "drizzle-orm"
+import { eq, and } from "drizzle-orm"
 
 const API_KEY_PREFIX = "sk_"
 const API_KEY_LENGTH = 32
@@ -172,8 +172,7 @@ export async function deleteApiKey(userId: string, keyId: string): Promise<boole
   if (!db) return false
 
   const result = await db.delete(apiKeys)
-    .where(eq(apiKeys.id, keyId))
-    .where(eq(apiKeys.userId, userId))
+    .where(and(eq(apiKeys.id, keyId), eq(apiKeys.userId, userId)))
     .returning()
 
   return result.length > 0
@@ -189,8 +188,7 @@ export async function resetApiKey(userId: string, keyId: string): Promise<ApiKey
 
   const [updated] = await db.update(apiKeys)
     .set({ key: newKey })
-    .where(eq(apiKeys.id, keyId))
-    .where(eq(apiKeys.userId, userId))
+    .where(and(eq(apiKeys.id, keyId), eq(apiKeys.userId, userId)))
     .returning()
 
   return updated || null
