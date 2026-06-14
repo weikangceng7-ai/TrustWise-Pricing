@@ -267,3 +267,6 @@ export type MultiDimensionalPrice = typeof multiDimensionalPrices.$inferSelect
 export type NewMultiDimensionalPrice = typeof multiDimensionalPrices.$inferInsert
 export type Enterprise = typeof enterprises.$inferSelect
 export type NewEnterprise = typeof enterprises.$inferInsert
+
+// API 相关表 - 从 schema-api 导入
+export * from "./schema-api"
