@@ -9,6 +9,18 @@
     {
       "path": "/api/cron/global-news",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/tracker/cron/hourly",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/tracker/cron/daily",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/tracker/cron/weekly",
+      "schedule": "0 9 * * 1"
     }
   ]
 }

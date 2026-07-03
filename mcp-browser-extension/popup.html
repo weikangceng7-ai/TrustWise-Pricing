@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>硫磺市场数据助手</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 320px;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+      color: #1a1a1a;
+      background: #fafafa;
+    }
+    h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #1a1a2e;
+    }
+    .setting-group {
+      margin-bottom: 12px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 12px;
+      background: #fff;
+      color: #1a1a1a;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: #1a1a2e;
+    }
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .toggle input[type="checkbox"] {
+      width: 36px;
+      height: 20px;
+      appearance: none;
+      background: #ddd;
+      border-radius: 10px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle input[type="checkbox"]::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: left 0.2s;
+    }
+    .toggle input[type="checkbox"]:checked {
+      background: #1a1a2e;
+    }
+    .toggle input[type="checkbox"]:checked::after {
+      left: 18px;
+    }
+    .toggle span {
+      font-size: 12px;
+      color: #333;
+    }
+    .status {
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      margin-top: 12px;
+    }
+    .status.ok {
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+    .status.error {
+      background: #fff2f0;
+      color: #cf1322;
+      border: 1px solid #ffccc7;
+    }
+    .btn {
+      width: 100%;
+      padding: 8px;
+      background: #1a1a2e;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: #16213e;
+    }
+    .divider {
+      height: 1px;
+      background: #e5e5e5;
+      margin: 12px 0;
+    }
+    .hint {
+      font-size: 11px;
+      color: #999;
+      line-height: 1.5;
+    }
+    .hint a {
+      color: #1a1a2e;
+    }
+  </style>
+</head>
+<body>
+  <h3>硫磺市场数据助手</h3>
+
+  <div class="toggle">
+    <input type="checkbox" id="enabled-toggle">
+    <span for="enabled-toggle">启用扩展</span>
+  </div>
+
+  <div class="setting-group">
+    <label for="mcp-url-input">MCP Server 地址</label>
+    <input type="text" id="mcp-url-input" placeholder="http://localhost:3100/mcp">
+  </div>
+
+  <div class="setting-group">
+    <label for="api-key-input">API Key（可选）</label>
+    <input type="password" id="api-key-input" placeholder="sk_你的API_KEY">
+  </div>
+
+  <button class="btn" id="save-btn">保存配置</button>
+
+  <div class="divider"></div>
+
+  <div id="status" class="status" style="display:none;"></div>
+
+  <div class="divider"></div>
+
+  <div class="hint">
+    使用方式：<br>
+    1. 配置 MCP Server 地址<br>
+    2. 在 DeepSeek / 豆包聊天页点击右下角浮动按钮<br>
+    3. 获取硫磺市场数据并注入到输入框<br><br>
+    <a href="https://github.com/weikangceng7-ai/TrustWise-Pricing" target="_blank">项目源码</a>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

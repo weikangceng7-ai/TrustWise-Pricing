@@ -20,9 +20,10 @@ export interface ReportStats {
   total: number
   thisWeek: number
   thisMonth: number
-  pending: number
-  byType: Record<string, number>
   byTrend: Record<string, number>
+  byRisk: Record<string, number>
+  byRecommendation: Record<string, number>
+  avgPrice?: number
 }
 
 export function useReports() {
@@ -43,16 +44,8 @@ export function useReports() {
     },
   })
 
-  const { data: statsData, refetch: refetchStats } = useQuery({
-    queryKey: ["reports", "stats"],
-    queryFn: async () => {
-      const res = await fetch("/api/reports?stats=true")
-      return res.json()
-    },
-  })
-
   const reports = (reportsData?.data || []) as Report[]
-  const stats = statsData?.stats as ReportStats | null
+  const stats = reportsData?.stats as ReportStats | null
 
   const updateFilters = useCallback((newFilters: Partial<ReportFilters>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }))
@@ -65,8 +58,8 @@ export function useReports() {
   const hasActiveFilters = Object.values(filters).some((v) => v !== undefined && v !== "")
 
   const refresh = useCallback(async () => {
-    await Promise.all([refetchReports(), refetchStats()])
-  }, [refetchReports, refetchStats])
+    await refetchReports()
+  }, [refetchReports])
 
   return {
     reports,

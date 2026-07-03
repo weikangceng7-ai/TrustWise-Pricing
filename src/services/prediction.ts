@@ -3,7 +3,32 @@
  * 调用 Python 预测服务 API
  */
 
-const PREDICTION_SERVICE_URL = process.env.PREDICTION_SERVICE_URL || 'http://localhost:5001'
+const DEFAULT_PREDICTION_SERVICE_URL = process.env.PREDICTION_SERVICE_URL || 'http://localhost:5001'
+
+/**
+ * 获取预测服务 URL
+ * @param customUrl 用户自定义的 URL（优先使用）
+ */
+function getServiceUrl(customUrl?: string): string {
+  if (customUrl && customUrl.trim()) {
+    return customUrl.trim()
+  }
+  return DEFAULT_PREDICTION_SERVICE_URL
+}
+
+/**
+ * 构建请求头（包含 API Key 认证）
+ * @param apiKey 可选的 API 密钥
+ */
+function buildHeaders(apiKey?: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+  if (apiKey && apiKey.trim()) {
+    headers['Authorization'] = `Bearer ${apiKey.trim()}`
+  }
+  return headers
+}
 
 export interface PredictionResult {
   date: string
@@ -69,12 +94,16 @@ export interface DecisionResponse {
 
 /**
  * 预测未来价格
+ * @param days 预测天数
+ * @param serviceUrl 可选的自定义服务地址
+ * @param apiKey 可选的 API 密钥
  */
-export async function predictPrices(days: number = 7): Promise<PredictionResponse> {
+export async function predictPrices(days: number = 7, serviceUrl?: string, apiKey?: string): Promise<PredictionResponse> {
+  const url = getServiceUrl(serviceUrl)
   try {
-    const response = await fetch(`${PREDICTION_SERVICE_URL}/predict`, {
+    const response = await fetch(`${url}/predict`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: buildHeaders(apiKey),
       body: JSON.stringify({ days }),
     })
 
@@ -100,14 +129,21 @@ export async function predictPrices(days: number = 7): Promise<PredictionRespons
 
 /**
  * 获取趋势分析
+ * @param days 分析天数
+ * @param serviceUrl 可选的自定义服务地址
+ * @param apiKey 可选的 API 密钥
  */
-export async function getTrendAnalysis(days: number = 30): Promise<{
+export async function getTrendAnalysis(days: number = 30, serviceUrl?: string, apiKey?: string): Promise<{
   success: boolean
   data?: TrendAnalysis
   error?: string
 }> {
+  const url = getServiceUrl(serviceUrl)
   try {
-    const response = await fetch(`${PREDICTION_SERVICE_URL}/trend?days=${days}`)
+    const response = await fetch(`${url}/trend?days=${days}`, {
+      method: 'GET',
+      headers: buildHeaders(apiKey),
+    })
     return await response.json()
   } catch (error) {
     console.error('趋势分析服务调用失败:', error)
@@ -120,17 +156,21 @@ export async function getTrendAnalysis(days: number = 30): Promise<{
 
 /**
  * 获取采购决策建议
+ * @param params 决策参数
+ * @param serviceUrl 可选的自定义服务地址
+ * @param apiKey 可选的 API 密钥
  */
 export async function getPurchaseDecision(params: {
   days?: number
   current_inventory?: number
   daily_consumption?: number
   safety_days?: number
-}): Promise<DecisionResponse> {
+}, serviceUrl?: string, apiKey?: string): Promise<DecisionResponse> {
+  const url = getServiceUrl(serviceUrl)
   try {
-    const response = await fetch(`${PREDICTION_SERVICE_URL}/decision`, {
+    const response = await fetch(`${url}/decision`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: buildHeaders(apiKey),
       body: JSON.stringify(params),
     })
 
@@ -179,17 +219,21 @@ export async function getPurchaseDecision(params: {
 
 /**
  * 训练模型
+ * @param testRatio 测试数据比例
+ * @param serviceUrl 可选的自定义服务地址
+ * @param apiKey 可选的 API 密钥
  */
-export async function trainModel(testRatio: number = 0.1): Promise<{
+export async function trainModel(testRatio: number = 0.1, serviceUrl?: string, apiKey?: string): Promise<{
   success: boolean
   message?: string
   metrics?: Record<string, unknown>
   error?: string
 }> {
+  const url = getServiceUrl(serviceUrl)
   try {
-    const response = await fetch(`${PREDICTION_SERVICE_URL}/train`, {
+    const response = await fetch(`${url}/train`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: buildHeaders(apiKey),
       body: JSON.stringify({ test_ratio: testRatio }),
     })
 
@@ -205,14 +249,18 @@ export async function trainModel(testRatio: number = 0.1): Promise<{
 
 /**
  * 检查预测服务健康状态
+ * @param serviceUrl 可选的自定义服务地址
+ * @param apiKey 可选的 API 密钥
  */
-export async function checkPredictionServiceHealth(): Promise<{
+export async function checkPredictionServiceHealth(serviceUrl?: string, apiKey?: string): Promise<{
   healthy: boolean
   message: string
 }> {
+  const url = getServiceUrl(serviceUrl)
   try {
-    const response = await fetch(`${PREDICTION_SERVICE_URL}/health`, {
+    const response = await fetch(`${url}/health`, {
       method: 'GET',
+      headers: buildHeaders(apiKey),
       signal: AbortSignal.timeout(5000), // 5秒超时
     })
 

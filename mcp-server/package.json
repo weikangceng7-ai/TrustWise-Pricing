@@ -1,0 +1,18 @@
+{
+  "name": "sulfur-tracker-agent-mcp",
+  "version": "0.1.0",
+  "description": "硫磺采购价格预测 MCP Server - HTTP 模式",
+  "type": "module",
+  "scripts": {
+    "start": "tsx mcp-server/index.ts",
+    "build": "tsc --project mcp-server/tsconfig.json",
+    "dev": "tsx mcp-server/index.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.4",
+    "typescript": "^5.0.0"
+  }
+}

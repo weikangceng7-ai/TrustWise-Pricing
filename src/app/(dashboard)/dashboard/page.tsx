@@ -1,19 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { TrendingUp, Package, DollarSign, BarChart3, AlertTriangle, ChevronRight, FileText, ArrowRight, ArrowUpRight, Activity, Zap, Target, Layers, Scale } from "lucide-react"
 import Link from "next/link"
 import { getBackgroundImage } from "@/config/images"
-
-interface Report {
-  id: number
-  title: string
-  reportDate: string
-  summary: string
-  recommendation: string | null
-  priceTrend: string | null
-  riskLevel: string | null
-}
+import type { Report } from "@/hooks/use-reports"
 
 function getRiskColor(risk: string | null) {
   if (risk === "高") return "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300"
@@ -49,28 +41,24 @@ const ENTERPRISE_COLORS = {
 }
 
 function ReportCarouselInline() {
-  const [reports, setReports] = useState<Report[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    async function fetchReports() {
+  const { data: reportsData, isLoading } = useQuery({
+    queryKey: ["dashboard-reports"],
+    queryFn: async () => {
       try {
-        const res = await fetch("/api/reports")
+        const res = await fetch("/api/reports?limit=5")
         const data = await res.json()
-        if (data.success && data.data) {
-          setReports(data.data.slice(0, 5))
-        }
-      } catch (error) {
-        console.error("获取报告数据失败:", error)
-      } finally {
-        setLoading(false)
+        return (data.data || []) as Report[]
+      } catch {
+        return [] as Report[]
       }
-    }
-    fetchReports()
-  }, [])
+    },
+  })
 
-  if (loading) {
+  const reports = reportsData || []
+
+  if (isLoading) {
     return <div className="animate-pulse text-slate-400 text-sm py-4">加载中...</div>
   }
 

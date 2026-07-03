@@ -32,8 +32,6 @@ import {
   FileDown,
   Sparkles,
   X,
-  BarChart3,
-  PieChart,
   ChevronDown,
   ChevronUp,
   MessageSquare,
@@ -65,32 +63,6 @@ const recommendationConfig: Record<string, { icon: React.ElementType; color: str
   "适当备库": { icon: CheckCircle, color: "text-blue-500" },
   "观望": { icon: Clock, color: "text-gray-500" },
   "按需采购": { icon: CheckCircle, color: "text-green-500" },
-}
-
-function StatCard({
-  title,
-  value,
-  icon: Icon,
-}: {
-  title: string
-  value: number | string
-  icon: React.ElementType
-}) {
-  return (
-    <Card className="py-2">
-      <CardContent className="pt-2">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
-            <Icon className="h-3.5 w-3.5 text-primary" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">{title}</p>
-            <p className="text-base font-bold">{value}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
 }
 
 function CollapsibleReportCard({
@@ -226,25 +198,6 @@ export default function ReportsPage() {
     <div className="space-y-4">
       {/* 价格走势图表 */}
       <ReportsPriceChart />
-
-      {/* 统计卡片 - 紧凑排列 */}
-      <div className="flex gap-2 flex-wrap">
-        <StatCard
-          title="总报告"
-          value={stats?.total || 0}
-          icon={FileText}
-        />
-        <StatCard
-          title="本周"
-          value={stats?.thisWeek || 0}
-          icon={BarChart3}
-        />
-        <StatCard
-          title="本月"
-          value={stats?.thisMonth || 0}
-          icon={PieChart}
-        />
-      </div>
 
       {/* 篮选和生成按钮 */}
       <div className="flex gap-2 justify-end">

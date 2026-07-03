@@ -76,6 +76,13 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("创建 API Key 失败:", error)
+    // 处理 Key 数量限制错误
+    if (error instanceof Error && error.message.includes("已达上限")) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 400 }
+      )
+    }
     return NextResponse.json(
       { success: false, error: "创建 API Key 失败" },
       { status: 500 }

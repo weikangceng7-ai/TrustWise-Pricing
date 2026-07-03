@@ -13,6 +13,14 @@
 # testing
 /coverage
 
+# playwright
+/test-results/
+/playwright-report/
+/screenshots/
+/exports/
+/scraped-data/
+tests/utils/auth-state.json
+
 # next.js
 /.next/
 /out/

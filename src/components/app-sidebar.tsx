@@ -13,6 +13,8 @@ import {
   ChevronDown,
   Settings,
   Plus,
+  Key,
+  Bell,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { ENTERPRISE_CONFIGS } from "@/services/enterprise-knowledge-config"
@@ -119,11 +121,25 @@ const subNavItems = [
     color: "amber",
   },
   {
+    title: "Tracker 追踪",
+    url: "/tracker",
+    icon: Bell,
+    description: "价格追踪与异动预警",
+    color: "blue",
+  },
+  {
     title: "采购报告单",
     url: "/reports",
     icon: FileText,
     description: "历史报告与数据分析",
     color: "emerald",
+  },
+  {
+    title: "API Console",
+    url: "/api-console",
+    icon: Key,
+    description: "API Key 管理与文档",
+    color: "rose",
   },
 ]
 
@@ -373,7 +389,8 @@ export function AppSidebar() {
             </SidebarGroupContent>
           )}
         </SidebarGroup>
-      </SidebarContent>
+
+        </SidebarContent>
 
       {/* Sidebar Footer */}
       <SidebarFooter className="relative overflow-hidden">

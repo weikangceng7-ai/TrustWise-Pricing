@@ -13,6 +13,9 @@ export const user = pgTable("user", {
   // 手机号登录支持
   phone: text("phone").unique(), // 手机号需要唯一约束，防止重复注册
   phoneVerified: boolean("phone_verified").notNull().default(false),
+  // 用户自定义预测服务配置
+  predictionServiceUrl: text("prediction_service_url"),
+  predictionServiceApiKey: text("prediction_service_api_key"), // 预测服务 API 密钥
 })
 
 // Better Auth 会话表 - 必须导出为 session
@@ -270,3 +273,6 @@ export type NewEnterprise = typeof enterprises.$inferInsert
 
 // API 相关表 - 从 schema-api 导入
 export * from "./schema-api"
+
+// Tracker Agent 相关表 - 从 schema-tracker 导入
+export * from "./schema-tracker"

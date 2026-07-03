@@ -22,6 +22,12 @@ export async function createApiKey(userId: string, name: string): Promise<ApiKey
     throw new Error("数据库不可用")
   }
 
+  // 检查用户已有的 API Key 数量（最多 5 个）
+  const existingKeys = await db.select().from(apiKeys).where(eq(apiKeys.userId, userId))
+  if (existingKeys.length >= 5) {
+    throw new Error("API Key 数量已达上限（最多 5 个）")
+  }
+
   const key = generateApiKey()
   const id = nanoid(16)
 
