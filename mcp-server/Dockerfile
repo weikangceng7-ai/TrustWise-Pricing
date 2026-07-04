@@ -6,10 +6,10 @@ WORKDIR /app
 COPY mcp-server/package.json ./package.json
 RUN npm install
 
-# 复制源码并编译
+# 复制源码并编译（直接调用 tsc.js 绕过 .bin symlink 权限问题）
 COPY mcp-server/ ./
 COPY mcp-server/tsconfig.json ./tsconfig.json
-RUN npm run build
+RUN node node_modules/typescript/lib/tsc.js
 
 FROM node:22-slim AS runtime
 
