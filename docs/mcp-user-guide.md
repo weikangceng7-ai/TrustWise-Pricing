@@ -117,7 +117,50 @@ Claude 会自动调用 MCP 工具获取真实数据后回复你。
 
 ---
 
-## 三、常见问题
+## 三、浏览器扩展接入（公共 MCP 服务）
+
+除了 Claude Desktop 本地 stdio 模式，你也可以直接在**浏览器中使用 MCP 扩展**，连接到已部署的公网 MCP 服务。这种方式无需编译代码，配置更简单，适合日常快速使用。
+
+### 3.1 第一步：安装浏览器 MCP 扩展
+
+在 Chrome/Edge 扩展商店搜索并安装支持 MCP 协议的浏览器扩展（例如 "硫磺市场数据助手" 或同类 MCP 客户端扩展）。
+
+### 3.2 第二步：配置扩展
+
+打开扩展配置页面，按以下方式填写：
+
+1. **启用扩展**：打开开关
+2. **MCP Server 地址**：填写 `https://sulfur-agent-web.vercel.app/mcp`
+3. **API Key（可选）**：填写你的 API Key（格式 `sk_xxxxxx`），可在 [sulfur-agent-web.vercel.app](https://sulfur-agent-web.vercel.app) 登录后获取
+4. 点击 **保存配置**
+
+> 如果扩展支持"使用默认公共服务器"选项，勾选后可自动填入默认地址。
+
+### 3.3 第三步：验证是否生效
+
+1. 打开 DeepSeek / 豆包等支持的 AI 聊天页面
+2. 点击页面右下角的扩展浮动按钮
+3. 硫磺市场数据助手应显示为已连接状态
+4. 在聊天中输入问题测试：
+
+```
+最近硫磺价格走势怎么样？
+```
+
+扩展会自动获取硫磺市场数据并注入到你的聊天输入框中。
+
+### 3.4 浏览器扩展 vs Claude Desktop
+
+| 对比项 | 浏览器扩展 | Claude Desktop |
+|--------|-----------|---------------|
+| 配置难度 | 简单，只需填地址 | 需编译和配置 JSON |
+| 运行方式 | 连接公网服务 | 本地运行 MCP Server |
+| 适用场景 | 日常快速查询 | 深度分析、本地开发 |
+| 数据延迟 | 公网网络延迟 | 本地直连更快 |
+
+---
+
+## 四、常见问题
 
 ### Q1：Claude Desktop 中没有显示 MCP 工具图标
 
@@ -154,11 +197,15 @@ Claude Desktop → Settings → Developer → View MCP Server Logs，可以看�
 
 ### Q5：我想用其他 AI 客户端
 
-目前仅验证 Claude Desktop（stdio 模式）可用。其他客户端的配置方式请参考项目仓库中的完整文档。
+目前支持两种接入方式：
+- **Claude Desktop**：本地 stdio 模式（见第二部分）
+- **浏览器扩展**：连接公网 MCP 服务（见第三部分），兼容 DeepSeek、豆包等 AI 聊天页面
+
+其他客户端的配置方式请参考项目仓库中的完整文档。
 
 ---
 
-## 四、可用工具速查表
+## 五、可用工具速查表
 
 | 工具 | 分类 | 说明 |
 |------|------|------|
@@ -176,7 +223,7 @@ Claude Desktop → Settings → Developer → View MCP Server Logs，可以看�
 
 ---
 
-## 五、技术支持
+## 六、技术支持
 
 - **项目地址**：https://github.com/weikangceng7-ai/TrustWise-Pricing
 - **在线系统**：https://sulfur-agent-web.vercel.app

@@ -35,6 +35,19 @@ export async function startHttpServer(
   client: ReturnType<typeof createClient>
 ): Promise<http.Server> {
   const httpServer = http.createServer(async (req, res) => {
+    // CORS 头：允许浏览器、MCP 浏览器插件等跨域访问
+    res.setHeader("Access-Control-Allow-Origin", "*")
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept, Cache-Control, X-Session-Id")
+    res.setHeader("Access-Control-Expose-Headers", "Content-Type")
+
+    // 处理 OPTIONS 预检请求
+    if (req.method === "OPTIONS") {
+      res.writeHead(204)
+      res.end()
+      return
+    }
+
     const url = new URL(req.url || "/", `http://${req.headers.host}`)
 
     // 健康检查

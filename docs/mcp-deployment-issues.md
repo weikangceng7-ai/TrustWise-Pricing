@@ -47,6 +47,19 @@
 
 **替代方案**：使用 Claude Desktop（官方支持 MCP，100% 兼容）。
 
+### 8. 浏览器 MCP 插件跨域（CORS）问题
+**现象**：在 Chrome 浏览器中通过 MCP 浏览器插件连接已部署的 MCP Server，报错 `数据获取失败: Failed to fetch`。
+
+**原因**：MCP Server 使用 Node.js 原生 `http` 模块，默认不发送 CORS 响应头。浏览器出于安全策略拦截跨域请求。
+
+**解决**：在 `http-server.ts` 的请求处理入口添加 CORS 头，并处理 `OPTIONS` 预检请求：
+```typescript
+res.setHeader("Access-Control-Allow-Origin", "*")
+res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept, Cache-Control, X-Session-Id")
+```
+修改后需重新构建 Docker 镜像并部署到 Railway。
+
 ---
 
 ## 解决后的最终架构
