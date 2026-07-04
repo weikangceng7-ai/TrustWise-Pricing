@@ -9,7 +9,7 @@ RUN npm install --ignore-scripts
 # 复制源码并编译
 COPY mcp-server/ ./
 COPY mcp-server/tsconfig.json ./tsconfig.json
-RUN npx tsc
+RUN npm run build
 
 FROM node:22-slim AS runtime
 
