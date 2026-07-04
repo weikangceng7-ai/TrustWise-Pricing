@@ -28,6 +28,11 @@ export function createClient(config: McpConfig) {
     path: string,
     options: { method?: string; body?: unknown } = {}
   ): Promise<ApiResponse<T>> {
+    // DEMO 模式：返回示例数据
+    if (config.DEMO_MODE) {
+      return { success: true, data: null as T, message: "DEMO 模式：此为示例数据" }
+    }
+
     const { method = "GET", body } = options
     const url = `${config.API_BASE_URL}${path}`
 

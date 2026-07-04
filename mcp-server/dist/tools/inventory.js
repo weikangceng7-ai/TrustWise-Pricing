@@ -1,13 +1,10 @@
-"use strict";
 /**
  * get_inventory MCP 工具
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.registerGetInventory = registerGetInventory;
-const zod_1 = require("zod");
-function registerGetInventory(server, config, client) {
+import { z } from "zod";
+export function registerGetInventory(server, config, client) {
     server.tool("get_inventory", `获取${config.INDUSTRY_CODE === "sulfur" ? "港口硫磺" : "行业"}库存数据`, {
-        limit: zod_1.z.number().optional(),
+        limit: z.number().optional(),
     }, async ({ limit }, _extra) => {
         const limitCount = limit || 2;
         try {

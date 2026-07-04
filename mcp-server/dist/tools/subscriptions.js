@@ -1,20 +1,17 @@
-"use strict";
 /**
  * subscribe_alert + list_subscriptions + update_subscription MCP 工具
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.registerSubscriptionTools = registerSubscriptionTools;
-const zod_1 = require("zod");
+import { z } from "zod";
 const SUBSCRIPTION_TYPES = ["price", "inventory", "news", "all"];
-function registerSubscriptionTools(server, config, client) {
+export function registerSubscriptionTools(server, config, client) {
     // ========== subscribe_alert ==========
     server.tool("subscribe_alert", `订阅${config.INDUSTRY_CODE === "sulfur" ? "硫磺" : "行业"}价格预警，当价格达到阈值或触发规则时自动通知`, {
-        name: zod_1.z.string().optional(),
-        threshold: zod_1.z.number(),
-        direction: zod_1.z.enum(["above", "below"]),
-        frequency: zod_1.z.enum(["hourly", "daily", "weekly"]).optional(),
-        targetType: zod_1.z.enum(SUBSCRIPTION_TYPES).optional(),
-        reportEnabled: zod_1.z.boolean().optional(),
+        name: z.string().optional(),
+        threshold: z.number(),
+        direction: z.enum(["above", "below"]),
+        frequency: z.enum(["hourly", "daily", "weekly"]).optional(),
+        targetType: z.enum(SUBSCRIPTION_TYPES).optional(),
+        reportEnabled: z.boolean().optional(),
     }, async ({ name, threshold, direction, frequency, targetType, reportEnabled }, _extra) => {
         try {
             const result = await client.createSubscription({
@@ -54,7 +51,7 @@ function registerSubscriptionTools(server, config, client) {
     });
     // ========== list_subscriptions ==========
     server.tool("list_subscriptions", "列出当前用户的所有追踪订阅", {
-        activeOnly: zod_1.z.boolean().optional(),
+        activeOnly: z.boolean().optional(),
     }, async ({ activeOnly }, _extra) => {
         try {
             const result = await client.getSubscriptions(activeOnly !== false);
@@ -92,10 +89,10 @@ function registerSubscriptionTools(server, config, client) {
     });
     // ========== update_subscription ==========
     server.tool("update_subscription", "更新或删除已有的订阅", {
-        subscriptionId: zod_1.z.number(),
-        action: zod_1.z.enum(["update", "delete"]),
-        isActive: zod_1.z.boolean().optional(),
-        name: zod_1.z.string().optional(),
+        subscriptionId: z.number(),
+        action: z.enum(["update", "delete"]),
+        isActive: z.boolean().optional(),
+        name: z.string().optional(),
     }, async ({ subscriptionId, action, isActive, name }, _extra) => {
         try {
             if (action === "delete") {
@@ -143,7 +140,7 @@ function registerSubscriptionTools(server, config, client) {
     });
     // ========== get_alerts ==========
     server.tool("get_alerts", "获取近期价格异动告警列表", {
-        limit: zod_1.z.number().optional(),
+        limit: z.number().optional(),
     }, async ({ limit }, _extra) => {
         const limitCount = limit || 10;
         try {

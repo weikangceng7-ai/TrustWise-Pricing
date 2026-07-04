@@ -1,14 +1,11 @@
-"use strict";
 /**
  * get_news MCP 工具
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.registerGetNews = registerGetNews;
-const zod_1 = require("zod");
-function registerGetNews(server, config, client) {
+import { z } from "zod";
+export function registerGetNews(server, config, client) {
     server.tool("get_news", `获取${config.INDUSTRY_CODE === "sulfur" ? "硫磺" : "行业"}市场新闻和行业动态`, {
-        limit: zod_1.z.number().optional(),
-        category: zod_1.z.string().optional(),
+        limit: z.number().optional(),
+        category: z.string().optional(),
     }, async ({ limit, category }, _extra) => {
         const limitCount = limit || 10;
         try {

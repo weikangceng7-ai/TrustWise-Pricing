@@ -41,7 +41,20 @@
       "Bash(MCP_TRANSPORT=http MCP_PORT=3100 API_BASE_URL=https://sulfur-agent-web.vercel.app API_KEY=test_key INDUSTRY_CODE=sulfur npx tsx mcp-server/index.ts)",
       "Bash(tskill tsx:*)",
       "Bash(timeout 5 bash -c \"while lsof -i :3100 -t 2>/dev/null; do sleep 1; done\")",
-      "Bash(MCP_TRANSPORT=http MCP_PORT=3101 API_BASE_URL=https://sulfur-agent-web.vercel.app API_KEY=test_key INDUSTRY_CODE=sulfur npx tsx mcp-server/index.ts)"
+      "Bash(MCP_TRANSPORT=http MCP_PORT=3101 API_BASE_URL=https://sulfur-agent-web.vercel.app API_KEY=test_key INDUSTRY_CODE=sulfur npx tsx mcp-server/index.ts)",
+      "Bash(grep -v \"^$\")",
+      "Bash(npx railway:*)",
+      "Bash(railway status:*)",
+      "Bash(timeout 5 node mcp-server/dist/index.js)",
+      "Bash(DEMO_MODE=true MCP_TRANSPORT=http timeout 5 node mcp-server/dist/index.js)",
+      "Bash(MCP_TRANSPORT=http MCP_PORT=3100 API_BASE_URL=https://sulfur-agent-web.vercel.app API_KEY=sk_F2PDkXQoQHs_ESXF7993E3MDCyTYZERJ INDUSTRY_CODE=sulfur npm run mcp:http)",
+      "Bash(MCP_TRANSPORT=http MCP_PORT=3100 API_BASE_URL=https://sulfur-agent-web.vercel.app API_KEY=sk_F2PDkXQoQHs_ESXF7993E3MDCyTYZERJ INDUSTRY_CODE=sulfur npx tsx mcp-server/index.ts)",
+      "Bash(netstat -ano)",
+      "Bash(ipconfig)",
+      "Bash(netsh advfirewall:*)",
+      "Bash(npm list:*)",
+      "Bash(DEMO_MODE=true MCP_TRANSPORT=http npx tsx index.ts)",
+      "Bash(MCP_TRANSPORT=http MCP_PORT=3101 DEMO_MODE=true npx tsx index.ts)"
     ]
   }
 }

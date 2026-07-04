@@ -1,14 +1,11 @@
-"use strict";
 /**
  * generate_report MCP 工具
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.registerGenerateReport = registerGenerateReport;
-const zod_1 = require("zod");
-function registerGenerateReport(server, config, client) {
+import { z } from "zod";
+export function registerGenerateReport(server, config, client) {
     server.tool("generate_report", `手动触发${config.INDUSTRY_CODE === "sulfur" ? "硫磺" : "行业"}追踪任务并生成报告`, {
-        subscriptionId: zod_1.z.string().optional(),
-        frequency: zod_1.z.enum(["hourly", "daily", "weekly"]).optional(),
+        subscriptionId: z.string().optional(),
+        frequency: z.enum(["hourly", "daily", "weekly"]).optional(),
     }, async ({ subscriptionId, frequency }, _extra) => {
         try {
             const result = await client.startTracking({

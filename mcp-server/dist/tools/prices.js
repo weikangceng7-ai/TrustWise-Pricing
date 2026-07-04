@@ -1,15 +1,12 @@
-"use strict";
 /**
  * get_prices MCP 工具
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.registerGetPrices = registerGetPrices;
-const zod_1 = require("zod");
-function registerGetPrices(server, config, client) {
+import { z } from "zod";
+export function registerGetPrices(server, config, client) {
     server.tool("get_prices", `获取${config.INDUSTRY_CODE === "sulfur" ? "硫磺" : "当前行业"}价格数据，包括近N天的价格走势和变化幅度`, {
-        days: zod_1.z.number().optional(),
-        region: zod_1.z.string().optional(),
-        market: zod_1.z.string().optional(),
+        days: z.number().optional(),
+        region: z.string().optional(),
+        market: z.string().optional(),
     }, async ({ days, region, market }, _extra) => {
         const daysCount = days || 7;
         try {

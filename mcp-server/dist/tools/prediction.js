@@ -1,13 +1,10 @@
-"use strict";
 /**
  * predict_prices MCP 工具
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.registerPredictPrices = registerPredictPrices;
-const zod_1 = require("zod");
-function registerPredictPrices(server, config, client) {
+import { z } from "zod";
+export function registerPredictPrices(server, config, client) {
     server.tool("predict_prices", `预测${config.INDUSTRY_CODE === "sulfur" ? "硫磺" : "行业"}未来价格走势，基于 ARIMA + XGBoost 混合模型`, {
-        days: zod_1.z.number().optional(),
+        days: z.number().optional(),
     }, async ({ days }, _extra) => {
         const daysCount = days || 7;
         try {

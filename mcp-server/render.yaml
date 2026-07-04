@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: sulfur-mcp-server
+    env: docker
+    dockerfilePath: ./mcp-server/Dockerfile
+    healthcheckPath: /health
+    envVars:
+      - key: API_BASE_URL
+        sync: false
+      - key: API_KEY
+        sync: false
+      - key: INDUSTRY_CODE
+        value: sulfur
+      - key: MCP_TRANSPORT
+        value: http
+      - key: DEMO_MODE
+        value: "false"

@@ -7,13 +7,10 @@ import { predictPrices, getPurchaseDecision, formatPredictionAsText, formatDecis
 
 export const maxDuration = 60
 
-// 延迟创建，避免构建时因缺少环境变量报错
-function getClient() {
-  return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    baseURL: process.env.OPENAI_BASE_URL || "https://api.qnaigc.com/v1",
-  })
-}
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_BASE_URL || "https://api.qnaigc.com/v1",
+})
 
 interface TextContent {
   type: "text"

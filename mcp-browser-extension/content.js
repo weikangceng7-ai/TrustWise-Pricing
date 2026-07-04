@@ -10,6 +10,7 @@ const DEFAULT_CONFIG = {
   mcpUrl: "http://localhost:3100/mcp",
   apiKey: "",
   enabled: true,
+  useDefaultServer: false,
 };
 
 // 全局状态

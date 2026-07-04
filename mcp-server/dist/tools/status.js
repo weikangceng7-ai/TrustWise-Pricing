@@ -1,10 +1,7 @@
-"use strict";
 /**
  * get_tracker_status MCP 工具
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.registerGetTrackerStatus = registerGetTrackerStatus;
-function registerGetTrackerStatus(server, config, client) {
+export function registerGetTrackerStatus(server, config, client) {
     server.tool("get_tracker_status", "获取 Tracker 运行状态统计，包括活跃订阅数、未读告警数等", {}, async ({}, _extra) => {
         try {
             const result = await client.getTrackerStatus();

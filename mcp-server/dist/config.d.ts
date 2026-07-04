@@ -15,6 +15,8 @@ export interface McpConfig {
     MCP_TRANSPORT: string;
     /** HTTP 监听端口，默认 3100 */
     MCP_PORT: number;
+    /** DEMO 模式：跳过 API_KEY 校验，返回示例数据 */
+    DEMO_MODE: boolean;
 }
 /**
  * 从环境变量加载配置

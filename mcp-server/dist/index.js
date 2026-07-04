@@ -1,4 +1,3 @@
-"use strict";
 /**
  * MCP Server 入口
  *
@@ -7,27 +6,26 @@
  * - http：用于 DeepSeek / 豆包等远程客户端
  * - both：同时启动两种传输（开发调试用）
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-const config_js_1 = require("./config.js");
-const client_js_1 = require("./client.js");
-const stdio_server_js_1 = require("./stdio-server.js");
-const http_server_js_1 = require("./http-server.js");
+import { loadConfig } from "./config.js";
+import { createClient } from "./client.js";
+import { startStdioServer } from "./stdio-server.js";
+import { startHttpServer } from "./http-server.js";
 async function main() {
-    const config = (0, config_js_1.loadConfig)();
+    const config = loadConfig();
     console.error(`[MCP] 配置加载完成: API_BASE_URL=${config.API_BASE_URL}, INDUSTRY_CODE=${config.INDUSTRY_CODE}, TRANSPORT=${config.MCP_TRANSPORT}, PORT=${config.MCP_PORT}`);
-    const client = (0, client_js_1.createClient)(config);
+    const client = createClient(config);
     switch (config.MCP_TRANSPORT) {
         case "http":
-            await (0, http_server_js_1.startHttpServer)(config, client);
+            await startHttpServer(config, client);
             break;
         case "both":
             // 同时启动：先起 HTTP，再起 stdio
-            await (0, http_server_js_1.startHttpServer)(config, client);
-            await (0, stdio_server_js_1.startStdioServer)(config, client);
+            await startHttpServer(config, client);
+            await startStdioServer(config, client);
             break;
         case "stdio":
         default:
-            await (0, stdio_server_js_1.startStdioServer)(config, client);
+            await startStdioServer(config, client);
             break;
     }
 }

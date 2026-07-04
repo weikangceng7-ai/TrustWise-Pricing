@@ -1,20 +1,21 @@
-"use strict";
 /**
  * MCP Server HTTP 客户端
  *
  * 封装所有对 API Server 的 HTTP 调用。
  * 统一处理认证、错误解析、中文错误消息。
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.createClient = createClient;
 /**
  * 创建 HTTP 客户端实例
  */
-function createClient(config) {
+export function createClient(config) {
     /**
      * 内部请求辅助方法
      */
     async function request(path, options = {}) {
+        // DEMO 模式：返回示例数据
+        if (config.DEMO_MODE) {
+            return { success: true, data: null, message: "DEMO 模式：此为示例数据" };
+        }
         const { method = "GET", body } = options;
         const url = `${config.API_BASE_URL}${path}`;
         const res = await fetch(url, {
