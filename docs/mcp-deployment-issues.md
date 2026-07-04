@@ -47,7 +47,16 @@
 
 **替代方案**：使用 Claude Desktop（官方支持 MCP，100% 兼容）。
 
-### 8. 浏览器 MCP 插件跨域（CORS）问题
+### 8. Railway 部署容器反复重启（tsx 找不到）
+**现象**：Railway 日志中 `sh: 1: tsx: Permission denied` 或 `command not found`，容器无限循环重启。
+
+**原因**：项目根目录的 `Dockerfile` 使用 `CMD ["npx", "tsx", "index.ts"]` 启动，但 `tsx` 是 devDependency，`npm install --production` 不会安装它。
+
+**解决**：Dockerfile 改为多阶段构建，Stage 1 编译 TypeScript，Stage 2 运行 `node dist/index.js`。
+
+---
+
+### 9. 浏览器 MCP 插件跨域（CORS）问题
 **现象**：在 Chrome 浏览器中通过 MCP 浏览器插件连接已部署的 MCP Server，报错 `数据获取失败: Failed to fetch`。
 
 **原因**：MCP Server 使用 Node.js 原生 `http` 模块，默认不发送 CORS 响应头。浏览器出于安全策略拦截跨域请求。
