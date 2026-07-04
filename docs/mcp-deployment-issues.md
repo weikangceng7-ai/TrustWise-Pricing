@@ -47,12 +47,16 @@
 
 **替代方案**：使用 Claude Desktop（官方支持 MCP，100% 兼容）。
 
-### 8. Railway 部署容器反复重启（tsx 找不到）
-**现象**：Railway 日志中 `sh: 1: tsx: Permission denied` 或 `command not found`，容器无限循环重启。
+### 8. Railway 部署容器反复重启（tsx 找不到 / tsc Permission denied）
+**现象**：Railway 日志中 `sh: 1: tsx: Permission denied` 或 `command not found`，容器无限循环重启；或构建阶段 `RUN npx tsc` 报 `Permission denied`。
 
-**原因**：项目根目录的 `Dockerfile` 使用 `CMD ["npx", "tsx", "index.ts"]` 启动，但 `tsx` 是 devDependency，`npm install --production` 不会安装它。
+**原因**：
+1. 项目根目录的 `Dockerfile` 使用 `CMD ["npx", "tsx", "index.ts"]` 启动，但 `tsx` 是 devDependency，`npm install --production` 不会安装它。
+2. 构建阶段 `RUN npm install --ignore-scripts` 跳过了 postinstall hook，导致 `node_modules/.bin/` 下没有创建可执行文件软链接，`npx tsc` 找不到可执行文件。
 
-**解决**：Dockerfile 改为多阶段构建，Stage 1 编译 TypeScript，Stage 2 运行 `node dist/index.js`。
+**解决**：
+1. Dockerfile 改为多阶段构建，Stage 1 编译 TypeScript，Stage 2 运行 `node dist/index.js`。
+2. 编译命令 `RUN npx tsc` 改为 `RUN npm run build`。`npm run build` 通过 npm 脚本内部调用 tsc，不受 `--ignore-scripts` 影响。
 
 ---
 
