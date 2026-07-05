@@ -58,7 +58,9 @@
       "Bash(MCP_TRANSPORT=http DEMO_MODE=true node dist/index.js)",
       "WebFetch(domain:github.com)",
       "Bash(DEMO_MODE=true MCP_TRANSPORT=http npx tsx mcp-server/index.ts)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(gh auth:*)",
+      "WebFetch(domain:vercel.com)"
     ]
   }
 }
