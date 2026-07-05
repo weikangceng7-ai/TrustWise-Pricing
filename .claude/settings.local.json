@@ -54,7 +54,10 @@
       "Bash(netsh advfirewall:*)",
       "Bash(npm list:*)",
       "Bash(DEMO_MODE=true MCP_TRANSPORT=http npx tsx index.ts)",
-      "Bash(MCP_TRANSPORT=http MCP_PORT=3101 DEMO_MODE=true npx tsx index.ts)"
+      "Bash(MCP_TRANSPORT=http MCP_PORT=3101 DEMO_MODE=true npx tsx index.ts)",
+      "Bash(MCP_TRANSPORT=http DEMO_MODE=true node dist/index.js)",
+      "WebFetch(domain:github.com)",
+      "Bash(DEMO_MODE=true MCP_TRANSPORT=http npx tsx mcp-server/index.ts)"
     ]
   }
 }
