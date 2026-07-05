@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { TrendingUp, Package, DollarSign, BarChart3, AlertTriangle, ChevronRight, FileText, ArrowRight, ArrowUpRight, Activity, Zap, Target, Layers, Scale } from "lucide-react"
+import { TrendingUp, Package, DollarSign, BarChart3, AlertTriangle, ChevronRight, FileText, ArrowRight, ArrowUpRight, Activity, Zap, Target, Layers, Scale, Network, MessageSquareText, Bell, Key } from "lucide-react"
 import Link from "next/link"
 import { getBackgroundImage } from "@/config/images"
 import type { Report } from "@/hooks/use-reports"
@@ -239,8 +239,62 @@ export default function DashboardPage() {
 
         {/* 主内容区域：左列、右列各占一半，占满页面 */}
         <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
-          {/* 左列 - 市场洞察和价格知识图谱 */}
+          {/* 左列 - 功能模块入口、市场洞察和价格知识图谱 */}
           <div className="space-y-3 flex flex-col flex-1 min-h-0">
+            {/* 功能模块入口 - 纵向排列 */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white px-1">功能模块</h3>
+              <Link href="/yihua-code-graph" className="group flex items-center gap-3 p-2.5 rounded-lg bg-gradient-to-r from-violet-500/10 to-violet-500/5 dark:from-violet-500/5 dark:to-violet-500/2 hover:from-violet-500/15 dark:hover:from-violet-500/10 border border-violet-200/50 dark:border-violet-500/20 transition-all duration-200">
+                <div className="w-9 h-9 rounded-lg bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <Network className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">价格知识图谱</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate">市场资讯·企业经验·制度规则</div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-violet-400 ml-auto shrink-0 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+              <Link href="/agent-chat" className="group flex items-center gap-3 p-2.5 rounded-lg bg-gradient-to-r from-amber-500/10 to-amber-500/5 dark:from-amber-500/5 dark:to-amber-500/2 hover:from-amber-500/15 dark:hover:from-amber-500/10 border border-amber-200/50 dark:border-amber-500/20 transition-all duration-200">
+                <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <MessageSquareText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">Agent 决策助手</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate">智能采购决策支持</div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-amber-400 ml-auto shrink-0 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+              <Link href="/tracker" className="group flex items-center gap-3 p-2.5 rounded-lg bg-gradient-to-r from-blue-500/10 to-blue-500/5 dark:from-blue-500/5 dark:to-blue-500/2 hover:from-blue-500/15 dark:hover:from-blue-500/10 border border-blue-200/50 dark:border-blue-500/20 transition-all duration-200">
+                <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <Bell className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">Tracker 追踪</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate">价格追踪与异动预警</div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-blue-400 ml-auto shrink-0 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+              <Link href="/reports" className="group flex items-center gap-3 p-2.5 rounded-lg bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 dark:from-emerald-500/5 dark:to-emerald-500/2 hover:from-emerald-500/15 dark:hover:from-emerald-500/10 border border-emerald-200/50 dark:border-emerald-500/20 transition-all duration-200">
+                <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <FileText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">采购报告单</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate">历史报告与数据分析</div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-emerald-400 ml-auto shrink-0 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+              <Link href="/api-console" className="group flex items-center gap-3 p-2.5 rounded-lg bg-gradient-to-r from-rose-500/10 to-rose-500/5 dark:from-rose-500/5 dark:to-rose-500/2 hover:from-rose-500/15 dark:hover:from-rose-500/10 border border-rose-200/50 dark:border-rose-500/20 transition-all duration-200">
+                <div className="w-9 h-9 rounded-lg bg-rose-100 dark:bg-rose-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <Key className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">API Console</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate">API Key 管理与文档</div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-rose-400 ml-auto shrink-0 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            </div>
             {/* 市场洞察 */}
             <div className="bg-gradient-to-r from-slate-50 via-blue-50 to-slate-50 dark:from-slate-800/30 dark:via-blue-900/20 dark:to-slate-800/30 backdrop-blur-sm rounded-lg p-3 border border-slate-200 dark:border-white/10">
               <div className="flex items-center gap-2 mb-2">
