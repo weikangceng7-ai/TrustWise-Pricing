@@ -400,7 +400,7 @@ export function AppSidebar() {
             <SidebarMenuButton size="sm" className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all duration-300">
               <div className="flex items-center gap-2">
                 <Sparkles className="size-3" />
-                <span>© 2024 Sulfur Agent</span>
+                <span>© 2026 Sulfur Agent</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
