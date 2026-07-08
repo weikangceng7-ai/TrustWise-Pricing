@@ -12,7 +12,7 @@
     },
     {
       "path": "/api/tracker/cron/hourly",
-      "schedule": "0 * * * *"
+      "schedule": "0 8 * * *"
     },
     {
       "path": "/api/tracker/cron/daily",
