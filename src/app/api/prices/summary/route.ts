@@ -1,9 +1,11 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { getPriceSummary } from "@/services/prices"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const summary = await getPriceSummary()
+    const { searchParams } = new URL(request.url)
+    const commodity = searchParams.get("commodity") || undefined
+    const summary = await getPriceSummary(commodity)
 
     return NextResponse.json({
       success: true,

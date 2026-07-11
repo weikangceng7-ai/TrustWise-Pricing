@@ -65,6 +65,7 @@ export const verification = pgTable("verification", {
 export const sulfurPrices = pgTable("sulfur_prices", {
   id: serial("id").primaryKey(),
   date: date("date").notNull(),
+  commodityCode: varchar("commodity_code", { length: 20 }).default("sulfur"),
   productName: varchar("product_name", { length: 50 }).default("硫磺"),
   region: varchar("region", { length: 50 }), // 华东地区
   market: varchar("market", { length: 50 }), // 镇江港
@@ -83,6 +84,7 @@ export const sulfurPrices = pgTable("sulfur_prices", {
 export const portInventory = pgTable("port_inventory", {
   id: serial("id").primaryKey(),
   date: date("date").notNull(),
+  commodityCode: varchar("commodity_code", { length: 20 }).default("sulfur"),
   inventory: decimal("inventory", { precision: 10, scale: 2 }).notNull(), // 港口库存（万吨）
   price: decimal("price", { precision: 10, scale: 2 }), // 镇江港颗粒硫磺价格（元/吨）
   createdAt: timestamp("created_at").defaultNow(),
@@ -181,13 +183,14 @@ export const enterprisePricePredictions = pgTable("enterprise_price_predictions"
   id: serial("id").primaryKey(),
   enterpriseName: varchar("enterprise_name", { length: 100 }).notNull(), // 企业名称
   enterpriseCode: varchar("enterprise_code", { length: 20 }).notNull(), // 企业代码 (yihua/luxi/jinzhengda)
+  commodityCode: varchar("commodity_code", { length: 20 }).default("sulfur"),
   date: date("date").notNull(), // 日期
   actualPrice: decimal("actual_price", { precision: 10, scale: 2 }), // 实际价格
   predictedPrice: decimal("predicted_price", { precision: 10, scale: 2 }), // 预测价格
   lowerBound: decimal("lower_bound", { precision: 10, scale: 2 }), // 预测下限
   upperBound: decimal("upper_bound", { precision: 10, scale: 2 }), // 预测上限
   confidence: decimal("confidence", { precision: 5, scale: 2 }), // 置信度
-  modelType: varchar("model_type", { length: 50 }), // 模型类型 (LSTM/ARIMA/EEMD-LSTM)
+  modelType: varchar("model_type", { length: 50 }), // 模型类型 (LSTM/ARIMA/EEMD-LSTM/Transformer)
   unit: varchar("unit", { length: 20 }).default("元/吨"),
   createdAt: timestamp("created_at").defaultNow(),
 })
@@ -198,6 +201,7 @@ export const multiDimensionalPrices = pgTable(
   {
     id: serial("id").primaryKey(),
     date: date("date").notNull(), // 日期
+    commodityCode: varchar("commodity_code", { length: 20 }).default("sulfur"),
     category: varchar("category", { length: 30 }).notNull(), // 分类: supply/demand/middle-east-cob/port-inventory/domestic/market-news
     categoryName: varchar("category_name", { length: 50 }).notNull(), // 分类名称
     price: varchar("price", { length: 20 }), // 价格
@@ -208,7 +212,7 @@ export const multiDimensionalPrices = pgTable(
     note: text("note"), // 备注
     createdAt: timestamp("created_at").defaultNow(),
   },
-  (t) => [uniqueIndex("multi_dimensional_prices_date_category_uidx").on(t.date, t.category)],
+  (t) => [uniqueIndex("multi_dimensional_prices_date_category_uidx").on(t.date, t.commodityCode, t.category)],
 )
 
 // 企业信息表
@@ -276,3 +280,6 @@ export * from "./schema-api"
 
 // Tracker Agent 相关表 - 从 schema-tracker 导入
 export * from "./schema-tracker"
+
+// 品种相关表 - 从 schema-commodity 导入
+export * from "./schema-commodity"

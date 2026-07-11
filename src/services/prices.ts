@@ -1,13 +1,17 @@
 import { db } from "@/db"
 import { sulfurPrices, portInventory, type SulfurPrice, type PortInventory } from "@/db/schema"
-import { desc } from "drizzle-orm"
+import { desc, eq, and } from "drizzle-orm"
 
 /**
- * 获取所有硫磺价格数据
+ * 获取所有价格数据（支持品种筛选）
  */
-export async function getPrices(limit?: number): Promise<SulfurPrice[]> {
+export async function getPrices(limit?: number, commodityCode?: string): Promise<SulfurPrice[]> {
   if (db) {
-    const query = db.select().from(sulfurPrices).orderBy(desc(sulfurPrices.date))
+    const conditions = []
+    if (commodityCode) {
+      conditions.push(eq(sulfurPrices.commodityCode, commodityCode))
+    }
+    const query = db.select().from(sulfurPrices).where(and(...conditions)).orderBy(desc(sulfurPrices.date))
     if (limit) {
       return await query.limit(limit)
     }
@@ -17,12 +21,16 @@ export async function getPrices(limit?: number): Promise<SulfurPrice[]> {
 }
 
 /**
- * 获取价格数据统计摘要
+ * 获取价格数据统计摘要（支持品种筛选）
  */
-export async function getPriceSummary() {
+export async function getPriceSummary(commodityCode?: string) {
   if (!db) return null
 
-  const prices = await db.select().from(sulfurPrices).orderBy(desc(sulfurPrices.date)).limit(30)
+  const conditions = []
+  if (commodityCode) {
+    conditions.push(eq(sulfurPrices.commodityCode, commodityCode))
+  }
+  const prices = await db.select().from(sulfurPrices).where(and(...conditions)).orderBy(desc(sulfurPrices.date)).limit(30)
 
   if (prices.length === 0) return null
 
@@ -43,11 +51,15 @@ export async function getPriceSummary() {
 }
 
 /**
- * 获取港口库存数据
+ * 获取港口库存数据（支持品种筛选）
  */
-export async function getInventory(limit?: number): Promise<PortInventory[]> {
+export async function getInventory(limit?: number, commodityCode?: string): Promise<PortInventory[]> {
   if (db) {
-    const query = db.select().from(portInventory).orderBy(desc(portInventory.date))
+    const conditions = []
+    if (commodityCode) {
+      conditions.push(eq(portInventory.commodityCode, commodityCode))
+    }
+    const query = db.select().from(portInventory).where(and(...conditions)).orderBy(desc(portInventory.date))
     if (limit) {
       return await query.limit(limit)
     }
@@ -57,12 +69,16 @@ export async function getInventory(limit?: number): Promise<PortInventory[]> {
 }
 
 /**
- * 获取库存数据统计摘要
+ * 获取库存数据统计摘要（支持品种筛选）
  */
-export async function getInventorySummary() {
+export async function getInventorySummary(commodityCode?: string) {
   if (!db) return null
 
-  const inventory = await db.select().from(portInventory).orderBy(desc(portInventory.date)).limit(30)
+  const conditions = []
+  if (commodityCode) {
+    conditions.push(eq(portInventory.commodityCode, commodityCode))
+  }
+  const inventory = await db.select().from(portInventory).where(and(...conditions)).orderBy(desc(portInventory.date)).limit(30)
 
   if (inventory.length === 0) return null
 
@@ -102,13 +118,17 @@ function findClosestByDate<T extends { date: string | Date }>(
 }
 
 /**
- * 获取指定日期的价格数据
+ * 获取指定日期的价格数据（支持品种筛选）
  */
-export async function getPriceByDate(targetDate: string) {
+export async function getPriceByDate(targetDate: string, commodityCode?: string) {
   if (!db) return null
 
   try {
-    const prices = await db.select().from(sulfurPrices).orderBy(desc(sulfurPrices.date)).limit(60)
+    const conditions = []
+    if (commodityCode) {
+      conditions.push(eq(sulfurPrices.commodityCode, commodityCode))
+    }
+    const prices = await db.select().from(sulfurPrices).where(and(...conditions)).orderBy(desc(sulfurPrices.date)).limit(60)
     const closestPrice = findClosestByDate(prices, targetDate)
 
     if (!closestPrice) return null
@@ -136,13 +156,17 @@ export async function getPriceByDate(targetDate: string) {
 }
 
 /**
- * 获取指定日期的库存数据
+ * 获取指定日期的库存数据（支持品种筛选）
  */
-export async function getInventoryByDate(targetDate: string) {
+export async function getInventoryByDate(targetDate: string, commodityCode?: string) {
   if (!db) return null
 
   try {
-    const inventory = await db.select().from(portInventory).orderBy(desc(portInventory.date)).limit(60)
+    const conditions = []
+    if (commodityCode) {
+      conditions.push(eq(portInventory.commodityCode, commodityCode))
+    }
+    const inventory = await db.select().from(portInventory).where(and(...conditions)).orderBy(desc(portInventory.date)).limit(60)
     const closestInventory = findClosestByDate(inventory, targetDate)
 
     if (!closestInventory) return null

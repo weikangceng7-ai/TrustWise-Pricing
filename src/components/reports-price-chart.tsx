@@ -19,9 +19,9 @@ import { X, TrendingUp, Factory, Globe, BarChart3, Package, Loader2 } from "luci
 const PRICE_CATEGORIES = [
   {
     id: "sulfur-price",
-    name: "国内硫磺均价",
+    name: "国内现货均价",
     icon: TrendingUp,
-    description: "硫磺市场价格走势",
+    description: "市场价格走势",
     color: "rose",
     unit: "元/吨",
   },
@@ -150,9 +150,13 @@ export function ReportsPriceChart() {
   const { data: reportsData, isLoading: reportsLoading } = useQuery({
     queryKey: ["reports-chart"],
     queryFn: async () => {
-      const res = await fetch(`/api/reports`)
-      const json = await res.json()
-      return json.data as any[]
+      try {
+        const res = await fetch(`/api/reports`)
+        const json = await res.json()
+        return (json.data as any[]) || []
+      } catch {
+        return []
+      }
     },
     staleTime: 60 * 1000,
   })

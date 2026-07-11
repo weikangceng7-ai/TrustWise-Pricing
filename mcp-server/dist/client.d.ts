@@ -59,5 +59,19 @@ export declare function createClient(config: McpConfig): {
     getAlerts(limit?: number): Promise<ApiResponse<unknown>>;
     /** POST /api/neo4j?action=query */
     queryKnowledgeGraph(query: string): Promise<ApiResponse<unknown>>;
+    /** GET /api/commodities */
+    listCommodities(): Promise<ApiResponse<unknown>>;
+    /** GET /api/commodities/:code/analysis */
+    getCommodityAnalysis(code: string): Promise<ApiResponse<unknown>>;
+    /** GET /api/commodities/cross-analysis */
+    crossCommodityAnalysis(): Promise<ApiResponse<unknown>>;
+    /** GET /api/accuracy */
+    getAccuracyMetrics(enterpriseCode?: string): Promise<ApiResponse<unknown>>;
+    /** GET /api/success-cases */
+    getSuccessCases(industry?: string): Promise<ApiResponse<unknown>>;
+    /** POST /api/prediction/transformer */
+    predictWithTransformer(days: number, commodityCode: string): Promise<ApiResponse<unknown>>;
+    /** POST /api/prediction/combined */
+    getCombinedPrediction(days: number, commodityCode: string): Promise<ApiResponse<unknown>>;
 };
 export {};

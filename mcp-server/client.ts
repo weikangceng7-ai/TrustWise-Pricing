@@ -142,5 +142,56 @@ export function createClient(config: McpConfig) {
         body: { query },
       })
     },
+
+    // ========== 多品种相关 ==========
+
+    /** GET /api/commodities */
+    async listCommodities() {
+      return request("/api/commodities")
+    },
+
+    /** GET /api/commodities/:code/analysis */
+    async getCommodityAnalysis(code: string) {
+      return request(`/api/commodities/${code}/analysis`)
+    },
+
+    /** GET /api/commodities/cross-analysis */
+    async crossCommodityAnalysis() {
+      return request("/api/commodities/cross-analysis")
+    },
+
+    // ========== 精度评估 ==========
+
+    /** GET /api/accuracy */
+    async getAccuracyMetrics(enterpriseCode?: string) {
+      const params = enterpriseCode ? `?enterprise=${enterpriseCode}` : ""
+      return request(`/api/accuracy${params}`)
+    },
+
+    // ========== 成功案例 ==========
+
+    /** GET /api/success-cases */
+    async getSuccessCases(industry?: string) {
+      const params = industry ? `?industry=${encodeURIComponent(industry)}` : ""
+      return request(`/api/success-cases${params}`)
+    },
+
+    // ========== Transformer 预测 ==========
+
+    /** POST /api/prediction/transformer */
+    async predictWithTransformer(days: number, commodityCode: string) {
+      return request("/api/prediction/transformer", {
+        method: "POST",
+        body: { days, commodity_code: commodityCode },
+      })
+    },
+
+    /** POST /api/prediction/combined */
+    async getCombinedPrediction(days: number, commodityCode: string) {
+      return request("/api/prediction/combined", {
+        method: "POST",
+        body: { days, commodity_code: commodityCode },
+      })
+    },
   }
 }

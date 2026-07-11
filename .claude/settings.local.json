@@ -60,7 +60,25 @@
       "Bash(DEMO_MODE=true MCP_TRANSPORT=http npx tsx mcp-server/index.ts)",
       "Bash(rm:*)",
       "Bash(gh auth:*)",
-      "WebFetch(domain:vercel.com)"
+      "WebFetch(domain:vercel.com)",
+      "WebFetch(domain:sulfur-agent-web.vercel.app)",
+      "Bash(kill:*)",
+      "Bash(npx next:*)",
+      "Bash(npx vercel:*)",
+      "Bash(npx defuddle:*)",
+      "Bash(Write:*)",
+      "Bash(Edit:*)",
+      "Bash(touch:*)",
+      "Bash(npm install --save-dev:*)",
+      "Bash(timeout 15 bash -c \"until curl -s -o /dev/null -w '%{http_code}' http://localhost:3000 2>/dev/null | grep -q 200; do sleep 1; done\")",
+      "Bash(timeout 20 bash -c \"until curl -s -o /dev/null -w '%{http_code}' http://localhost:3000 2>/dev/null | grep -q 200; do sleep 1; done\")",
+      "Bash(rm -rf .next/dev)",
+      "Bash(rm -rf .next)",
+      "Bash(node _fix_query.js)",
+      "Bash(node -e \"const fs=require\\('fs'\\); const c=fs.readFileSync\\('src/components/reports-price-chart.tsx','utf8'\\); const idx=c.indexOf\\('queryFn: async'\\); console.log\\('Index:', idx\\); console.log\\(JSON.stringify\\(c.substring\\(idx, idx+150\\)\\)\\);\")",
+      "Bash(DEMO_MODE=true MCP_TRANSPORT=http npm run mcp:http)",
+      "Bash(export DEMO_MODE=true)",
+      "Bash(export MCP_TRANSPORT=http)"
     ]
   }
 }

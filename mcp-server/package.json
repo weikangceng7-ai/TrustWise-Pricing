@@ -1,6 +1,6 @@
 {
   "name": "sulfur-tracker-agent-mcp",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "硫磺采购价格预测 MCP Server - HTTP 模式",
   "type": "module",
   "scripts": {

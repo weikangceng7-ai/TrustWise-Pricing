@@ -1,8 +1,10 @@
-export const SYSTEM_PROMPT = `你是硫磺采购决策助手，一位专业的化工原料市场分析师。
+export const SYSTEM_PROMPT = `你是一个大宗原料采购决策助手，一位专业的化工原料市场分析师。你精通硫磺、磷矿、钾肥、尿素等多个品类的市场分析。
+
+当用户指定品名时，以该品名为主进行分析；若未指定，默认以硫磺为例，同时提醒用户系统支持多品名分析。
 
 ## 项目背景
 
-硫磺是磷肥生产中的重要原料，价格变化会直接影响企业的采购成本、库存安排和经营风险。对采购工作来说，真正困难的地方不只是价格本身在波动，而是市场中的有效信息来源途径杂乱，信息更新速度快，且信息量庞大。
+本系统覆盖硫磺、磷矿、钾肥、尿素等大宗化工原料的价格预测与采购决策支持。价格变化会直接影响企业的采购成本、库存安排和经营风险。对采购工作来说，真正困难的地方不只是价格本身在波动，而是市场中的有效信息来源途径杂乱，信息更新速度快，且信息量庞大。
 
 这就导致采购工作经常面临两个连续的问题：
 
@@ -23,12 +25,13 @@ export const SYSTEM_PROMPT = `你是硫磺采购决策助手，一位专业的�
 6. **基于 Hybrid ARIMA + XGBoost 模型进行价格预测**
 
 ## 你的知识领域
-- 国际硫磺市场价格走势
-- 中东地区运费变化
-- 国内磷肥行业需求
+- 国际市场价格走势
+- 运费变化与物流成本
+- 国内化工/化肥行业需求
 - 供应链风险管理
 - 库存优化策略
 - **知识图谱推理：分析企业、因子、供应链之间的因果关系**
+- **多模型预测：Hybrid ARIMA + XGBoost + Transformer 组合预测**
 
 ## 知识图谱能力
 你可以访问 Neo4j 知识图谱数据库，其中包含：
@@ -171,12 +174,19 @@ export function generateSystemPromptWithContext(context: {
   date?: string
   knowledgeGraph?: string
   prediction?: string
+  transformerPrediction?: string
   enterprise?: string
+  commodityCode?: string
+  commodityName?: string
 }): string {
   let contextSection = '\n\n---\n## 📡 实时市场数据\n\n'
 
   if (context.date) {
     contextSection += `**数据更新时间**：${context.date}\n\n`
+  }
+
+  if (context.commodityName) {
+    contextSection += `**当前分析品名**：${context.commodityName}\n\n`
   }
 
   if (context.enterprise) {
@@ -193,6 +203,10 @@ export function generateSystemPromptWithContext(context: {
 
   if (context.prediction) {
     contextSection += `${context.prediction}\n\n`
+  }
+
+  if (context.transformerPrediction) {
+    contextSection += `${context.transformerPrediction}\n\n`
   }
 
   if (context.knowledgeGraph) {

@@ -1,6 +1,8 @@
-# Sulfur Agent MCP Server
+# Sulfur Agent MCP Server (v0.3)
 
-硫磺采购价格预测 MCP Server，为 Claude / DeepSeek / 豆包 / Cherry Studio 等提供硫磺市场数据查询、价格预测、告警订阅、知识图谱检索等工具。
+大宗原料采购价格预测 MCP Server，为 Claude / DeepSeek / 豆包 / Cherry Studio 等提供多品种市场数据查询（硫磺/磷矿/钾肥/尿素）、深度学习价格预测（ARIMA+XGBoost + Transformer）、模型精度评估、客户成功案例等 18 个工具。
+
+> **v0.3 新特性**: 多品种支持、Transformer 预测、精度评估、成功案例。详见 [`docs/mcp-server-v0.3-update.md`](../docs/mcp-server-v0.3-update.md)
 
 ## 快速开始
 
@@ -106,10 +108,17 @@ Claude Desktop → **Settings** → **Developer** → **Edit Config**：
 
 | 工具 | 分类 | 说明 |
 |------|------|------|
-| `get_prices` | 价格 | 查询 N 天硫磺价格走势，支持地区/市场筛选 |
+| `get_prices` | 价格 | 查询 N 天价格走势，支持地区/市场筛选 |
 | `get_inventory` | 库存 | 获取港口库存水平及环比变化 |
 | `get_news` | 资讯 | 市场新闻，标注情绪倾向 |
 | `predict_prices` | 预测 | ARIMA+XGBoost 模型预测未来价格 |
+| `predict_with_transformer` | 🆕 预测 | Transformer/PatchTST 深度学习预测 |
+| `get_combined_prediction` | 🆕 预测 | ARIMA+XGBoost + Transformer 双模型融合预测 |
+| `list_commodities` | 🆕 多品种 | 列出所有支持的品种及当前行情 |
+| `get_commodity_analysis` | 🆕 多品种 | 获取单个品种的详细分析（驱动因素、展望、相关性） |
+| `cross_commodity_analysis` | 🆕 多品种 | 品种间价格对比、相关性矩阵和协同采购建议 |
+| `get_accuracy_metrics` | 🆕 精度 | 模型 MAPE/MAE/RMSE/R² 精度评估 |
+| `get_success_cases` | 🆕 案例 | 客户成功案例，按行业筛选 |
 | `query_knowledge_graph` | 知识图谱 | 自然语言查询价格影响因子、供应链、采购建议 |
 | `subscribe_alert` | 订阅 | 创建价格/库存/新闻告警 |
 | `list_subscriptions` | 订阅 | 列出所有订阅 |
@@ -139,7 +148,7 @@ Claude Desktop → **Settings** → **Developer** → **Edit Config**：
 
 ```bash
 curl http://localhost:3100/health
-# {"status":"ok","version":"0.2.0"}
+# {"status":"ok","version":"0.3.0"}
 ```
 
 ---
@@ -158,6 +167,11 @@ mcp-server/
 │   ├── inventory.ts      # get_inventory
 │   ├── news.ts           # get_news
 │   ├── prediction.ts     # predict_prices
+│   ├── transformer.ts    # 🆕 predict_with_transformer, get_combined_prediction
+│   ├── commodities.ts    # 🆕 list_commodities, get_commodity_analysis
+│   ├── cross-commodity.ts # 🆕 cross_commodity_analysis
+│   ├── accuracy.ts       # 🆕 get_accuracy_metrics
+│   ├── success-cases.ts  # 🆕 get_success_cases
 │   ├── knowledge-graph.ts # query_knowledge_graph
 │   ├── subscriptions.ts  # subscribe_alert, list_subscriptions, update_subscription
 │   ├── report.ts         # generate_report

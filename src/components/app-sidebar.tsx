@@ -15,6 +15,8 @@ import {
   Plus,
   Key,
   Bell,
+  Target,
+  Layers,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { ENTERPRISE_CONFIGS } from "@/services/enterprise-knowledge-config"
@@ -126,6 +128,20 @@ const subNavItems = [
     icon: Bell,
     description: "价格追踪与异动预警",
     color: "blue",
+  },
+  {
+    title: "品种对比",
+    url: "/commodities",
+    icon: Layers,
+    description: "多品种价格对比分析",
+    color: "violet",
+  },
+  {
+    title: "模型精度",
+    url: "/accuracy",
+    icon: Target,
+    description: "预测模型精度评估",
+    color: "emerald",
   },
   {
     title: "采购报告单",

@@ -5,7 +5,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!, 10) : undefined
-    const data = await getInventory(limit)
+    const commodity = searchParams.get("commodity") || undefined
+    const data = await getInventory(limit, commodity)
     return NextResponse.json({
       success: true,
       data,

@@ -14,13 +14,18 @@ import { registerSubscriptionTools } from "./tools/subscriptions.js";
 import { registerGenerateReport } from "./tools/report.js";
 import { registerGetTrackerStatus } from "./tools/status.js";
 import { registerQueryKnowledgeGraph } from "./tools/knowledge-graph.js";
+import { registerCommodityTools } from "./tools/commodities.js";
+import { registerAccuracyTools } from "./tools/accuracy.js";
+import { registerSuccessCasesTools } from "./tools/success-cases.js";
+import { registerTransformerTools } from "./tools/transformer.js";
+import { registerCrossCommodityTools } from "./tools/cross-commodity.js";
 /**
  * 创建并启动 Stdio MCP 服务器
  */
 export async function startStdioServer(config, client) {
     const server = new McpServer({
         name: "sulfur-tracker-agent",
-        version: "0.1.0",
+        version: "0.3.0",
     });
     registerGetPrices(server, config, client);
     registerGetInventory(server, config, client);
@@ -30,6 +35,12 @@ export async function startStdioServer(config, client) {
     registerGenerateReport(server, config, client);
     registerGetTrackerStatus(server, config, client);
     registerQueryKnowledgeGraph(server, config, client);
+    // v0.3 新增工具
+    registerCommodityTools(server, config, client);
+    registerAccuracyTools(server, config, client);
+    registerSuccessCasesTools(server, config, client);
+    registerTransformerTools(server, config, client);
+    registerCrossCommodityTools(server, config, client);
     console.error("[MCP] 所有工具注册完成，开始启动 stdio transport...");
     const transport = new StdioServerTransport();
     await server.connect(transport);

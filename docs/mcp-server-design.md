@@ -1,15 +1,48 @@
 # MCP Server 设计方案
 
+> **当前版本**: v0.3.0 | **工具数量**: 18 个 | **更新日期**: 2026-07-10
+
+## 0. v0.3 更新亮点 (What's New)
+
+### 0.1 四大新增能力
+
+| 能力 | 工具 | 说明 |
+|------|------|------|
+| 🆕 多品种支持 | `list_commodities`, `get_commodity_analysis`, `cross_commodity_analysis` | 硫磺/磷矿/钾肥/尿素四大品种全生命周期覆盖 |
+| 🆕 Transformer 预测 | `predict_with_transformer`, `get_combined_prediction` | PatchTST 深度学习 + ARIMA+XGBoost 双模型加权融合 |
+| 🆕 精度评估 | `get_accuracy_metrics` | MAPE/MAE/RMSE/R² 核心指标 + 各企业精度分布 |
+| 🆕 客户案例 | `get_success_cases` | 真实客户 ROI 数据，按行业筛选 |
+
+### 0.2 架构变化
+
+```
+v0.2 (11 tools)                        v0.3 (18 tools)
+┌───────────────────┐                  ┌──────────────────────────┐
+│ 价格 / 库存 / 新闻 │                  │ 价格 / 库存 / 新闻         │
+│ 预测 (ARIMA+XGB)   │        →         │ 预测 (ARIMA+XGB + Transf) │
+│ 知识图谱 / 订阅    │                  │ 知识图谱 / 订阅            │
+│ 报告 / 状态        │                  │ 报告 / 状态               │
+└───────────────────┘                  │ 🆕 多品种 / 精度 / 案例   │
+                                       └──────────────────────────┘
+```
+
+### 0.3 向下兼容
+
+所有 v0.2 的 11 个工具保持不变，已有集成（Claude Desktop / Cherry Studio / Continue）无需任何修改。
+
+---
+
 ## 1. 概述
 
 ### 1.1 目标
-为硫磺采购价格预测系统提供标准化的 MCP（Model Context Protocol）接口，让各类 AI 客户端（Claude Desktop、Cherry Studio、Continue 等）能够直接调用硫磺市场数据查询、价格预测、告警订阅等工具。
+为大宗原料采购价格预测系统提供标准化的 MCP（Model Context Protocol）接口，让各类 AI 客户端（Claude Desktop、Cherry Studio、Continue 等）能够直接调用多品种市场数据查询、价格预测（含 Transformer 深度学习）、告警订阅等工具。
 
 ### 1.2 设计原则
 - **无状态优先**：每个 HTTP 请求独立处理，避免 session 管理复杂度
 - **最小依赖**：仅依赖 `@modelcontextprotocol/sdk`，不引入 Express/Fastify 等框架
 - **双传输支持**：同时支持 stdio（本地）和 HTTP（远程）两种传输方式
 - **零配置体验**：通过 DEMO 模式让用户无需 API Key 即可试用
+- **多品种原生支持**：所有工具原生支持 sulfur/phosphate/potash/urea 品种参数
 
 ---
 
@@ -43,11 +76,13 @@
 
 | 分类 | 工具 | 说明 |
 |------|------|------|
-| 价格 & 数据 | `get_prices`, `get_inventory`, `get_news` | 查询硫磺价格、库存、新闻 |
-| 预测 | `predict_prices` | ARIMA + XGBoost 混合模型预测 |
+| 价格 & 数据 | `get_prices`, `get_inventory`, `get_news` | 查询多品种价格、库存、新闻 |
+| 预测 | `predict_prices`, `predict_with_transformer`, `get_combined_prediction` | ARIMA+XGBoost + Transformer 双模型预测 |
+| 多品种 | `list_commodities`, `get_commodity_analysis`, `cross_commodity_analysis` | 品种列表、详情分析、跨品种对比 |
+| 精度 | `get_accuracy_metrics` | 模型 MAPE/MAE/RMSE/R² 评估 |
 | 知识图谱 | `query_knowledge_graph` | Neo4j 查询供应链、影响因子 |
 | 订阅 & 告警 | `subscribe_alert`, `list_subscriptions`, `update_subscription`, `get_alerts` | 价格告警管理 |
-| 报告 & 状态 | `generate_report`, `get_tracker_status` | 追踪报告和运行状态 |
+| 报告 & 案例 | `generate_report`, `get_tracker_status`, `get_success_cases` | 追踪报告、运行状态、客户案例 |
 
 ---
 
@@ -133,18 +168,23 @@ Stage 2 (runtime)   → 仅装生产依赖 + node dist/index.js
 mcp-server/
 ├── index.ts              # 入口：加载配置 + 选择传输方式
 ├── config.ts             # 环境变量加载 + 校验
-── client.ts             # HTTP 客户端封装
+├── client.ts             # HTTP 客户端封装（v0.3: 新增多品种/精度/Transformer API）
 ├── http-server.ts        # HTTP 传输层（stateless）
 ├── stdio-server.ts       # stdio 传输层
-├── tools/                # 11 个工具实现
-│   ├── prices.ts
-│   ├── inventory.ts
-│   ├── news.ts
-│   ├── prediction.ts
-│   ├── knowledge-graph.ts
-│   ├── subscriptions.ts
-│   ├── report.ts
-│   └── status.ts
+├── tools/                # 18 个工具实现
+│   ├── prices.ts         # get_prices
+│   ├── inventory.ts      # get_inventory
+│   ├── news.ts           # get_news
+│   ├── prediction.ts     # predict_prices
+│   ├── transformer.ts    # 🆕 predict_with_transformer, get_combined_prediction
+│   ├── commodities.ts    # 🆕 list_commodities, get_commodity_analysis
+│   ├── cross-commodity.ts # 🆕 cross_commodity_analysis
+│   ├── accuracy.ts       # 🆕 get_accuracy_metrics
+│   ├── success-cases.ts  # 🆕 get_success_cases
+│   ├── knowledge-graph.ts # query_knowledge_graph
+│   ├── subscriptions.ts  # subscribe_alert, list_subscriptions, update_subscription
+│   ├── report.ts         # generate_report
+│   └── status.ts         # get_tracker_status
 ├── Dockerfile            # 多阶段构建
 ├── docker-compose.yml    # Docker 编排
 ├── railway.json          # Railway 部署配置

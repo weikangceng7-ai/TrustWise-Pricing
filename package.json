@@ -12,6 +12,7 @@
     "db:seed:yihua": "tsx --tsconfig tsconfig.json scripts/seed-yihua-knowledge.ts",
     "db:seed:yihua-code": "tsx --tsconfig tsconfig.json scripts/seed-yihua-code.ts",
     "db:seed:multi-prices": "tsx --tsconfig tsconfig.json scripts/seed-multi-dimensional-prices.ts",
+    "db:seed:multi-commodity": "tsx --tsconfig tsconfig.json scripts/seed-multi-commodity.ts",
     "prepare": "husky",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",

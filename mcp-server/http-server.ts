@@ -23,6 +23,11 @@ import { registerSubscriptionTools } from "./tools/subscriptions.js"
 import { registerGenerateReport } from "./tools/report.js"
 import { registerGetTrackerStatus } from "./tools/status.js"
 import { registerQueryKnowledgeGraph } from "./tools/knowledge-graph.js"
+import { registerCommodityTools } from "./tools/commodities.js"
+import { registerAccuracyTools } from "./tools/accuracy.js"
+import { registerSuccessCasesTools } from "./tools/success-cases.js"
+import { registerTransformerTools } from "./tools/transformer.js"
+import { registerCrossCommodityTools } from "./tools/cross-commodity.js"
 
 /**
  * 创建并启动 HTTP MCP 服务器
@@ -53,7 +58,7 @@ export async function startHttpServer(
     // 健康检查
     if (url.pathname === "/health") {
       res.writeHead(200, { "Content-Type": "application/json" })
-      res.end(JSON.stringify({ status: "ok", version: "0.2.0" }))
+      res.end(JSON.stringify({ status: "ok", version: "0.3.0" }))
       return
     }
 
@@ -67,7 +72,7 @@ export async function startHttpServer(
       // 每次请求创建新的 server + transport（无状态模式）
       const server = new McpServer({
         name: "sulfur-tracker-agent",
-        version: "0.2.0",
+        version: "0.3.0",
       })
 
       registerGetPrices(server, config, client)
@@ -78,6 +83,12 @@ export async function startHttpServer(
       registerGenerateReport(server, config, client)
       registerGetTrackerStatus(server, config, client)
       registerQueryKnowledgeGraph(server, config, client)
+      // v0.3 新增工具
+      registerCommodityTools(server, config, client)
+      registerAccuracyTools(server, config, client)
+      registerSuccessCasesTools(server, config, client)
+      registerTransformerTools(server, config, client)
+      registerCrossCommodityTools(server, config, client)
 
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,

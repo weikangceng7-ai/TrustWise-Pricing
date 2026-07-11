@@ -18,6 +18,8 @@ const ADMIN_PATHS = [
 const PROTECTED_PATHS = [
   "/dashboard",
   "/agent-chat",
+  "/accuracy",
+  "/commodities",
   "/api/chat",
   "/api/conversations",
   "/api/reports",

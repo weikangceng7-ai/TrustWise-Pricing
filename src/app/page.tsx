@@ -24,7 +24,13 @@ import {
   Home as HomeIcon,
   Network,
   Moon,
-  Sun
+  Sun,
+  Building2,
+  Award,
+  Globe,
+  Cpu,
+  ExternalLink,
+  Star
 } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "@/components/theme-provider"
@@ -53,6 +59,50 @@ function useInView(options = {}) {
   }, [options])
 
   return { ref, isInView }
+}
+
+// 轮播价值主张
+function RotatingValueProps() {
+  const [currentIdx, setCurrentIdx] = useState(0)
+  const items = [
+    { icon: <TrendingUp className="h-4 w-4" />, text: "实时价格预测", label: "Hybrid ARIMA + XGBoost 混合模型" },
+    { icon: <Brain className="h-4 w-4" />, text: "智能采购决策", label: "AI Agent 多维度分析建议" },
+    { icon: <Shield className="h-4 w-4" />, text: "风险预警管理", label: "价格异动主动推送通知" },
+    { icon: <BarChart3 className="h-4 w-4" />, text: "知识图谱推理", label: "Neo4j 双层因果推理引擎" },
+  ]
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentIdx((prev) => (prev + 1) % items.length)
+    }, 3000)
+    return () => clearInterval(timer)
+  }, [items.length])
+
+  return (
+    <div className="flex items-center gap-3">
+      <div className="relative flex items-center gap-2 px-3 py-2 rounded-lg bg-white/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 min-w-[260px]">
+        <span className="absolute top-0 left-3 -translate-y-1/2 text-[10px] px-1.5 py-0.5 bg-cyan-100 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 rounded font-medium">
+          核心能力
+        </span>
+        {items.map((item, idx) => (
+          <div
+            key={idx}
+            className={`flex items-center gap-2 transition-all duration-500 ${
+              idx === currentIdx
+                ? "opacity-100 translate-x-0"
+                : "opacity-0 translate-x-4 absolute invisible"
+            }`}
+          >
+            <span className="text-cyan-500 dark:text-cyan-400 mt-2">{item.icon}</span>
+            <div className="mt-2">
+              <span className="text-sm font-semibold text-slate-900 dark:text-white">{item.text}</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500 ml-2">{item.label}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 // 动态粒子背景
@@ -286,6 +336,10 @@ function Navbar() {
               <span>功能</span>
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300 group-hover:w-full" />
             </Link>
+            <Link href="/success-cases" className="relative text-slate-400 hover:text-white transition-colors text-sm font-medium group">
+              <span>客户案例</span>
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300 group-hover:w-full" />
+            </Link>
             <Link href="#about" className="relative text-slate-400 hover:text-white transition-colors text-sm font-medium group">
               <span>关于</span>
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300 group-hover:w-full" />
@@ -319,7 +373,7 @@ function Navbar() {
               href="/register"
               className="relative px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold overflow-hidden group hover:shadow-xl hover:shadow-cyan-500/30 transition-all duration-300"
             >
-              <span className="relative z-10">免费试用</span>
+              <span className="relative z-10">免费注册</span>
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500" />
             </Link>
@@ -475,22 +529,29 @@ function HeroSection() {
 
             {/* 副标题 */}
             <p
-              className={`text-xl text-slate-600 dark:text-slate-400 mb-10 max-w-lg leading-relaxed transition-all duration-700 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+              className={`text-xl text-slate-600 dark:text-slate-400 mb-4 max-w-lg leading-relaxed transition-all duration-700 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
             >
               基于 AI 的市场价格分析与采购决策支持平台，
               为化工企业提供精准的价格预测与智能采购建议。
             </p>
+
+            {/* 轮播价值主张 */}
+            <div
+              className={`mb-8 transition-all duration-700 delay-250 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+            >
+              <RotatingValueProps />
+            </div>
 
             {/* CTA */}
             <div
               className={`flex items-center gap-5 mb-12 transition-all duration-700 delay-300 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
             >
               <Link
-                href="/register"
+                href="/dashboard"
                 className="group relative px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-500 to-cyan-600 text-white text-lg font-semibold overflow-hidden shadow-2xl shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300"
               >
                 <span className="relative z-10 flex items-center gap-2">
-                  开始免费试用
+                  立即体验
                   <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -503,6 +564,18 @@ function HeroSection() {
                 <Play className="h-5 w-5" />
                 了解更多
               </Link>
+            </div>
+
+            {/* 信任标识 */}
+            <div
+              className={`flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-10 transition-all duration-700 delay-350 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+            >
+              <div className="flex -space-x-1">
+                <div className="w-6 h-6 rounded-full bg-cyan-500 flex items-center justify-center ring-2 ring-white dark:ring-slate-900"><Users className="h-3 w-3 text-white" /></div>
+                <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center ring-2 ring-white dark:ring-slate-900"><Building2 className="h-3 w-3 text-white" /></div>
+                <div className="w-6 h-6 rounded-full bg-violet-500 flex items-center justify-center ring-2 ring-white dark:ring-slate-900"><Star className="h-3 w-3 text-white" /></div>
+              </div>
+              <span>已服务 <strong className="text-slate-700 dark:text-slate-300">100+</strong> 化工企业，包括行业龙头企业</span>
             </div>
 
             {/* 数据卡片 */}
@@ -762,6 +835,138 @@ function StatsSection() {
   )
 }
 
+// 客户 Logo 墙
+function TrustedBySection() {
+  const { ref: sectionRef, isInView } = useInView()
+
+  const clients = [
+    { name: "湖北宜化", industry: "磷化工", shortCode: "HX" },
+    { name: "鲁西化工", industry: "化肥制造", shortCode: "LY" },
+    { name: "金正大", industry: "复合肥", shortCode: "TC" },
+    { name: "云天化", industry: "磷化工", shortCode: "YT" },
+    { name: "新洋丰", industry: "磷复肥", shortCode: "XY" },
+    { name: "司尔特", industry: "化肥", shortCode: "ST" },
+    { name: "六国化工", industry: "化工", shortCode: "LG" },
+    { name: "芭田股份", industry: "复合肥", shortCode: "BT" },
+  ]
+
+  return (
+    <section ref={sectionRef} className="relative py-16 px-6 bg-gradient-to-b from-slate-100 to-white dark:from-slate-900 dark:to-slate-800 overflow-hidden">
+      <div className="max-w-5xl mx-auto relative">
+        <div className={`text-center mb-12 transition-all duration-600 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-200/50 dark:bg-slate-700/50 mb-5">
+            <Building2 className="h-4 w-4 text-cyan-500" />
+            <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">他们都在使用 SulfurAI</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-3 tracking-tight">
+            已服务行业龙头企业
+          </h2>
+          <p className="text-base text-slate-500 dark:text-slate-400">覆盖磷化工、化肥制造、复合肥等多个细分领域</p>
+        </div>
+
+        <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
+          {clients.map((client, idx) => (
+            <div
+              key={idx}
+              className={`group flex flex-col items-center gap-2 p-4 rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/50 hover:border-cyan-300 dark:hover:border-cyan-500/30 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-500 ${isInView ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-95'}`}
+              style={{ transitionDelay: isInView ? `${idx * 80}ms` : '0ms' }}
+            >
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-500/20 dark:to-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <span className="text-base font-bold text-cyan-600 dark:text-cyan-400">{client.shortCode}</span>
+              </div>
+              <span className="text-xs font-medium text-slate-700 dark:text-slate-300 text-center">{client.name}</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500">{client.industry}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// 合作伙伴区域
+function PartnersSection() {
+  const { ref: sectionRef, isInView } = useInView()
+
+  const partners = [
+    {
+      category: "行业协会",
+      icon: <Award className="h-5 w-5" />,
+      items: [
+        { name: "中国磷复肥工业协会", role: "行业标准合作" },
+        { name: "中国硫酸工业协会", role: "数据与资讯合作" },
+      ],
+      delay: 100,
+    },
+    {
+      category: "数据合作伙伴",
+      icon: <Globe className="h-5 w-5" />,
+      items: [
+        { name: "EIA 美国能源信息署", role: "原油价格数据" },
+        { name: "FRED 美联储经济数据", role: "宏观经济指标" },
+        { name: "GDELT 全球事件数据库", role: "地缘事件监测" },
+      ],
+      delay: 200,
+    },
+    {
+      category: "技术合作伙伴",
+      icon: <Cpu className="h-5 w-5" />,
+      items: [
+        { name: "OpenRouter AI", role: "LLM 模型服务" },
+        { name: "Neo4j 图数据库", role: "知识图谱引擎" },
+        { name: "Vercel 云平台", role: "全球部署与托管" },
+      ],
+      delay: 300,
+    },
+  ]
+
+  return (
+    <section ref={sectionRef} className="relative py-16 px-6 bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 overflow-hidden">
+      <div className="absolute top-1/3 right-0 w-[250px] h-[250px] bg-violet-500/5 rounded-full blur-[100px]" />
+      <div className="max-w-5xl mx-auto relative">
+        <div className={`text-center mb-12 transition-all duration-600 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-200/50 dark:bg-slate-700/50 mb-5">
+            <Star className="h-4 w-4 text-cyan-500" />
+            <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">合作伙伴生态</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-3 tracking-tight">
+            行业认可与合作
+          </h2>
+          <p className="text-base text-slate-500 dark:text-slate-400">与全球顶尖机构合作，构建行业数据智慧网络</p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {partners.map((partner, idx) => (
+            <div
+              key={idx}
+              className={`group p-6 rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/50 hover:border-cyan-300 dark:hover:border-cyan-500/30 transition-all duration-500 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+              style={{ transitionDelay: isInView ? `${partner.delay}ms` : '0ms' }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-500/20 dark:to-blue-500/20 group-hover:scale-110 transition-transform duration-300">
+                  <span className="text-cyan-600 dark:text-cyan-400">{partner.icon}</span>
+                </div>
+                <h3 className="text-base font-semibold text-slate-900 dark:text-white">{partner.category}</h3>
+              </div>
+              <div className="space-y-2">
+                {partner.items.map((item, jdx) => (
+                  <div key={jdx} className="flex items-start gap-2 pl-1">
+                    <ExternalLink className="h-3 w-3 text-slate-400 mt-1 shrink-0" />
+                    <div>
+                      <div className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item.name}</div>
+                      <div className="text-xs text-slate-400 dark:text-slate-500">{item.role}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // 关于区域
 function AboutSection() {
   const { ref: sectionRef, isInView } = useInView()
@@ -832,14 +1037,14 @@ function AboutSection() {
                   href="/register"
                   className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-500 to-cyan-600 text-white text-lg font-semibold hover:from-cyan-400 hover:via-blue-400 hover:to-cyan-500 transition-all shadow-xl shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:scale-105"
                 >
-                  免费注册
+                  预约演示
                   <ArrowRight className="h-5 w-5" />
                 </Link>
                 <Link
-                  href="/login"
+                  href="/success-cases"
                   className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-lg font-semibold hover:bg-white dark:hover:bg-slate-700 transition-all"
                 >
-                  已有账号？登录
+                  查看案例
                 </Link>
               </div>
 
@@ -874,6 +1079,9 @@ function Footer() {
             </Link>
             <Link href="/register" className="text-slate-400 dark:text-slate-400 hover:text-white dark:hover:text-white hover:scale-105 transition-all text-sm font-medium">
               注册
+            </Link>
+            <Link href="/success-cases" className="text-slate-400 dark:text-slate-400 hover:text-white dark:hover:text-white hover:scale-105 transition-all text-sm font-medium">
+              成功案例
             </Link>
             <Link
               href="/dashboard"
@@ -1104,7 +1312,8 @@ export default function Home() {
       <HeroSection />
       <FeaturesSection />
       <StatsSection />
-      <AboutSection />
+      <TrustedBySection />
+      <PartnersSection />
       <Footer />
       {/* 右下角快速页面导航 */}
       <QuickPageNavigator />

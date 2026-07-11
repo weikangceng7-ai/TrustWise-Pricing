@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query"
 export interface PriceData {
   id: number
   date: string
+  commodityCode: string | null
   productName: string | null
   region: string | null
   market: string | null
@@ -65,64 +66,66 @@ export interface InventoryResponse {
   total: number
 }
 
-async function fetchPrices(limit?: number): Promise<PricesResponse> {
-  const url = limit ? `/api/prices?limit=${limit}` : "/api/prices"
+export function usePrices(limit?: number, commodityCode?: string) {
+  return useQuery({
+    queryKey: ["prices", limit, commodityCode],
+    queryFn: () => fetchPrices(limit, commodityCode),
+  })
+}
+
+export function usePriceSummary(commodityCode?: string) {
+  return useQuery({
+    queryKey: ["priceSummary", commodityCode],
+    queryFn: () => fetchPriceSummary(commodityCode),
+  })
+}
+
+export function useInventory(limit?: number, commodityCode?: string) {
+  return useQuery({
+    queryKey: ["inventory", limit, commodityCode],
+    queryFn: () => fetchInventory(limit, commodityCode),
+  })
+}
+
+export function useInventorySummary(commodityCode?: string) {
+  return useQuery({
+    queryKey: ["inventorySummary", commodityCode],
+    queryFn: () => fetchInventorySummary(commodityCode),
+  })
+}
+
+async function fetchPrices(limit?: number, commodityCode?: string): Promise<PricesResponse> {
+  const params = new URLSearchParams()
+  if (limit) params.set("limit", String(limit))
+  if (commodityCode) params.set("commodity", commodityCode)
+  const qs = params.toString()
+  const url = qs ? `/api/prices?${qs}` : "/api/prices"
   const res = await fetch(url)
-  if (!res.ok) {
-    throw new Error("获取价格数据失败")
-  }
+  if (!res.ok) throw new Error("获取价格数据失败")
   return res.json()
 }
 
-async function fetchPriceSummary(): Promise<SummaryResponse<PriceSummary>> {
-  const res = await fetch("/api/prices/summary")
-  if (!res.ok) {
-    throw new Error("获取价格摘要失败")
-  }
-  return res.json()
-}
-
-async function fetchInventory(limit?: number): Promise<InventoryResponse> {
-  const url = limit ? `/api/inventory?limit=${limit}` : "/api/inventory"
+async function fetchPriceSummary(commodityCode?: string): Promise<SummaryResponse<PriceSummary>> {
+  const url = commodityCode ? `/api/prices/summary?commodity=${commodityCode}` : "/api/prices/summary"
   const res = await fetch(url)
-  if (!res.ok) {
-    throw new Error("获取库存数据失败")
-  }
+  if (!res.ok) throw new Error("获取价格摘要失败")
   return res.json()
 }
 
-async function fetchInventorySummary(): Promise<SummaryResponse<InventorySummary>> {
-  const res = await fetch("/api/inventory/summary")
-  if (!res.ok) {
-    throw new Error("获取库存摘要失败")
-  }
+async function fetchInventory(limit?: number, commodityCode?: string): Promise<InventoryResponse> {
+  const params = new URLSearchParams()
+  if (limit) params.set("limit", String(limit))
+  if (commodityCode) params.set("commodity", commodityCode)
+  const qs = params.toString()
+  const url = qs ? `/api/inventory?${qs}` : "/api/inventory"
+  const res = await fetch(url)
+  if (!res.ok) throw new Error("获取库存数据失败")
   return res.json()
 }
 
-export function usePrices(limit?: number) {
-  return useQuery({
-    queryKey: ["prices", limit],
-    queryFn: () => fetchPrices(limit),
-  })
-}
-
-export function usePriceSummary() {
-  return useQuery({
-    queryKey: ["priceSummary"],
-    queryFn: fetchPriceSummary,
-  })
-}
-
-export function useInventory(limit?: number) {
-  return useQuery({
-    queryKey: ["inventory", limit],
-    queryFn: () => fetchInventory(limit),
-  })
-}
-
-export function useInventorySummary() {
-  return useQuery({
-    queryKey: ["inventorySummary"],
-    queryFn: fetchInventorySummary,
-  })
+async function fetchInventorySummary(commodityCode?: string): Promise<SummaryResponse<InventorySummary>> {
+  const url = commodityCode ? `/api/inventory/summary?commodity=${commodityCode}` : "/api/inventory/summary"
+  const res = await fetch(url)
+  if (!res.ok) throw new Error("获取库存摘要失败")
+  return res.json()
 }
