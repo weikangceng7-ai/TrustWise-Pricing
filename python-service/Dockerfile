@@ -8,11 +8,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装 Python 依赖
-COPY requirements.txt .
+COPY python-service/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 复制源码
-COPY app.py .
+COPY python-service/app.py .
 RUN mkdir -p data models
 
 # 预热 AKShare（可选，减少首次请求延迟）
