@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # 安装 Python 依赖
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip install --no-cache-dir -r requirements.txt
 
 # 复制源码
 COPY app.py .
@@ -18,7 +18,5 @@ RUN mkdir -p data models
 # 预热 AKShare（可选，减少首次请求延迟）
 RUN python -c "import akshare; print('AKShare ready')" 2>/dev/null || echo "AKShare unavailable (will use mock data)"
 
-EXPOSE 5001
-
-# gunicorn 生产模式，关闭 debug
-CMD ["gunicorn", "--bind", "0.0.0.0:5001", "--timeout", "120", "--workers", "2", "app:app"]
+# gunicorn 生产模式，PORT 由 Railway 自动注入
+CMD gunicorn --bind 0.0.0.0:${PORT:-5001} --timeout 120 --workers 2 app:app
