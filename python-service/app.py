@@ -39,6 +39,18 @@ class SulfurPricePredictor:
         self.resid_std = 1
         self.lags = 3
         self.arima_order = (0, 1, 1)
+        self._initialized = False
+
+    def ensure_initialized(self):
+        """懒加载：首次调用时加载数据并训练模型"""
+        if self._initialized:
+            return
+        self.load_data()
+        if not self._load_models():
+            print("未找到已训练模型，开始训练...")
+            self.train()
+            print("模型训练完成")
+        self._initialized = True
 
     def load_data(self, file_path: str = None) -> pd.DataFrame:
         """加载价格历史数据"""
@@ -392,8 +404,287 @@ class SulfurPricePredictor:
         return False
 
 
-# 全局预测器实例
+class CommodityDataFetcher:
+    """大宗商品数据抓取器 - 基于 AKShare"""
+
+    def __init__(self):
+        self._akshare_available = False
+        try:
+            import akshare as ak
+            self.ak = ak
+            self._akshare_available = True
+            print("AKShare 已加载")
+        except ImportError:
+            print("警告: akshare 未安装，大宗商品数据将使用模拟数据")
+
+    def is_available(self) -> bool:
+        return self._akshare_available
+
+    def fetch_sulfur_spot(self, days: int = 90) -> Dict[str, Any]:
+        """获取硫磺现货价格（生意社）"""
+        if not self._akshare_available:
+            return self._mock_spot("sulfur", "硫磺", days)
+
+        try:
+            df = self.ak.spot_price(symbol="硫磺")
+            if df is None or df.empty:
+                return self._mock_spot("sulfur", "硫磺", days)
+
+            df = df.tail(days)
+            records = []
+            for _, row in df.iterrows():
+                records.append({
+                    "date": str(row.get("日期", "")),
+                    "price": float(row.get("价格", 0)),
+                    "change_percent": float(row.get("涨跌幅", 0)) if "涨跌幅" in row else None,
+                    "unit": "元/吨",
+                })
+
+            return {
+                "success": True,
+                "source": "生意社",
+                "commodity_code": "sulfur",
+                "data": records,
+                "count": len(records),
+            }
+        except Exception as e:
+            print(f"获取硫磺现货价格失败: {e}")
+            return self._mock_spot("sulfur", "硫磺", days)
+
+    def fetch_phosphate_spot(self, days: int = 90) -> Dict[str, Any]:
+        """获取磷矿石价格"""
+        if not self._akshare_available:
+            return self._mock_spot("phosphate", "磷矿石", days)
+
+        try:
+            df = self.ak.spot_price(symbol="磷矿石")
+            if df is None or df.empty:
+                return self._mock_spot("phosphate", "磷矿石", days)
+
+            df = df.tail(days)
+            records = []
+            for _, row in df.iterrows():
+                records.append({
+                    "date": str(row.get("日期", "")),
+                    "price": float(row.get("价格", 0)),
+                    "change_percent": float(row.get("涨跌幅", 0)) if "涨跌幅" in row else None,
+                    "unit": "元/吨",
+                })
+
+            return {
+                "success": True,
+                "source": "生意社",
+                "commodity_code": "phosphate",
+                "data": records,
+                "count": len(records),
+            }
+        except Exception as e:
+            print(f"获取磷矿石价格失败: {e}")
+            return self._mock_spot("phosphate", "磷矿石", days)
+
+    def fetch_potash_spot(self, days: int = 90) -> Dict[str, Any]:
+        """获取钾肥价格"""
+        if not self._akshare_available:
+            return self._mock_spot("potash", "钾肥", days)
+
+        try:
+            df = self.ak.spot_price(symbol="氯化钾")
+            if df is None or df.empty:
+                return self._mock_spot("potash", "钾肥", days)
+
+            df = df.tail(days)
+            records = []
+            for _, row in df.iterrows():
+                records.append({
+                    "date": str(row.get("日期", "")),
+                    "price": float(row.get("价格", 0)),
+                    "change_percent": float(row.get("涨跌幅", 0)) if "涨跌幅" in row else None,
+                    "unit": "元/吨",
+                })
+
+            return {
+                "success": True,
+                "source": "生意社",
+                "commodity_code": "potash",
+                "data": records,
+                "count": len(records),
+            }
+        except Exception as e:
+            print(f"获取钾肥价格失败: {e}")
+            return self._mock_spot("potash", "钾肥", days)
+
+    def fetch_urea_spot(self, days: int = 90) -> Dict[str, Any]:
+        """获取尿素现货价格"""
+        if not self._akshare_available:
+            return self._mock_spot("urea", "尿素", days)
+
+        try:
+            df = self.ak.spot_price(symbol="尿素")
+            if df is None or df.empty:
+                return self._mock_spot("urea", "尿素", days)
+
+            df = df.tail(days)
+            records = []
+            for _, row in df.iterrows():
+                records.append({
+                    "date": str(row.get("日期", "")),
+                    "price": float(row.get("价格", 0)),
+                    "change_percent": float(row.get("涨跌幅", 0)) if "涨跌幅" in row else None,
+                    "unit": "元/吨",
+                })
+
+            return {
+                "success": True,
+                "source": "生意社",
+                "commodity_code": "urea",
+                "data": records,
+                "count": len(records),
+            }
+        except Exception as e:
+            print(f"获取尿素价格失败: {e}")
+            return self._mock_spot("urea", "尿素", days)
+
+    def fetch_urea_futures(self, days: int = 90) -> Dict[str, Any]:
+        """获取郑商所尿素期货价格"""
+        if not self._akshare_available:
+            return self._mock_spot("urea_futures", "尿素期货", days)
+
+        try:
+            df = self.ak.futures_spot_price("尿素")
+            if df is None or df.empty:
+                return self._mock_spot("urea_futures", "尿素期货", days)
+
+            df = df.tail(days)
+            records = []
+            for _, row in df.iterrows():
+                records.append({
+                    "date": str(row.get("日期", row.get("date", ""))),
+                    "price": float(row.get("价格", row.get("price", 0))),
+                    "unit": "元/吨",
+                })
+
+            return {
+                "success": True,
+                "source": "郑商所",
+                "commodity_code": "urea",
+                "data": records,
+                "count": len(records),
+            }
+        except Exception as e:
+            print(f"获取尿素期货价格失败: {e}")
+            return self._mock_spot("urea_futures", "尿素期货", days)
+
+    def fetch_bdi_index(self) -> Dict[str, Any]:
+        """获取波罗的海干散货指数 (BDI)"""
+        if not self._akshare_available:
+            return self._mock_bdi()
+
+        try:
+            df = self.ak.bdi_index()
+            if df is None or df.empty:
+                return self._mock_bdi()
+
+            df = df.tail(90)
+            records = []
+            for _, row in df.iterrows():
+                records.append({
+                    "date": str(row.get("日期", "")),
+                    "price": int(row.get("指数", row.get("BDI", 0))),
+                    "unit": "指数",
+                })
+
+            return {
+                "success": True,
+                "source": "Baltic Exchange via AKShare",
+                "commodity_code": "bdi",
+                "data": records,
+                "count": len(records),
+            }
+        except Exception as e:
+            print(f"获取BDI指数失败: {e}")
+            return self._mock_bdi()
+
+    def fetch_all_commodities(self, days: int = 30) -> Dict[str, Any]:
+        """批量获取所有品种数据"""
+        results = {}
+        results["sulfur"] = self.fetch_sulfur_spot(days)
+        results["phosphate"] = self.fetch_phosphate_spot(days)
+        results["potash"] = self.fetch_potash_spot(days)
+        results["urea"] = self.fetch_urea_spot(days)
+        results["bdi"] = self.fetch_bdi_index()
+        return results
+
+    def _mock_spot(self, code: str, name: str, days: int) -> Dict[str, Any]:
+        """生成模拟现货数据（AKShare 不可用时的 fallback）"""
+        import numpy as np
+
+        base_prices = {
+            "sulfur": 1900, "phosphate": 1080,
+            "potash": 3500, "urea": 2350,
+            "urea_futures": 2300,
+        }
+        volatility_map = {
+            "sulfur": 15, "phosphate": 8,
+            "potash": 20, "urea": 12,
+            "urea_futures": 10,
+        }
+        base = base_prices.get(code, 1000)
+        vol = volatility_map.get(code, 15)
+
+        np.random.seed(hash(code) % 2**32)
+        dates = pd.date_range(end=datetime.now(), periods=days, freq="D")
+        noise = np.random.normal(0, vol, days)
+        prices = base + np.cumsum(noise)
+
+        records = []
+        for d, p in zip(dates, prices):
+            records.append({
+                "date": d.strftime("%Y-%m-%d"),
+                "price": round(float(p), 2),
+                "unit": "元/吨",
+            })
+
+        return {
+            "success": True,
+            "source": "模拟数据（AKShare 不可用）",
+            "commodity_code": code,
+            "data": records,
+            "count": len(records),
+            "note": "AKShare 未安装或数据源不可用，使用模拟数据",
+        }
+
+    def _mock_bdi(self) -> Dict[str, Any]:
+        """生成模拟 BDI 数据"""
+        import numpy as np
+
+        np.random.seed(12345)
+        dates = pd.date_range(end=datetime.now(), periods=90, freq="D")
+        bdi_base = 1800
+        noise = np.random.normal(0, 25, 90)
+        bdi_values = bdi_base + np.cumsum(noise)
+        bdi_values = np.clip(bdi_values, 500, 5000)
+
+        records = []
+        for d, v in zip(dates, bdi_values):
+            records.append({
+                "date": d.strftime("%Y-%m-%d"),
+                "price": int(v),
+                "unit": "指数",
+            })
+
+        return {
+            "success": True,
+            "source": "模拟数据（AKShare 不可用）",
+            "commodity_code": "bdi",
+            "data": records,
+            "count": len(records),
+            "note": "AKShare 未安装或数据源不可用，使用模拟数据",
+        }
+
+
+# 全局实例
 predictor = SulfurPricePredictor()
+fetcher = CommodityDataFetcher()
 
 
 @app.route('/health', methods=['GET'])
@@ -428,6 +719,7 @@ def train_model():
 @app.route('/predict', methods=['POST'])
 def predict():
     """预测价格"""
+    predictor.ensure_initialized()
     try:
         data = request.get_json() or {}
         days = data.get('days', 7)
@@ -451,6 +743,7 @@ def predict():
 @app.route('/trend', methods=['GET'])
 def analyze_trend():
     """分析趋势"""
+    predictor.ensure_initialized()
     try:
         days = request.args.get('days', 30, type=int)
         result = predictor.analyze_trend(days=days)
@@ -468,7 +761,8 @@ def analyze_trend():
 
 @app.route('/decision', methods=['POST'])
 def purchase_decision():
-    """
+    """"""
+    predictor.ensure_initialized()
     生成采购决策建议
 
     基于预测结果和库存情况，给出采购建议
@@ -546,16 +840,71 @@ def purchase_decision():
         }), 500
 
 
+# ---- AKShare 数据接口 ----
+
+@app.route('/akshare/commodity', methods=['GET'])
+def akshare_commodity():
+    """获取指定品种的现货价格"""
+    code = request.args.get('code', 'sulfur')
+    days = request.args.get('days', 90, type=int)
+    days = min(max(1, days), 365)
+
+    code_map = {
+        'sulfur': fetcher.fetch_sulfur_spot,
+        'phosphate': fetcher.fetch_phosphate_spot,
+        'potash': fetcher.fetch_potash_spot,
+        'urea': fetcher.fetch_urea_spot,
+        'urea_futures': fetcher.fetch_urea_futures,
+    }
+
+    fetch_fn = code_map.get(code)
+    if fetch_fn is None:
+        return jsonify({"success": False, "error": f"未知品种: {code}"}), 400
+
+    result = fetch_fn(days)
+    return jsonify(result)
+
+
+@app.route('/akshare/bdi', methods=['GET'])
+def akshare_bdi():
+    """获取 BDI 指数"""
+    result = fetcher.fetch_bdi_index()
+    return jsonify(result)
+
+
+@app.route('/akshare/all', methods=['GET'])
+def akshare_all():
+    """批量获取所有品种数据"""
+    days = request.args.get('days', 30, type=int)
+    days = min(max(1, days), 365)
+    result = fetcher.fetch_all_commodities(days)
+    return jsonify({"success": True, "data": result})
+
+
+@app.route('/akshare/health', methods=['GET'])
+def akshare_health():
+    """AKShare 数据源健康检查"""
+    return jsonify({
+        "akshare_available": fetcher.is_available(),
+        "service": "akshare-data-fetcher",
+    })
+
+
+@app.route('/akshare/refresh', methods=['POST'])
+def akshare_refresh():
+    """手动触发全量数据刷新"""
+    days = request.args.get('days', 30, type=int)
+    result = fetcher.fetch_all_commodities(days)
+    return jsonify({
+        "success": True,
+        "message": "数据刷新完成",
+        "data": result,
+        "refreshed_at": datetime.now().isoformat(),
+    })
+
+
 if __name__ == '__main__':
-    # 初始化数据
-    predictor.load_data()
-
-    # 尝试加载已有模型，否则训练新模型
-    if not predictor._load_models():
-        print("未找到已训练模型，开始训练...")
-        predictor.train()
-        print("模型训练完成")
-
-    # 启动服务
+    # 启动服务（开发模式用 Flask 内建服务器）
+    # 生产环境请用: gunicorn --bind 0.0.0.0:5001 --workers 2 app:app
     port = int(os.environ.get('PORT', 5001))
     app.run(host='0.0.0.0', port=port, debug=True)

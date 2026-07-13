@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: sulfur-predictor
+    env: python
+    region: singapore
+    buildCommand: pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --timeout 120 --workers 2 app:app
+    plan: free
+    envVars:
+      - key: PORT
+        value: "5001"
