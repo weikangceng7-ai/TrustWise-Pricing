@@ -761,12 +761,11 @@ def analyze_trend():
 
 @app.route('/decision', methods=['POST'])
 def purchase_decision():
-    """"""
-    predictor.ensure_initialized()
-    生成采购决策建议
+    """生成采购决策建议
 
     基于预测结果和库存情况，给出采购建议
     """
+    predictor.ensure_initialized()
     try:
         data = request.get_json() or {}
         days = data.get('days', 7)
