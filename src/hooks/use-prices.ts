@@ -30,6 +30,7 @@ export interface PriceSummary {
   date: string | null
   market: string | null
   specification: string | null
+  source: string | null
 }
 
 // 港口库存数据类型
@@ -47,6 +48,7 @@ export interface InventorySummary {
   avgInventory: string
   currentPrice: string | null
   date: string | null
+  source: string | null
 }
 
 export interface PricesResponse {

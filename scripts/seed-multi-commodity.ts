@@ -72,9 +72,85 @@ function seedRandom(seed: number): () => number {
   }
 }
 
+async function fetchRealCommodityData(): Promise<Array<{
+  code: string
+  name: string
+  date: string
+  price: number
+  change: number
+  changePercent: string
+  unit: string
+}>> {
+  const PYTHON_SERVICE = process.env.PYTHON_SERVICE_URL || "http://localhost:5001"
+  const results: Array<{
+    code: string; name: string; date: string; price: number; change: number; changePercent: string; unit: string
+  }> = []
+
+  try {
+    const res = await fetch(`${PYTHON_SERVICE}/akshare/all`)
+    if (!res.ok) {
+      console.error(`AKShare 服务返回 ${res.status}`)
+      return results
+    }
+    const data = await res.json()
+
+    for (const code of Object.values(COMMODITY_CODES)) {
+      const key = code === "sulfur" ? "sulfur" : code
+      const commodityData = data.data?.[key]
+      if (!commodityData?.data) {
+        console.log(`  ${COMMODITY_INFO[code as CommodityCode].name}: 无 AKShare 数据`)
+        continue
+      }
+      for (const row of commodityData.data) {
+        results.push({
+          code,
+          name: COMMODITY_INFO[code as CommodityCode].name,
+          date: row.date || new Date().toISOString().split("T")[0],
+          price: Number(row.price || row.mainPrice || 0),
+          change: Number(row.change || 0),
+          changePercent: String(row.changePercent || "0"),
+          unit: COMMODITY_INFO[code as CommodityCode].unit,
+        })
+      }
+    }
+    console.log(`  AKShare 返回 ${results.length} 条数据`)
+  } catch (e) {
+    console.error(`无法连接 AKShare 服务 (${PYTHON_SERVICE}):`, e)
+  }
+  return results
+}
+
+async function insertRealData(data: Awaited<ReturnType<typeof fetchRealCommodityData>>) {
+  let totalPrices = 0
+  let totalInventory = 0
+
+  for (const row of data) {
+    if (row.price <= 0) continue
+    await db.insert(sulfurPrices).values({
+      date: row.date,
+      commodityCode: row.code,
+      productName: row.name,
+      mainPrice: String(row.price),
+      changeValue: String(row.change),
+      changePercent: row.changePercent,
+      unit: row.unit,
+      source: "AKShare 生意社",
+    })
+    totalPrices++
+  }
+
+  return { totalPrices, totalInventory }
+}
+
 async function main() {
+  const args = process.argv.slice(2)
+  const mockOnly = args.includes("--mock-only")
+  const append = args.includes("--append")
+
   console.log("\n========================================")
   console.log("开始生成多品种价格数据")
+  if (mockOnly) console.log("模式: 模拟数据（跳过 AKShare）")
+  if (append) console.log("模式: 追加 (不清空已有数据)")
   console.log("========================================\n")
 
   if (!process.env.DATABASE_URL) {
@@ -82,103 +158,127 @@ async function main() {
     process.exit(1)
   }
 
-  // 清空现有的非硫磺数据
   const codes = Object.values(COMMODITY_CODES)
-  for (const code of codes) {
-    if (code === "sulfur") continue // 保留原有硫磺数据
-    console.log(`清空 ${COMMODITY_INFO[code].name} 现有数据...`)
-    await db.delete(sulfurPrices).where(eq(sulfurPrices.commodityCode, code))
-    await db.delete(portInventory).where(eq(portInventory.commodityCode, code))
+
+  if (!append) {
+    // 清空现有的非硫磺数据（append 模式下保留已有数据）
+    for (const code of codes) {
+      if (code === "sulfur") continue
+      console.log(`清空 ${COMMODITY_INFO[code].name} 现有数据...`)
+      await db.delete(sulfurPrices).where(eq(sulfurPrices.commodityCode, code))
+      await db.delete(portInventory).where(eq(portInventory.commodityCode, code))
+    }
   }
 
-  const days = 90
   let totalPrices = 0
   let totalInventory = 0
+  let usedRealData = false
 
-  for (const code of codes) {
-    const info = COMMODITY_INFO[code]
-    const config = COMMODITY_PRICE_CONFIG[code]
-    const invConfig = INVENTORY_CONFIG[code]
-    const rand = seedRandom(Object.values(COMMODITY_CODES).indexOf(code) * 12345 + 42)
+  if (!mockOnly) {
+    // 优先尝试从 AKShare 获取真实数据
+    console.log("\n尝试从 AKShare 获取真实数据...")
+    const realData = await fetchRealCommodityData()
+    if (realData.length > 0) {
+      const result = await insertRealData(realData)
+      totalPrices = result.totalPrices
+      totalInventory = result.totalInventory
+      usedRealData = true
+      console.log(`✓ 已从 AKShare 获取真实数据 (${totalPrices} 条)`)
+    } else {
+      console.log("⚠ AKShare 服务不可用，将使用模拟数据")
+    }
+  }
 
-    console.log(`\n生成 ${info.name} (${code}) 数据...`)
+  if (!usedRealData) {
+    // 降级到模拟数据生成
+    const days = 90
 
-    // 生成每日价格（带季节性 + 随机游走）
-    let currentPrice = config.basePrice
-    const now = new Date()
+    for (const code of codes) {
+      const info = COMMODITY_INFO[code]
+      const config = COMMODITY_PRICE_CONFIG[code]
+      const invConfig = INVENTORY_CONFIG[code]
+      const rand = seedRandom(Object.values(COMMODITY_CODES).indexOf(code) * 12345 + 42)
 
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date(now)
-      date.setDate(date.getDate() - i)
-      const dateStr = date.toISOString().split("T")[0]
+      console.log(`\n生成 ${info.name} (${code}) 模拟数据...`)
 
-      // 季节性：夏季（6-8月）磷肥需求旺季，价格上涨
-      const month = date.getMonth()
-      const seasonalFactor = code === "sulfur"
-        ? Math.sin((month - 3) * Math.PI / 6) * 30 // 4-6月硫磺旺季
-        : code === "phosphate"
-        ? Math.sin((month - 2) * Math.PI / 6) * 15 // 3-5月磷矿需求
-        : code === "potash"
-        ? Math.sin((month - 1) * Math.PI / 6) * 60 // 2-4月钾肥备肥
-        : Math.sin((month - 5) * Math.PI / 6) * 35 // 6-8月尿素旺季
+      // 生成每日价格（带季节性 + 随机游走）
+      let currentPrice = config.basePrice
+      const now = new Date()
 
-      // 随机游走
-      const dailyChange = (rand() - 0.48) * config.volatility * 0.2
-      currentPrice = Math.max(
-        config.basePrice * 0.85,
-        Math.min(config.basePrice * 1.15, currentPrice + dailyChange + seasonalFactor * 0.05)
-      )
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(now)
+        date.setDate(date.getDate() - i)
+        const dateStr = date.toISOString().split("T")[0]
 
-      const highPrice = Math.round((currentPrice + rand() * config.volatility * 0.3) * 100) / 100
-      const lowPrice = Math.round((currentPrice - rand() * config.volatility * 0.3) * 100) / 100
-      const mainPrice = Math.round(currentPrice * 100) / 100
+        // 季节性：夏季（6-8月）磷肥需求旺季，价格上涨
+        const month = date.getMonth()
+        const seasonalFactor = code === "sulfur"
+          ? Math.sin((month - 3) * Math.PI / 6) * 30 // 4-6月硫磺旺季
+          : code === "phosphate"
+          ? Math.sin((month - 2) * Math.PI / 6) * 15 // 3-5月磷矿需求
+          : code === "potash"
+          ? Math.sin((month - 1) * Math.PI / 6) * 60 // 2-4月钾肥备肥
+          : Math.sin((month - 5) * Math.PI / 6) * 35 // 6-8月尿素旺季
 
-      // 每个品种插入多个地区/市场的价格
-      for (let r = 0; r < config.regions.length; r++) {
-        const regionOffset = (rand() - 0.5) * config.volatility * 0.15
-        const marketOffset = (rand() - 0.5) * config.volatility * 0.1
+        // 随机游走
+        const dailyChange = (rand() - 0.48) * config.volatility * 0.2
+        currentPrice = Math.max(
+          config.basePrice * 0.85,
+          Math.min(config.basePrice * 1.15, currentPrice + dailyChange + seasonalFactor * 0.05)
+        )
 
-        for (let s = 0; s < config.specifications.length; s++) {
-          const specOffset = config.specifications[s].includes("大") || config.specifications[s].includes("62%") ? 20 : 0
+        const highPrice = Math.round((currentPrice + rand() * config.volatility * 0.3) * 100) / 100
+        const lowPrice = Math.round((currentPrice - rand() * config.volatility * 0.3) * 100) / 100
+        const mainPrice = Math.round(currentPrice * 100) / 100
 
-          await db.insert(sulfurPrices).values({
+        // 每个品种插入多个地区/市场的价格
+        for (let r = 0; r < config.regions.length; r++) {
+          const regionOffset = (rand() - 0.5) * config.volatility * 0.15
+          const marketOffset = (rand() - 0.5) * config.volatility * 0.1
+
+          for (let s = 0; s < config.specifications.length; s++) {
+            const specOffset = config.specifications[s].includes("大") || config.specifications[s].includes("62%") ? 20 : 0
+
+            await db.insert(sulfurPrices).values({
+              date: dateStr,
+              commodityCode: code,
+              productName: info.name,
+              region: config.regions[r],
+              market: config.markets[r],
+              specification: config.specifications[s],
+              minPrice: String(Math.round((lowPrice + regionOffset - 10) * 100) / 100),
+              maxPrice: String(Math.round((highPrice + regionOffset + 10) * 100) / 100),
+              mainPrice: String(Math.round((mainPrice + regionOffset + specOffset) * 100) / 100),
+              changeValue: String(Math.round((dailyChange + regionOffset) * 100) / 100),
+              changePercent: String(Math.round(((dailyChange + regionOffset) / (currentPrice - dailyChange)) * 10000) / 100),
+              unit: info.unit,
+              source: "模拟数据（本地生成）",
+            })
+
+            totalPrices++
+          }
+        }
+
+        // 生成港口库存数据（每周两次）
+        if (i % 3 === 0 || i % 4 === 0) {
+          const invChange = (rand() - 0.5) * invConfig.volatility
+          const inventory = Math.round(invConfig.base + invChange * 2)
+          const invPrice = Math.round(currentPrice * (1 + (rand() - 0.5) * 0.05))
+
+          await db.insert(portInventory).values({
             date: dateStr,
             commodityCode: code,
-            productName: info.name,
-            region: config.regions[r],
-            market: config.markets[r],
-            specification: config.specifications[s],
-            minPrice: String(Math.round((lowPrice + regionOffset - 10) * 100) / 100),
-            maxPrice: String(Math.round((highPrice + regionOffset + 10) * 100) / 100),
-            mainPrice: String(Math.round((mainPrice + regionOffset + specOffset) * 100) / 100),
-            changeValue: String(Math.round((dailyChange + regionOffset) * 100) / 100),
-            changePercent: String(Math.round(((dailyChange + regionOffset) / (currentPrice - dailyChange)) * 10000) / 100),
-            unit: info.unit,
-            source: code === "potash" ? "中国化肥网" : code === "urea" ? "隆众资讯" : "百川盈孚",
+            inventory: String(inventory),
+            price: String(invPrice),
+            source: "模拟数据（本地生成）",
           })
 
-          totalPrices++
+          totalInventory++
         }
       }
 
-      // 生成港口库存数据（每周两次）
-      if (i % 3 === 0 || i % 4 === 0) {
-        const invChange = (rand() - 0.5) * invConfig.volatility
-        const inventory = Math.round(invConfig.base + invChange * 2)
-        const invPrice = Math.round(currentPrice * (1 + (rand() - 0.5) * 0.05))
-
-        await db.insert(portInventory).values({
-          date: dateStr,
-          commodityCode: code,
-          inventory: String(inventory),
-          price: String(invPrice),
-        })
-
-        totalInventory++
-      }
+      console.log(`  ✓ ${info.name}: 价格 ${totalPrices} 条, 库存 ${totalInventory} 条`)
     }
-
-    console.log(`  ✓ ${info.name}: 价格 ${totalPrices} 条, 库存 ${totalInventory} 条`)
   }
 
   // 验证

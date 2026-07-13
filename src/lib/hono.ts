@@ -9,12 +9,18 @@ import { chatRoutes } from "@/routes/chat"
 // 创建 Hono 应用实例
 const app = new Hono()
 
+// CORS 允许的来源
+const allowedOrigins = [
+  process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  "https://sulfur-agent-web.vercel.app",
+].filter((url): url is string => Boolean(url))
+
 // 中间件
 app.use("*", logger())
 app.use(
   "*",
   cors({
-    origin: ["http://localhost:3000"],
+    origin: allowedOrigins,
     allowMethods: ["GET", "POST", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
   })

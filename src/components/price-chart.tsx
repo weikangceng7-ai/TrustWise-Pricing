@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect } from "react"
 import {
   LineChart,
   Line,
@@ -36,38 +36,51 @@ interface ExternalDataResponse {
   timestamp: string
 }
 
-// 硫磺价格模拟数据（基于原油价格推算）
-function generateSulfurPriceData(oilData: ExternalDataPoint[]): Array<{
+// 硫磺价格模拟数据（基于原油价格推算，仅作 fallback）
+function generateSulfurPriceFromOil(oilData: ExternalDataPoint[]): Array<{
   date: string
   actualPrice: number
   predictedPrice: number | null
 }> {
   if (!oilData || oilData.length === 0) return []
 
-  // 硫磺价格约为原油价格的 12-15 倍（元/吨 vs 美元/桶）
-  // 汇率约 7.2
   return oilData.map((item) => {
     const oilPrice = item.value
     const exchangeRate = 7.2
-    // 硫磺价格 = 原油价格 * 汇率 * 系数 (约 100-120 元/吨)
     const sulfurPrice = Math.round(oilPrice * exchangeRate * 1.2 + (Math.random() - 0.5) * 50)
 
     return {
       date: item.date,
-      actualPrice: Math.max(800, Math.min(1200, sulfurPrice)), // 限制在合理范围
+      actualPrice: Math.max(800, Math.min(1200, sulfurPrice)),
       predictedPrice: null,
     }
   })
 }
 
-// 生成预测数据
-function generatePredictions(historicalData: Array<{ date: string; actualPrice: number }>) {
+// 生成预测数据（优先使用预测 API，失败时本地推算）
+async function fetchPredictions(historicalData: Array<{ date: string; actualPrice: number }>) {
   if (historicalData.length === 0) return []
 
+  // 尝试调用预测 API
+  try {
+    const res = await fetch("/api/v1/prices/predict", { method: "POST" })
+    if (res.ok) {
+      const data = await res.json()
+      if (data.success && data.data?.predictions) {
+        return data.data.predictions.map((p: { date: string; price: number }) => ({
+          date: p.date,
+          actualPrice: null as number | null,
+          predictedPrice: Math.round(p.price),
+        }))
+      }
+    }
+  } catch {
+    // 预测 API 不可用，使用本地推算
+  }
+
+  // 本地 fallback 推算
   const lastPrice = historicalData[historicalData.length - 1].actualPrice
   const lastDate = new Date(historicalData[historicalData.length - 1].date)
-
-  // 计算平均变化率
   const prices = historicalData.slice(-7).map(d => d.actualPrice)
   const avgChange = prices.length > 1
     ? (prices[prices.length - 1] - prices[0]) / prices.length
@@ -77,19 +90,14 @@ function generatePredictions(historicalData: Array<{ date: string; actualPrice: 
   for (let i = 1; i <= 7; i++) {
     const futureDate = new Date(lastDate)
     futureDate.setDate(futureDate.getDate() + i)
-
-    // 使用固定种子生成伪随机数
-    const seed = futureDate.getTime() + i
-    const randomFactor = 1 + (Math.sin(seed) * 0.5 - 0.25) * 0.02
-    const predictedPrice = (lastPrice + avgChange * i) * randomFactor
+    const predictedPrice = lastPrice + avgChange * i
 
     predictions.push({
       date: futureDate.toISOString().split("T")[0],
-      actualPrice: null,
+      actualPrice: null as number | null,
       predictedPrice: Math.round(Math.max(800, Math.min(1200, predictedPrice))),
     })
   }
-
   return predictions
 }
 
@@ -99,18 +107,36 @@ interface PriceChartProps {
 
 export function PriceChart({ timeRange = "month" }: PriceChartProps) {
   const { resolvedTheme, mounted } = useTheme()
-  const [externalData, setExternalData] = useState<ExternalDataResponse | null>(null)
+  const [chartData, setChartData] = useState<Array<{ date: string; actualPrice: number | null; predictedPrice: number | null }>>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
     async function fetchData() {
       try {
-        // 获取原油价格数据作为参考
-        const res = await fetch("/api/external-data/akshare?type=oil")
-        if (!res.ok) throw new Error("获取数据失败")
-        const data: ExternalDataResponse = await res.json()
-        setExternalData(data)
+        // 优先获取真实价格数据
+        const chartRes = await fetch("/api/prices/chart-data")
+        let historicalData: Array<{ date: string; actualPrice: number }> = []
+
+        if (chartRes.ok) {
+          const chartJson = await chartRes.json()
+          if (chartJson.success && chartJson.data?.length > 0) {
+            historicalData = chartJson.data
+          }
+        }
+
+        // Fallback: 从原油价格推算
+        if (historicalData.length === 0) {
+          const oilRes = await fetch("/api/external-data/akshare?type=oil")
+          if (!oilRes.ok) throw new Error("获取数据失败")
+          const oilData: ExternalDataResponse = await oilRes.json()
+          historicalData = generateSulfurPriceFromOil(oilData.data?.history || [])
+        }
+
+        // 获取预测数据
+        const predictions = await fetchPredictions(historicalData)
+
+        setChartData([...historicalData.map(d => ({ ...d, predictedPrice: null as number | null })), ...predictions])
       } catch (err) {
         setError(err instanceof Error ? err : new Error("未知错误"))
       } finally {
@@ -121,40 +147,7 @@ export function PriceChart({ timeRange = "month" }: PriceChartProps) {
     if (mounted) {
       fetchData()
     }
-  }, [mounted])
-
-  // 根据时间范围过滤数据
-  const filterDataByTimeRange = useCallback((data: ExternalDataPoint[]) => {
-    if (!data || data.length === 0) return data
-
-    const now = new Date()
-    let cutoffDate: Date
-
-    switch (timeRange) {
-      case "week":
-        cutoffDate = new Date(now)
-        cutoffDate.setDate(now.getDate() - 7)
-        break
-      case "month":
-      default:
-        cutoffDate = new Date(now)
-        cutoffDate.setMonth(now.getMonth() - 1)
-        break
-    }
-
-    return data.filter(item => new Date(item.date) >= cutoffDate)
-  }, [timeRange])
-
-  // 处理图表数据
-  const chartData = useMemo(() => {
-    if (!externalData?.data?.history) return []
-
-    const history = filterDataByTimeRange(externalData.data.history)
-    const sulfurData = generateSulfurPriceData(history)
-    const predictions = generatePredictions(sulfurData)
-
-    return [...sulfurData, ...predictions]
-  }, [externalData, filterDataByTimeRange])
+  }, [mounted, timeRange])
 
   if (isLoading || !mounted) {
     return (

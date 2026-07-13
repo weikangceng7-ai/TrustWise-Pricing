@@ -87,6 +87,7 @@ export const portInventory = pgTable("port_inventory", {
   commodityCode: varchar("commodity_code", { length: 20 }).default("sulfur"),
   inventory: decimal("inventory", { precision: 10, scale: 2 }).notNull(), // 港口库存（万吨）
   price: decimal("price", { precision: 10, scale: 2 }), // 镇江港颗粒硫磺价格（元/吨）
+  source: varchar("source", { length: 100 }),
   createdAt: timestamp("created_at").defaultNow(),
 })
 

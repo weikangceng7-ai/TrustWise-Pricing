@@ -173,6 +173,7 @@ export function generateSystemPromptWithContext(context: {
   inventory?: string
   date?: string
   knowledgeGraph?: string
+  knowledgeContext?: string
   prediction?: string
   transformerPrediction?: string
   enterprise?: string
@@ -211,6 +212,10 @@ export function generateSystemPromptWithContext(context: {
 
   if (context.knowledgeGraph) {
     contextSection += `### 知识图谱分析\n${context.knowledgeGraph}\n\n`
+  }
+
+  if (context.knowledgeContext) {
+    contextSection += `${context.knowledgeContext}\n\n`
   }
 
   contextSection += '**请严格按照两板块结构回答，第一板块分析宏观市场，第二板块结合企业特点给出专项建议。确保分析的准确性和时效性。**'

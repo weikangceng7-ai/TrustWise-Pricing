@@ -1,14 +1,20 @@
 import { NextResponse } from "next/server"
+import {
+  fetchCommoditySpot,
+  fetchBDI,
+  fetchAllCommodities,
+  type CommodityDataResponse,
+} from "@/lib/akshare-client"
 
 /**
  * AkShare 数据 API
  * 文档：https://akshare.akfamily.xyz/
- * 无需 API 密钥
  *
  * 数据来源:
  * - 汇率: Frankfurter API (欧洲央行数据)
  * - 原油: FRED API (美联储经济数据)
- * - BDI: 模拟数据
+ * - BDI: AKShare Python 服务 或 模拟数据
+ * - 大宗商品现货: AKShare Python 服务（生意社）
  * - 新闻: GDELT API
  */
 
@@ -34,9 +40,20 @@ export async function GET(request: Request) {
       return await fetchRealtimeBrentPrice()
     }
 
-    // BDI 指数使用模拟数据
+    // BDI 指数（从 Python AKShare 服务获取，不可用时 fallback）
     if (type === "bdi") {
-      return await fetchRealtimeBDI()
+      return await fetchRealtimeBDIFromService()
+    }
+
+    // 大宗商品现货价格（从 Python AKShare 服务获取）
+    if (type === "sulfur_spot" || type === "phosphate" || type === "potash" || type === "urea") {
+      const code = type === "sulfur_spot" ? "sulfur" : type
+      return await fetchCommoditySpotFromService(code)
+    }
+
+    // 所有品种批量获取
+    if (type === "commodity_all") {
+      return await fetchAllCommoditiesFromService()
     }
 
     // 其他指标使用模拟数据
@@ -410,6 +427,103 @@ async function fetchRealtimeBDI() {
       note: "使用模拟数据"
     })
   }
+}
+
+/**
+ * 从 Python AKShare 服务获取 BDI 指数，不可用时 fallback
+ */
+async function fetchRealtimeBDIFromService() {
+  try {
+    const data = await fetchBDI()
+    if (data && data.data.length > 0) {
+      return NextResponse.json({
+        success: true,
+        source: data.source,
+        type: "bdi",
+        data: {
+          name: "波罗的海干散货指数",
+          unit: "指数",
+          history: data.data.map((d) => ({
+            date: d.date,
+            value: d.price,
+          })),
+        },
+        timestamp: new Date().toISOString(),
+        note: data.note || "实时数据 - AKShare (Baltic Exchange)",
+      })
+    }
+  } catch (e) {
+    console.warn("Python AKShare BDI 服务不可用, fallback 到模拟数据")
+  }
+  return await fetchRealtimeBDI()
+}
+
+/**
+ * 从 Python AKShare 服务获取大宗商品现货价格
+ */
+async function fetchCommoditySpotFromService(code: string) {
+  try {
+    const data = await fetchCommoditySpot(code)
+    if (data && data.data.length > 0) {
+      const nameMap: Record<string, string> = {
+        sulfur: "硫磺", phosphate: "磷矿石", potash: "钾肥", urea: "尿素",
+      }
+      return NextResponse.json({
+        success: true,
+        source: data.source,
+        type: code,
+        data: {
+          name: nameMap[code] || code,
+          unit: "元/吨",
+          history: data.data.map((d) => ({
+            date: d.date,
+            value: d.price,
+            changePercent: d.change_percent ?? null,
+          })),
+        },
+        timestamp: new Date().toISOString(),
+        note: data.note || `实时数据 - ${data.source}`,
+      })
+    }
+  } catch (e) {
+    console.warn(`Python AKShare 服务不可用 (${code}), fallback 到模拟数据`)
+  }
+
+  const mockData = getMockData(code)
+  return NextResponse.json({
+    success: true,
+    source: "AKShare (模拟)",
+    type: code,
+    data: mockData,
+    timestamp: new Date().toISOString(),
+    note: "Python AKShare 服务不可达，使用模拟数据",
+  })
+}
+
+/**
+ * 批量获取所有大宗商品数据
+ */
+async function fetchAllCommoditiesFromService() {
+  try {
+    const allData = await fetchAllCommodities()
+    if (allData) {
+      return NextResponse.json({
+        success: true,
+        source: "AKShare (生意社)",
+        type: "commodity_all",
+        data: allData,
+        timestamp: new Date().toISOString(),
+      })
+    }
+  } catch (e) {
+    console.warn("Python AKShare 服务不可用, 无法批量获取")
+  }
+
+  return NextResponse.json({
+    success: false,
+    error: "Python AKShare 服务不可达",
+    note: "请启动 python-service 后重试",
+  }, { status: 503 })
 }
 
 function getMockData(type: string) {

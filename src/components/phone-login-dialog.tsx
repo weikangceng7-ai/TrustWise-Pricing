@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2 } from "lucide-react"
-import { verifyCode } from "@/lib/services/sms"
 
 interface PhoneLoginDialogProps {
   open: boolean
@@ -84,22 +83,13 @@ export function PhoneLoginDialog({
     }
   }
 
-  // 验证码登录
+  // 验证码登录（验证码在服务端校验）
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setIsLoading(true)
 
     try {
-      // 先验证验证码
-      const verifyResult = verifyCode(phone, code)
-      if (!verifyResult.valid) {
-        setError(verifyResult.error || "验证码错误")
-        setIsLoading(false)
-        return
-      }
-
-      // 调用自定义手机号登录 API
       const res = await fetch("/api/auth/phone-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

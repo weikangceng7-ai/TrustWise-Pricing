@@ -1,66 +1,10 @@
 "use client"
 
-import { useState } from "react"
-import { TrendingUp, TrendingDown, Minus, DollarSign, BarChart3, ArrowUpRight, Activity, Scale } from "lucide-react"
+import { useState, useMemo } from "react"
+import { TrendingUp, TrendingDown, Minus, Activity, Scale, Loader2 } from "lucide-react"
 import { COMMODITY_INFO, COMMODITY_CODES, type CommodityCode } from "@/db/schema-commodity"
+import { usePriceSummary, useInventorySummary } from "@/hooks/use-prices"
 import { getBackgroundImage } from "@/config/images"
-
-const COMMODITY_METRICS: Record<CommodityCode, {
-  price: string
-  priceLabel: string
-  change: string
-  trend: "up" | "down" | "flat"
-  volatility: string
-  marketHeat: string
-  riskLevel: string
-  keyDrivers: string[]
-  outlook: string
-}> = {
-  sulfur: {
-    price: "¥1,850",
-    priceLabel: "港口现货均价",
-    change: "+3.2%",
-    trend: "up",
-    volatility: "中等",
-    marketHeat: "活跃",
-    riskLevel: "中等",
-    keyDrivers: ["磷肥需求旺盛", "中东供应稳定", "运费上涨", "港口库存适中"],
-    outlook: "短期高位震荡，关注下游磷肥开工率及国际硫磺供应动态",
-  },
-  phosphate: {
-    price: "¥1,080",
-    priceLabel: "矿山出厂均价",
-    change: "+1.5%",
-    trend: "up",
-    volatility: "低",
-    marketHeat: "温和",
-    riskLevel: "低",
-    keyDrivers: ["磷肥开工率回升", "矿山开工正常", "环保限产政策", "运输成本稳定"],
-    outlook: "价格以稳为主，关注环保限产政策对矿山开工的影响",
-  },
-  potash: {
-    price: "¥3,500",
-    priceLabel: "进口均价",
-    change: "+5.8%",
-    trend: "up",
-    volatility: "高",
-    marketHeat: "旺盛",
-    riskLevel: "高",
-    keyDrivers: ["俄乌冲突持续", "白俄罗斯供应受限", "港口库存偏低", "进口到货不足"],
-    outlook: "短期价格难以下跌，关注地缘政治及国际海运变化",
-  },
-  urea: {
-    price: "¥2,350",
-    priceLabel: "出厂均价",
-    change: "-2.1%",
-    trend: "down",
-    volatility: "中等",
-    marketHeat: "疲软",
-    riskLevel: "低",
-    keyDrivers: ["国内产能过剩", "农业需求淡季", "出口窗口未开", "工业需求有限"],
-    outlook: "价格承压，关注印度招标动态及出口政策变化",
-  },
-}
 
 const CARD_COLORS: Record<CommodityCode, { gradient: string; border: string; badge: string; badgeText: string }> = {
   sulfur: {
@@ -114,24 +58,124 @@ function TrendBadge({ trend, change }: { trend: "up" | "down" | "flat"; change: 
   )
 }
 
+function CommodityOverviewCards({
+  selected,
+  onSelect,
+}: {
+  selected: CommodityCode
+  onSelect: (code: CommodityCode) => void
+}) {
+  const codes = Object.values(COMMODITY_CODES)
+  const queries = codes.map((code) => {
+    const summary = usePriceSummary(code)
+    return { code, summary }
+  })
+
+  return (
+    <div className="grid grid-cols-4 gap-3 mb-4">
+      {queries.map(({ code, summary }) => {
+        const cardColors = CARD_COLORS[code]
+        const info = COMMODITY_INFO[code]
+        const isSelected = selected === code
+        const priceData = summary.data?.data
+        const isLoading = summary.isLoading
+
+        const currentPrice = priceData?.currentPrice
+        const changePercent = priceData?.changePercent ? Number(priceData.changePercent) : 0
+        const trend: "up" | "down" | "flat" = changePercent > 1 ? "up" : changePercent < -1 ? "down" : "flat"
+        const changeStr = `${changePercent >= 0 ? "+" : ""}${changePercent.toFixed(1)}%`
+        const market = priceData?.market || ""
+
+        return (
+          <button
+            key={code}
+            onClick={() => onSelect(code)}
+            className={`text-left p-4 rounded-xl border backdrop-blur-sm transition-all duration-200 cursor-pointer bg-gradient-to-br ${cardColors.gradient} ${cardColors.border} ${
+              isSelected ? "ring-2 ring-offset-1 ring-slate-400 dark:ring-slate-500 scale-[1.02] shadow-lg" : "hover:scale-[1.02] hover:shadow-md hover:border-slate-300 dark:hover:border-slate-500"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded ${cardColors.badge} ${cardColors.badgeText}`}>
+                {info.name}
+              </span>
+              <TrendBadge trend={trend} change={changeStr} />
+            </div>
+            <div className="text-xl font-bold text-slate-900 dark:text-white mb-1">
+              {isLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+              ) : currentPrice ? (
+                `¥${Number(currentPrice).toLocaleString()}`
+              ) : (
+                <span className="text-sm text-slate-400">暂无数据</span>
+              )}
+            </div>
+            <div className="text-xs text-slate-400 dark:text-slate-500">{market || "现货均价"}</div>
+            <div className="flex items-center gap-3 mt-3 pt-3 border-t border-slate-200/50 dark:border-white/10">
+              <div className="flex items-center gap-1">
+                <Activity className="h-3 w-3 text-slate-400" />
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  {Math.abs(changePercent) > 2 ? "活跃" : "正常"}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Scale className="h-3 w-3 text-slate-400" />
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  {Math.abs(changePercent) > 3 ? "高风险" : Math.abs(changePercent) > 1 ? "中等风险" : "低风险"}
+                </span>
+              </div>
+            </div>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function ComparisonBar() {
-  const commodities = Object.entries(COMMODITY_METRICS) as [CommodityCode, typeof COMMODITY_METRICS[CommodityCode]][]
-  const prices = commodities.map(([, m]) => parseFloat(m.price.replace(/[¥,]/g, "")))
-  const maxPrice = Math.max(...prices)
+  const codes = Object.values(COMMODITY_CODES)
+  // 并行获取所有品种的价格摘要
+  const queries = codes.map((code) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const summary = usePriceSummary(code)
+    return { code, summary }
+  })
+
+  const items = queries
+    .map(({ code, summary }) => {
+      const priceData = summary.data?.data
+      if (!priceData?.currentPrice) return null
+      return {
+        code,
+        name: COMMODITY_INFO[code].name,
+        price: Number(priceData.currentPrice),
+        changePercent: priceData.changePercent ? Number(priceData.changePercent) : 0,
+        market: priceData.market || "",
+      }
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+
+  if (items.length === 0) {
+    return (
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">价格对比</h3>
+        <p className="text-xs text-slate-400">加载中...</p>
+      </div>
+    )
+  }
+
+  const maxPrice = Math.max(...items.map((i) => i.price))
 
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold text-slate-900 dark:text-white">价格对比</h3>
-      {commodities.map(([code, m]) => {
-        const price = parseFloat(m.price.replace(/[¥,]/g, ""))
-        const width = (price / maxPrice) * 100
-        const info = COMMODITY_INFO[code]
+      {items.map(({ code, name, price, changePercent, market }) => {
+        const width = maxPrice > 0 ? (price / maxPrice) * 100 : 0
         return (
           <div key={code} className="space-y-1">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-medium text-slate-700 dark:text-slate-300">{info.name}</span>
+              <span className="font-medium text-slate-700 dark:text-slate-300">{name}</span>
               <span className="text-slate-600 dark:text-slate-400">
-                {m.price} <span className="text-slate-400">{m.priceLabel}</span>
+                ¥{price.toLocaleString()} <span className="text-slate-400">{market || "现货均价"}</span>
               </span>
             </div>
             <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
@@ -155,7 +199,51 @@ export default function CommoditiesPage() {
   const [selectedCommodity, setSelectedCommodity] = useState<CommodityCode>("sulfur")
   const bgImage = getBackgroundImage("dashboardBackground")
 
-  const metrics = COMMODITY_METRICS[selectedCommodity]
+  // 从 API 获取选中品种的真实数据
+  const priceSummary = usePriceSummary(selectedCommodity)
+  const inventorySummary = useInventorySummary(selectedCommodity)
+  const isLoading = priceSummary.isLoading || inventorySummary.isLoading
+
+  // 从 API 计算展示值，API 不可用时显示空状态
+  const metrics = useMemo(() => {
+    const priceData = priceSummary.data?.data
+    const invData = inventorySummary.data?.data
+    if (priceData?.currentPrice) {
+      const currentPrice = Number(priceData.currentPrice)
+      const changePercent = priceData.changePercent ? Number(priceData.changePercent) : 0
+
+      // 根据真实数据生成关键驱动因素和展望
+      const drivers: string[] = []
+      if (Math.abs(changePercent) > 2) drivers.push(changePercent > 0 ? "价格上涨趋势" : "价格下跌趋势")
+      if (invData?.currentInventory) {
+        const inv = Number(invData.currentInventory)
+        if (inv > 500000) drivers.push("港口库存偏高")
+        else if (inv < 200000) drivers.push("港口库存偏低")
+        else drivers.push("库存水平正常")
+      }
+      drivers.push("关注国际市场动态")
+
+      const outlook = changePercent > 2
+        ? `短期价格走强，变动${changePercent.toFixed(1)}%，建议关注下游需求变化。`
+        : changePercent < -2
+        ? `短期价格承压，变动${Math.abs(changePercent).toFixed(1)}%，可关注采购时机。`
+        : "价格相对平稳，按需采购为主。"
+
+      return {
+        price: `¥${currentPrice.toLocaleString()}`,
+        priceLabel: priceData.market ? `${priceData.market}现货价` : "现货均价",
+        change: `${changePercent >= 0 ? "+" : ""}${changePercent.toFixed(1)}%`,
+        trend: (changePercent > 1 ? "up" : changePercent < -1 ? "down" : "flat") as "up" | "down" | "flat",
+        volatility: changePercent > 3 ? "高" : changePercent > 1 ? "中等" : "低",
+        marketHeat: invData?.currentInventory ? (Number(invData.currentInventory) > 500000 ? "旺盛" : Number(invData.currentInventory) > 200000 ? "活跃" : "温和") : "正常",
+        riskLevel: changePercent > 3 ? "高" : changePercent > 1 ? "中等" : "低",
+        keyDrivers: drivers,
+        outlook,
+      }
+    }
+    return null
+  }, [selectedCommodity, priceSummary.data, inventorySummary.data])
+
   const colors = CARD_COLORS[selectedCommodity]
 
   return (
@@ -182,88 +270,69 @@ export default function CommoditiesPage() {
 
         {/* 品种概览卡片 */}
         <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">点击卡片查看品种详细分析</p>
-        <div className="grid grid-cols-4 gap-3 mb-4">
-          {(Object.entries(COMMODITY_METRICS) as [CommodityCode, typeof COMMODITY_METRICS[CommodityCode]][]).map(([code, m]) => {
-            const cardColors = CARD_COLORS[code]
-            const info = COMMODITY_INFO[code]
-            const isSelected = selectedCommodity === code
-            return (
-              <button
-                key={code}
-                onClick={() => setSelectedCommodity(code)}
-                className={`text-left p-4 rounded-xl border backdrop-blur-sm transition-all duration-200 cursor-pointer bg-gradient-to-br ${cardColors.gradient} ${cardColors.border} ${
-                  isSelected ? "ring-2 ring-offset-1 ring-slate-400 dark:ring-slate-500 scale-[1.02] shadow-lg" : "hover:scale-[1.02] hover:shadow-md hover:border-slate-300 dark:hover:border-slate-500"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded ${cardColors.badge} ${cardColors.badgeText}`}>
-                    {info.name}
-                  </span>
-                  <TrendBadge trend={m.trend} change={m.change} />
-                </div>
-                <div className="text-xl font-bold text-slate-900 dark:text-white mb-1">{m.price}</div>
-                <div className="text-xs text-slate-400 dark:text-slate-500">{m.priceLabel}</div>
-                <div className="flex items-center gap-3 mt-3 pt-3 border-t border-slate-200/50 dark:border-white/10">
-                  <div className="flex items-center gap-1">
-                    <Activity className="h-3 w-3 text-slate-400" />
-                    <span className="text-xs text-slate-500 dark:text-slate-400">{m.marketHeat}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Scale className="h-3 w-3 text-slate-400" />
-                    <span className="text-xs text-slate-500 dark:text-slate-400">{m.riskLevel}风险</span>
-                  </div>
-                </div>
-              </button>
-            )
-          })}
-        </div>
+        <CommodityOverviewCards selected={selectedCommodity} onSelect={setSelectedCommodity} />
 
         <div className="grid grid-cols-2 gap-4">
           {/* 左侧：详情 */}
-          <div className={`rounded-xl border backdrop-blur-sm p-5 bg-gradient-to-br ${colors.gradient} ${colors.border}`}>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4">
-              {COMMODITY_INFO[selectedCommodity].name} 详细分析
-            </h2>
+          {metrics ? (
+            <div className={`rounded-xl border backdrop-blur-sm p-5 bg-gradient-to-br ${colors.gradient} ${colors.border}`}>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4">
+                {COMMODITY_INFO[selectedCommodity].name} 详细分析
+              </h2>
 
-            {/* 关键指标 */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="p-3 rounded-lg bg-white/60 dark:bg-white/10 border border-slate-200/50 dark:border-white/5">
-                <div className="text-xs text-slate-500 mb-1">价格</div>
-                <div className="text-lg font-bold text-slate-900 dark:text-white">{metrics.price}</div>
-                <TrendBadge trend={metrics.trend} change={metrics.change} />
-              </div>
-              <div className="p-3 rounded-lg bg-white/60 dark:bg-white/10 border border-slate-200/50 dark:border-white/5">
-                <div className="text-xs text-slate-500 mb-1">波动性</div>
-                <div className="text-lg font-bold text-slate-900 dark:text-white">{metrics.volatility}</div>
-                <div className="text-xs text-slate-400">价格波动率</div>
-              </div>
-              <div className="p-3 rounded-lg bg-white/60 dark:bg-white/10 border border-slate-200/50 dark:border-white/5">
-                <div className="text-xs text-slate-500 mb-1">风险等级</div>
-                <div className={`text-lg font-bold ${metrics.riskLevel === "高" ? "text-rose-600 dark:text-rose-400" : metrics.riskLevel === "中等" ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`}>
-                  {metrics.riskLevel}
+              {/* 关键指标 */}
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="p-3 rounded-lg bg-white/60 dark:bg-white/10 border border-slate-200/50 dark:border-white/5">
+                  <div className="text-xs text-slate-500 mb-1">价格</div>
+                  <div className="text-lg font-bold text-slate-900 dark:text-white">{metrics.price}</div>
+                  <TrendBadge trend={metrics.trend} change={metrics.change} />
                 </div>
-                <div className="text-xs text-slate-400">综合评估</div>
+                <div className="p-3 rounded-lg bg-white/60 dark:bg-white/10 border border-slate-200/50 dark:border-white/5">
+                  <div className="text-xs text-slate-500 mb-1">波动性</div>
+                  <div className="text-lg font-bold text-slate-900 dark:text-white">{metrics.volatility}</div>
+                  <div className="text-xs text-slate-400">价格波动率</div>
+                </div>
+                <div className="p-3 rounded-lg bg-white/60 dark:bg-white/10 border border-slate-200/50 dark:border-white/5">
+                  <div className="text-xs text-slate-500 mb-1">风险等级</div>
+                  <div className={`text-lg font-bold ${metrics.riskLevel === "高" ? "text-rose-600 dark:text-rose-400" : metrics.riskLevel === "中等" ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                    {metrics.riskLevel}
+                  </div>
+                  <div className="text-xs text-slate-400">综合评估</div>
+                </div>
+              </div>
+
+              {/* 关键驱动因素 */}
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2">关键驱动因素</h3>
+                <div className="flex flex-wrap gap-2">
+                  {metrics.keyDrivers.map((d) => (
+                    <span key={d} className="text-xs px-2.5 py-1 rounded-full bg-white/60 dark:bg-white/10 border border-slate-200/50 dark:border-white/10 text-slate-700 dark:text-slate-300">
+                      {d}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* 展望 */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2">市场展望</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{metrics.outlook}</p>
               </div>
             </div>
-
-            {/* 关键驱动因素 */}
-            <div className="mb-4">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2">关键驱动因素</h3>
-              <div className="flex flex-wrap gap-2">
-                {metrics.keyDrivers.map((d) => (
-                  <span key={d} className="text-xs px-2.5 py-1 rounded-full bg-white/60 dark:bg-white/10 border border-slate-200/50 dark:border-white/10 text-slate-700 dark:text-slate-300">
-                    {d}
-                  </span>
-                ))}
+          ) : (
+            <div className={`rounded-xl border backdrop-blur-sm p-5 bg-gradient-to-br ${colors.gradient} ${colors.border} flex items-center justify-center min-h-[300px]`}>
+              <div className="text-center">
+                {isLoading ? (
+                  <Loader2 className="h-8 w-8 animate-spin text-slate-400 mx-auto mb-3" />
+                ) : (
+                  <Activity className="h-8 w-8 text-slate-300 mx-auto mb-3" />
+                )}
+                <p className="text-sm text-slate-500">
+                  {isLoading ? "加载中..." : "暂无数据，请稍后重试"}
+                </p>
               </div>
             </div>
-
-            {/* 展望 */}
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2">市场展望</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{metrics.outlook}</p>
-            </div>
-          </div>
+          )}
 
           {/* 右侧：价格对比条 + 相关性 */}
           <div className="space-y-4">

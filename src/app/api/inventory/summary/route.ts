@@ -1,9 +1,11 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { getInventorySummary } from "@/services/prices"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const data = await getInventorySummary()
+    const { searchParams } = new URL(request.url)
+    const commodity = searchParams.get("commodity") || undefined
+    const data = await getInventorySummary(commodity)
     return NextResponse.json({ success: true, data })
   } catch (error) {
     console.error("获取库存摘要失败:", error)

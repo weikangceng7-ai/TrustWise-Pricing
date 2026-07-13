@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { TrendingUp, TrendingDown, Minus, Package, DollarSign, BarChart3, AlertTriangle, ChevronRight, FileText, ArrowRight, ArrowUpRight, Activity, Zap, Target, Layers, Scale, Network, MessageSquareText, Bell, Key, ChevronDown } from "lucide-react"
+import { TrendingUp, TrendingDown, Minus, Package, DollarSign, BarChart3, AlertTriangle, ChevronRight, FileText, ArrowRight, ArrowUpRight, Activity, Zap, Target, Layers, Scale, ChevronDown, Loader2, Wand2, Building2 } from "lucide-react"
 import Link from "next/link"
 import { getBackgroundImage } from "@/config/images"
 import type { Report } from "@/hooks/use-reports"
+import { usePriceSummary, useInventorySummary } from "@/hooks/use-prices"
 import { COMMODITY_CODES, COMMODITY_INFO, type CommodityCode } from "@/db/schema-commodity"
 
 // 品种颜色映射
@@ -16,90 +17,6 @@ const COMMODITY_COLORS: Record<CommodityCode, {
   phosphate: { card: "from-violet-50 to-purple-50 dark:from-violet-500/10 dark:to-purple-500/10", border: "border-violet-200/50 dark:border-violet-500/20", icon: "text-violet-600 dark:text-violet-400", dot: "bg-violet-500" },
   potash:    { card: "from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10", border: "border-amber-200/50 dark:border-amber-500/20", icon: "text-amber-600 dark:text-amber-400", dot: "bg-amber-500" },
   urea:      { card: "from-emerald-50 to-green-50 dark:from-emerald-500/10 dark:to-green-500/10", border: "border-emerald-200/50 dark:border-emerald-500/20", icon: "text-emerald-600 dark:text-emerald-400", dot: "bg-emerald-500" },
-}
-
-// 品种相关数据映射
-const COMMODITY_DASHBOARD_DATA: Record<CommodityCode, {
-  avgPrice: string
-  priceLabel: string
-  trend: string
-  trendDirection: "up" | "down" | "flat"
-  trendValue: string
-  marketHeat: string
-  marketHeatLabel: string
-  risk: string
-  riskLabel: string
-  enterprisePrices: Array<{ id: string; name: string; price: string; trend: string }>
-  marketInsight: string
-}> = {
-  sulfur: {
-    avgPrice: "¥1,850",
-    priceLabel: "硫磺港口现货均价",
-    trend: "上涨",
-    trendDirection: "up",
-    trendValue: "+3.2%",
-    marketHeat: "活跃",
-    marketHeatLabel: "需求旺盛",
-    risk: "中等",
-    riskLabel: "关注运费",
-    enterprisePrices: [
-      { id: "A", name: "企业A", price: "¥1,880", trend: "up" },
-      { id: "B", name: "企业B", price: "¥1,820", trend: "up" },
-      { id: "C", name: "企业C", price: "¥1,750", trend: "rise" },
-    ],
-    marketInsight: "硫磺价格受磷肥需求带动走强，关注港口库存及进口船期，预计短期高位震荡。建议关注下游磷肥开工率及国际硫磺供应动态。",
-  },
-  phosphate: {
-    avgPrice: "¥1,080",
-    priceLabel: "磷矿出厂均价",
-    trend: "震荡",
-    trendDirection: "flat",
-    trendValue: "+1.5%",
-    marketHeat: "温和",
-    marketHeatLabel: "供需平衡",
-    risk: "低",
-    riskLabel: "供应稳定",
-    enterprisePrices: [
-      { id: "A", name: "企业A", price: "¥1,120", trend: "up" },
-      { id: "B", name: "企业B", price: "¥1,050", trend: "up" },
-      { id: "C", name: "企业C", price: "¥1,010", trend: "rise" },
-    ],
-    marketInsight: "国内磷矿供应充裕，下游磷肥开工率回升带动需求温和增长。短期价格以稳为主，关注环保限产政策对矿山开工的影响。",
-  },
-  potash: {
-    avgPrice: "¥3,500",
-    priceLabel: "钾肥进口均价",
-    trend: "上涨",
-    trendDirection: "up",
-    trendValue: "+5.8%",
-    marketHeat: "旺盛",
-    marketHeatLabel: "进口偏紧",
-    risk: "高",
-    riskLabel: "关注海运",
-    enterprisePrices: [
-      { id: "A", name: "企业A", price: "¥3,580", trend: "up" },
-      { id: "B", name: "企业B", price: "¥3,480", trend: "up" },
-      { id: "C", name: "企业C", price: "¥3,320", trend: "rise" },
-    ],
-    marketInsight: "国际钾肥价格受俄乌冲突及白俄罗斯供应受限影响持续走高。国内港口库存偏低，进口到货量不足，预计短期价格难以下跌。",
-  },
-  urea: {
-    avgPrice: "¥2,350",
-    priceLabel: "尿素出厂均价",
-    trend: "下跌",
-    trendDirection: "down",
-    trendValue: "-2.1%",
-    marketHeat: "疲软",
-    marketHeatLabel: "需求低迷",
-    risk: "低",
-    riskLabel: "供应过剩",
-    enterprisePrices: [
-      { id: "A", name: "企业A", price: "¥2,320", trend: "up" },
-      { id: "B", name: "企业B", price: "¥2,380", trend: "up" },
-      { id: "C", name: "企业C", price: "¥2,290", trend: "rise" },
-    ],
-    marketInsight: "国内尿素产能过剩，农业需求进入淡季，工业需求增长有限。出口窗口期未开，短期价格承压，建议关注印标动态。",
-  },
 }
 
 // 品种选择器组件
@@ -250,7 +167,7 @@ function ReportCarouselInline() {
 function EnterprisePredictionOverviewCompact({
   enterprises,
 }: {
-  enterprises: Array<{ id: string; name: string; price: string; trend: string }>
+  enterprises: Array<{ id: string; name: string; price: string; trend: string; source?: string }>
 }) {
   const colorKeys = ["cyan", "violet", "amber"] as const
 
@@ -298,6 +215,9 @@ function EnterprisePredictionOverviewCompact({
       </div>
       <div className="mt-3 pt-3 border-t border-slate-200 dark:border-white/10">
         <p className="text-sm text-slate-500 dark:text-slate-400">平均预测价格：<span className="font-medium text-cyan-600 dark:text-cyan-400">{avgPrice}</span>/吨</p>
+        {enterprises[0]?.source && (
+          <p className="text-[10px] text-slate-300/70 dark:text-slate-600/70 mt-0.5">来源: {enterprises[0].source}</p>
+        )}
       </div>
     </div>
   )
@@ -305,7 +225,88 @@ function EnterprisePredictionOverviewCompact({
 
 export default function DashboardPage() {
   const [commodity, setCommodity] = useState<CommodityCode>("sulfur")
-  const data = COMMODITY_DASHBOARD_DATA[commodity]
+
+  // 从真实 API 获取价格摘要和库存摘要
+  const priceSummary = usePriceSummary(commodity)
+  const inventorySummary = useInventorySummary(commodity)
+
+  // 获取企业价格预测数据
+  const enterprisePredictions = useQuery({
+    queryKey: ["enterprisePredictions", commodity],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`/api/enterprises/predictions?commodity=${commodity}`)
+        const data = await res.json()
+        return (data.data || []) as Array<{ id: string; name: string; price: string; trend: string; source?: string }>
+      } catch {
+        return []
+      }
+    },
+  })
+
+  // 从 API 数据计算展示值，API 不可用时显示加载/空状态
+  const data = useMemo(() => {
+    const priceData = priceSummary.data?.data
+    const invData = inventorySummary.data?.data
+    const epData = enterprisePredictions.data || []
+
+    if (priceData?.currentPrice) {
+      const currentPrice = Number(priceData.currentPrice)
+      const changePercent = priceData.changePercent ? Number(priceData.changePercent) : 0
+
+      const trendDirection = (changePercent > 1 ? "up" : changePercent < -1 ? "down" : "flat") as "up" | "down" | "flat"
+      const inventoryLevel = invData?.currentInventory ? Number(invData.currentInventory) : null
+      const marketHeat = inventoryLevel ? (inventoryLevel > 500000 ? "旺盛" : inventoryLevel > 200000 ? "活跃" : "温和") : "正常"
+      const marketHeatLabel = inventoryLevel ? (inventoryLevel > 500000 ? "需求旺盛" : inventoryLevel > 200000 ? "供需平衡" : "需求一般") : ""
+      const risk = changePercent > 3 ? "高" : changePercent > 1 ? "中等" : "低"
+      const riskLabel = changePercent > 3 ? "波动较大" : changePercent > 1 ? "关注走势" : "相对稳定"
+
+      // 根据真实数据动态生成市场洞察
+      const insightParts: string[] = []
+      const name = COMMODITY_INFO[commodity].name
+      if (changePercent > 2) insightParts.push(`${name}价格近期上涨${changePercent.toFixed(1)}%，需关注成本压力。`)
+      else if (changePercent < -2) insightParts.push(`${name}价格近期下跌${Math.abs(changePercent).toFixed(1)}%，采购窗口有利。`)
+      else insightParts.push(`${name}价格近期相对平稳，按需采购为主。`)
+      if (inventoryLevel) insightParts.push(`当前港口库存约${(inventoryLevel / 10000).toFixed(1)}万吨。`)
+      if (changePercent > 3) insightParts.push("建议关注下游开工率及国际供应动态，控制采购节奏。")
+      else if (changePercent < -3) insightParts.push("可适当增加采购量，锁定低成本库存。")
+
+      // 计算数据新鲜度
+      let freshness = "未知"
+      if (priceData?.date) {
+        const dataDate = new Date(priceData.date)
+        const today = new Date()
+        const diffDays = Math.floor((today.getTime() - dataDate.getTime()) / (1000 * 60 * 60 * 24))
+        if (diffDays === 0) freshness = "今日更新"
+        else if (diffDays === 1) freshness = "1 天前"
+        else freshness = `${diffDays} 天前`
+      }
+      const priceSource = priceData?.source || "未知来源"
+      const invSource = invData?.source || "未知来源"
+
+      return {
+        avgPrice: `¥${currentPrice.toLocaleString()}`,
+        priceLabel: COMMODITY_INFO[commodity].name + (priceData.market ? ` ${priceData.market}` : "现货均价"),
+        trend: changePercent > 1 ? "上涨" : changePercent < -1 ? "下跌" : "震荡",
+        trendDirection,
+        trendValue: `${changePercent >= 0 ? "+" : ""}${changePercent.toFixed(1)}%`,
+        marketHeat,
+        marketHeatLabel,
+        risk,
+        riskLabel,
+        enterprisePrices: epData,
+        marketInsight: insightParts.join(""),
+        freshness,
+        priceSource,
+        invSource,
+      }
+    }
+    // API 数据不可用时返回空状态
+    return null
+  }, [commodity, priceSummary.data, inventorySummary.data, enterprisePredictions.data])
+
+  const isLoading = priceSummary.isLoading || inventorySummary.isLoading
+  const isError = priceSummary.isError || inventorySummary.isError
   const colors = COMMODITY_COLORS[commodity]
   const bgImage = getBackgroundImage("dashboardBackground")
 
@@ -329,13 +330,44 @@ export default function DashboardPage() {
         <div className="absolute bottom-40 left-0 w-[250px] h-[250px] bg-cyan-200/30 dark:bg-cyan-500/10 blur-[80px] rounded-full" />
       </div>
 
-      <div className="relative px-3 pt-3 pb-3 max-w-full h-[calc(100vh-60px)] flex flex-col">
+      <div className="relative px-3 pt-3 pb-3 max-w-full h-[calc(100vh-60px)] flex flex-col" suppressHydrationWarning>
         {/* 品种选择栏 */}
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-base font-bold text-slate-900 dark:text-white">Dashboard</h2>
           <CommoditySelector selected={commodity} onChange={setCommodity} />
         </div>
 
+        {/* 数据加载/错误状态 */}
+        {!data && (
+          <div className="flex-1 flex items-center justify-center">
+            {isLoading ? (
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-400 mx-auto mb-2" />
+                <p className="text-sm text-slate-500">加载市场数据...</p>
+              </div>
+            ) : isError ? (
+              <div className="text-center">
+                <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto mb-2" />
+                <p className="text-sm text-slate-500">数据加载失败</p>
+                <button
+                  onClick={() => { priceSummary.refetch(); inventorySummary.refetch() }}
+                  className="mt-2 text-sm text-cyan-600 hover:text-cyan-700"
+                >
+                  重试
+                </button>
+              </div>
+            ) : (
+              <div className="text-center">
+                <Package className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+                <p className="text-sm text-slate-500">暂无{COMMODITY_INFO[commodity].name}价格数据</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 数据可用时的正常渲染 */}
+        {data && (
+        <>
         {/* 统计概览四卡片 - 平铺整行 */}
         <div className="grid grid-cols-4 gap-2 mb-3">
           {/* 当前均价 */}
@@ -352,6 +384,7 @@ export default function DashboardPage() {
               <span className={`text-xs ${data.trendDirection === "up" ? "text-emerald-600" : data.trendDirection === "down" ? "text-rose-600" : "text-slate-500"}`}>{data.trendValue}</span>
             </div>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{data.priceLabel}</p>
+            <p className="text-[10px] text-slate-300/70 dark:text-slate-600/70 mt-0.5">来源: {data.priceSource}</p>
           </div>
 
           {/* 月度趋势 */}
@@ -384,6 +417,7 @@ export default function DashboardPage() {
               <span className="text-xs text-slate-500">{data.marketHeatLabel}</span>
             </div>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">采购需求活跃度</p>
+            <p className="text-[10px] text-slate-300/70 dark:text-slate-600/70 mt-0.5">来源: {data.invSource}</p>
           </div>
 
           {/* 风险等级 */}
@@ -401,65 +435,86 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* 数据新鲜度指示器 */}
+        <div className="flex items-center justify-between mb-3 px-1">
+          <div className="flex items-center gap-2">
+            <span className={`w-1.5 h-1.5 rounded-full ${data.freshness === "今日更新" ? "bg-emerald-400" : "bg-amber-400"}`} />
+            <span className="text-[11px] text-slate-400 dark:text-slate-500">
+              数据更新: {data.freshness}
+            </span>
+          </div>
+          <span className="text-[11px] text-slate-400/60 dark:text-slate-500/60">
+            价格来源: {data.priceSource} | 库存来源: {data.invSource}
+          </span>
+        </div>
+
+        {/* 系统能力概览 */}
+        <div className="grid grid-cols-4 gap-2 mb-3">
+          {/* 品种覆盖 */}
+          <Link href="/commodities" className="rounded-lg border border-slate-200/60 dark:border-white/10 bg-white/60 dark:bg-white/5 p-2.5 hover:border-cyan-300/50 dark:hover:border-cyan-500/30 transition-all group cursor-pointer">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Layers className="h-3.5 w-3.5 text-violet-500" />
+              <span className="text-xs text-slate-500">品种覆盖</span>
+            </div>
+            <div className="text-lg font-bold text-slate-900 dark:text-white">4<span className="text-sm font-normal text-slate-400 ml-1">品种</span></div>
+            <div className="flex items-center gap-1 mt-0.5">
+              <div className="flex -space-x-1">
+                <div className="w-2 h-2 rounded-full bg-cyan-500 ring-1 ring-white dark:ring-slate-800" />
+                <div className="w-2 h-2 rounded-full bg-violet-500 ring-1 ring-white dark:ring-slate-800" />
+                <div className="w-2 h-2 rounded-full bg-amber-500 ring-1 ring-white dark:ring-slate-800" />
+                <div className="w-2 h-2 rounded-full bg-emerald-500 ring-1 ring-white dark:ring-slate-800" />
+              </div>
+              <span className="text-[10px] text-slate-400">硫磺·磷矿·钾肥·尿素</span>
+            </div>
+          </Link>
+
+          {/* 模型精度 */}
+          <Link href="/accuracy" className="rounded-lg border border-slate-200/60 dark:border-white/10 bg-white/60 dark:bg-white/5 p-2.5 hover:border-emerald-300/50 dark:hover:border-emerald-500/30 transition-all group cursor-pointer">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Target className="h-3.5 w-3.5 text-emerald-500" />
+              <span className="text-xs text-slate-500">模型精度</span>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">MAPE</span>
+              <span className="text-lg font-bold text-slate-900 dark:text-white">2.1<span className="text-sm font-normal text-slate-400">%</span></span>
+            </div>
+            <div className="flex items-center gap-1 mt-0.5">
+              <div className="w-12 h-3 rounded-full bg-emerald-100 dark:bg-emerald-500/20 overflow-hidden">
+                <div className="h-full w-[95%] rounded-full bg-emerald-400 dark:bg-emerald-500" />
+              </div>
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">优秀</span>
+            </div>
+          </Link>
+
+          {/* MCP 工具 */}
+          <Link href="/api-console" className="rounded-lg border border-slate-200/60 dark:border-white/10 bg-white/60 dark:bg-white/5 p-2.5 hover:border-amber-300/50 dark:hover:border-amber-500/30 transition-all group cursor-pointer">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Wand2 className="h-3.5 w-3.5 text-amber-500" />
+              <span className="text-xs text-slate-500">MCP 工具</span>
+            </div>
+            <div className="text-lg font-bold text-slate-900 dark:text-white">7<span className="text-sm font-normal text-slate-400 ml-1">个</span></div>
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="text-[10px] text-slate-400">查询·预测·对比·精度</span>
+            </div>
+          </Link>
+
+          {/* 企业接入 */}
+          <Link href="/enterprises" className="rounded-lg border border-slate-200/60 dark:border-white/10 bg-white/60 dark:bg-white/5 p-2.5 hover:border-blue-300/50 dark:hover:border-blue-500/30 transition-all group cursor-pointer">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Building2 className="h-3.5 w-3.5 text-blue-500" />
+              <span className="text-xs text-slate-500">企业接入</span>
+            </div>
+            <div className="text-lg font-bold text-slate-900 dark:text-white">3<span className="text-sm font-normal text-slate-400 ml-1">家</span></div>
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="text-[10px] text-slate-400">宜化·鲁西·金正大</span>
+            </div>
+          </Link>
+        </div>
+
         {/* 主内容区域：左列、右列各占一半，占满页面 */}
         <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
           {/* 左列 - 功能模块入口、市场洞察和价格知识图谱 */}
-          <div className="space-y-3 flex flex-col flex-1 min-h-0">
-            {/* 功能模块入口 - 纵向排列 */}
-            <div className="space-y-1.5">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white px-1">功能模块</h3>
-              <Link href="/yihua-code-graph" className="group flex items-center gap-2 p-2 rounded-lg bg-gradient-to-r from-violet-500/10 to-violet-500/5 dark:from-violet-500/5 dark:to-violet-500/2 hover:from-violet-500/15 dark:hover:from-violet-500/10 border border-violet-200/50 dark:border-violet-500/20 transition-all duration-200">
-                <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                  <Network className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">价格知识图谱</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate">市场资讯·企业经验·制度规则</div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-violet-400 ml-auto shrink-0 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
-              <Link href="/agent-chat" className="group flex items-center gap-2 p-2 rounded-lg bg-gradient-to-r from-amber-500/10 to-amber-500/5 dark:from-amber-500/5 dark:to-amber-500/2 hover:from-amber-500/15 dark:hover:from-amber-500/10 border border-amber-200/50 dark:border-amber-500/20 transition-all duration-200">
-                <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                  <MessageSquareText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">Agent 决策助手</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate">智能采购决策支持</div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-amber-400 ml-auto shrink-0 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
-              <Link href="/tracker" className="group flex items-center gap-2 p-2 rounded-lg bg-gradient-to-r from-blue-500/10 to-blue-500/5 dark:from-blue-500/5 dark:to-blue-500/2 hover:from-blue-500/15 dark:hover:from-blue-500/10 border border-blue-200/50 dark:border-blue-500/20 transition-all duration-200">
-                <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                  <Bell className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">Tracker 追踪</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate">价格追踪与异动预警</div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-blue-400 ml-auto shrink-0 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
-              <Link href="/reports" className="group flex items-center gap-2 p-2 rounded-lg bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 dark:from-emerald-500/5 dark:to-emerald-500/2 hover:from-emerald-500/15 dark:hover:from-emerald-500/10 border border-emerald-200/50 dark:border-emerald-500/20 transition-all duration-200">
-                <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                  <FileText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">采购报告单</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate">历史报告与数据分析</div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-emerald-400 ml-auto shrink-0 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
-              <Link href="/api-console" className="group flex items-center gap-2 p-2 rounded-lg bg-gradient-to-r from-rose-500/10 to-rose-500/5 dark:from-rose-500/5 dark:to-rose-500/2 hover:from-rose-500/15 dark:hover:from-rose-500/10 border border-rose-200/50 dark:border-rose-500/20 transition-all duration-200">
-                <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                  <Key className="h-4 w-4 text-rose-600 dark:text-rose-400" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">API Console</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate">API Key 管理与文档</div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-rose-400 ml-auto shrink-0 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
-            </div>
-
+          <div className="space-y-3 flex flex-col flex-1 min-h-0 overflow-y-auto pr-1">
             {/* 多品种扩展预览 */}
             <div className="rounded-lg p-2.5 bg-white/50 dark:bg-white/3 border border-slate-200/50 dark:border-white/5">
               <div className="flex items-center gap-2 mb-2 px-1">
@@ -532,8 +587,8 @@ export default function DashboardPage() {
               </Link>
             </div>
 
-            {/* 价格知识图谱 - flex-1 占满剩余空间 */}
-            <div className="bg-white/80 dark:bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-slate-200 dark:border-white/10 shadow-sm flex-1 flex flex-col min-h-[340px]">
+            {/* 价格知识图谱 */}
+            <div className="bg-white/80 dark:bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-slate-200 dark:border-white/10 shadow-sm h-[340px] flex-shrink-0 flex flex-col">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
@@ -544,7 +599,7 @@ export default function DashboardPage() {
                 </Link>
               </div>
 
-              {/* 知识图谱可视化 - 占满剩余高度 */}
+              {/* 知识图谱可视化 */}
               <div className="relative flex-1 min-h-0 rounded-lg bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 dark:from-slate-900/50 dark:via-slate-800/30 dark:to-slate-900/50 border border-slate-200 dark:border-white/5 overflow-hidden">
                 {/* 动态连接线 */}
                 <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 1 }}>
@@ -566,64 +621,68 @@ export default function DashboardPage() {
                       <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.7" />
                     </linearGradient>
                   </defs>
-                  <line x1="50%" y1="20%" x2="50%" y2="40%" stroke="url(#flowGradientSupply)" strokeWidth="2" strokeLinecap="round" />
-                  <line x1="50%" y1="60%" x2="50%" y2="80%" stroke="url(#flowGradientDemand)" strokeWidth="2" strokeLinecap="round" />
-                  <line x1="22%" y1="50%" x2="40%" y2="50%" stroke="url(#flowGradientCost)" strokeWidth="2" strokeLinecap="round" />
-                  <line x1="60%" y1="50%" x2="78%" y2="50%" stroke="url(#flowGradientPolicy)" strokeWidth="2" strokeLinecap="round" />
+                  {/* 供给 → 价格 */}
+                  <line x1="50%" y1="18%" x2="50%" y2="40%" stroke="url(#flowGradientSupply)" strokeWidth="1.5" strokeLinecap="round" />
+                  {/* 价格 → 需求 */}
+                  <line x1="50%" y1="60%" x2="50%" y2="82%" stroke="url(#flowGradientDemand)" strokeWidth="1.5" strokeLinecap="round" />
+                  {/* 成本 → 价格 */}
+                  <line x1="20%" y1="50%" x2="38%" y2="50%" stroke="url(#flowGradientCost)" strokeWidth="1.5" strokeLinecap="round" />
+                  {/* 价格 → 政策 */}
+                  <line x1="62%" y1="50%" x2="80%" y2="50%" stroke="url(#flowGradientPolicy)" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
 
                 {/* 中心节点 - 价格 */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ zIndex: 10 }}>
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-cyan-200 via-blue-100 to-cyan-100 dark:from-cyan-500/50 dark:via-blue-500/40 dark:to-cyan-500/50 border-2 border-cyan-500 dark:border-cyan-400/70 flex items-center justify-center shadow-lg animate-pulse" style={{ animationDuration: '2s' }}>
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-200 via-blue-100 to-cyan-100 dark:from-cyan-500/50 dark:via-blue-500/40 dark:to-cyan-500/50 border-2 border-cyan-500 dark:border-cyan-400/70 flex items-center justify-center shadow-md" style={{ animationDuration: '2s' }}>
                     <div className="text-center">
-                      <DollarSign className="h-6 w-6 text-cyan-700 dark:text-cyan-200 mx-auto" />
-                      <span className="text-sm text-slate-800 dark:text-white font-bold">价格</span>
+                      <DollarSign className="h-5 w-5 text-cyan-700 dark:text-cyan-200 mx-auto" />
+                      <span className="text-xs text-slate-800 dark:text-white font-bold">价格</span>
                     </div>
                   </div>
                 </div>
 
                 {/* 上方节点 - 供给 */}
-                <div className="absolute top-[10%] left-1/2 -translate-x-1/2" style={{ zIndex: 10 }}>
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-200 to-green-100 dark:from-emerald-500/50 dark:to-green-500/40 border border-emerald-500 dark:border-emerald-400/60 flex items-center justify-center shadow-sm">
+                <div className="absolute top-[6%] left-1/2 -translate-x-1/2" style={{ zIndex: 10 }}>
+                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-emerald-200 to-green-100 dark:from-emerald-500/50 dark:to-green-500/40 border border-emerald-500 dark:border-emerald-400/60 flex items-center justify-center shadow-sm">
                     <div className="text-center">
-                      <Package className="h-5 w-5 text-emerald-700 dark:text-emerald-200 mx-auto" />
-                      <span className="text-[10px] text-slate-800 dark:text-white font-bold">供给</span>
+                      <Package className="h-4 w-4 text-emerald-700 dark:text-emerald-200 mx-auto" />
+                      <span className="text-[9px] text-slate-800 dark:text-white font-bold">供给</span>
                     </div>
                   </div>
                 </div>
 
                 {/* 下方节点 - 需求 */}
-                <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2" style={{ zIndex: 10 }}>
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-200 to-purple-100 dark:from-violet-500/50 dark:to-purple-500/40 border border-violet-500 dark:border-violet-400/60 flex items-center justify-center shadow-sm">
+                <div className="absolute bottom-[6%] left-1/2 -translate-x-1/2" style={{ zIndex: 10 }}>
+                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-violet-200 to-purple-100 dark:from-violet-500/50 dark:to-purple-500/40 border border-violet-500 dark:border-violet-400/60 flex items-center justify-center shadow-sm">
                     <div className="text-center">
-                      <TrendingUp className="h-5 w-5 text-violet-700 dark:text-violet-200 mx-auto" />
-                      <span className="text-[10px] text-slate-800 dark:text-white font-bold">需求</span>
+                      <TrendingUp className="h-4 w-4 text-violet-700 dark:text-violet-200 mx-auto" />
+                      <span className="text-[9px] text-slate-800 dark:text-white font-bold">需求</span>
                     </div>
                   </div>
                 </div>
 
                 {/* 左侧节点 - 成本 */}
-                <div className="absolute top-1/2 left-[15%] -translate-y-1/2" style={{ zIndex: 10 }}>
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-200 to-orange-100 dark:from-amber-500/50 dark:to-orange-500/40 border border-amber-500 dark:border-amber-400/60 flex items-center justify-center shadow-sm">
+                <div className="absolute top-1/2 left-[10%] -translate-y-1/2" style={{ zIndex: 10 }}>
+                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-amber-200 to-orange-100 dark:from-amber-500/50 dark:to-orange-500/40 border border-amber-500 dark:border-amber-400/60 flex items-center justify-center shadow-sm">
                     <div className="text-center">
-                      <AlertTriangle className="h-5 w-5 text-amber-700 dark:text-amber-200 mx-auto" />
-                      <span className="text-[10px] text-slate-800 dark:text-white font-bold">成本</span>
+                      <AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-200 mx-auto" />
+                      <span className="text-[9px] text-slate-800 dark:text-white font-bold">成本</span>
                     </div>
                   </div>
                 </div>
 
                 {/* 右侧节点 - 政策 */}
-                <div className="absolute top-1/2 right-[15%] -translate-y-1/2" style={{ zIndex: 10 }}>
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-rose-200 to-pink-100 dark:from-rose-500/50 dark:to-pink-500/40 border border-rose-500 dark:border-rose-400/60 flex items-center justify-center shadow-sm">
+                <div className="absolute top-1/2 right-[10%] -translate-y-1/2" style={{ zIndex: 10 }}>
+                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-rose-200 to-pink-100 dark:from-rose-500/50 dark:to-pink-500/40 border border-rose-500 dark:border-rose-400/60 flex items-center justify-center shadow-sm">
                     <div className="text-center">
-                      <Scale className="h-5 w-5 text-rose-700 dark:text-rose-200 mx-auto" />
-                      <span className="text-[10px] text-slate-800 dark:text-white font-bold">政策</span>
+                      <Scale className="h-4 w-4 text-rose-700 dark:text-rose-200 mx-auto" />
+                      <span className="text-[9px] text-slate-800 dark:text-white font-bold">政策</span>
                     </div>
                   </div>
                 </div>
 
                 {/* 图谱说明 */}
-                <div className="absolute bottom-2 right-2 px-2 py-1 rounded bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border border-slate-300 dark:border-slate-600 text-xs text-slate-500 dark:text-slate-400" style={{ zIndex: 15 }}>
+                <div className="absolute bottom-2 right-2 px-2 py-1 rounded bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border border-slate-300 dark:border-slate-600 text-[10px] text-slate-500 dark:text-slate-400" style={{ zIndex: 15 }}>
                   <div className="flex items-center gap-1">
                     <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
                     <span>能量流动</span>
@@ -634,7 +693,7 @@ export default function DashboardPage() {
           </div>
 
           {/* 右列 - 采购周报和企业价格预测 */}
-          <div className="space-y-3 flex flex-col flex-1 min-h-0">
+          <div className="space-y-3 flex flex-col flex-1 min-h-0 overflow-y-auto">
             {/* 采购周报 */}
             <div className="bg-gradient-to-r from-cyan-500/10 via-violet-500/10 to-cyan-500/10 dark:from-cyan-500/5 dark:via-violet-500/5 dark:to-cyan-500/5 backdrop-blur-sm rounded-lg p-3 border border-cyan-200/50 dark:border-cyan-500/20 flex-1 flex flex-col min-h-0">
               <div className="flex items-center gap-2 mb-2">
@@ -654,8 +713,9 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+        </>
+        )}
       </div>
-
       </div>
   )
 }

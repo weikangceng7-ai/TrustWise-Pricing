@@ -4,6 +4,7 @@ import { withApiAuth, apiSuccessResponse, apiErrorResponse } from "@/lib/api-mid
 import OpenAI from "openai"
 import { generateSystemPromptWithContext } from "@/lib/system-prompt"
 import { getPrices, getInventory } from "@/services/prices"
+import { searchKnowledge, formatKnowledgeContext } from "@/services/rag-search"
 import type { ApiKey, ApiQuota } from "@/db/schema"
 
 export const maxDuration = 60
@@ -37,15 +38,21 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // 获取上下文数据
-      const [prices, inventory] = await Promise.all([
+      // 获取上下文数据（价格、库存、知识库）
+      const [prices, inventory, ragResults] = await Promise.all([
         getPrices(10),
         getInventory(5),
+        searchKnowledge(message, 3).catch(() => []),
       ])
+
+      const knowledgeContext = ragResults.length > 0
+        ? formatKnowledgeContext(ragResults)
+        : undefined
 
       const systemPrompt = generateSystemPromptWithContext({
         prices: prices && prices.length > 0 ? formatPrices(prices) : undefined,
         inventory: inventory && inventory.length > 0 ? formatInventory(inventory) : undefined,
+        knowledgeContext,
         date: new Date().toLocaleDateString("zh-CN"),
       })
 

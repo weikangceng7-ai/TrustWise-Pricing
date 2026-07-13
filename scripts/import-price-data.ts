@@ -6,7 +6,11 @@
 import * as XLSX from "xlsx";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { sulfurPrices, portInventory } from "../src/db/schema";
+import { config } from "dotenv";
+import { resolve } from "path";
+
+// 加载 .env.local 以读取 DATABASE_URL
+config({ path: resolve(process.cwd(), ".env.local"), quiet: true });
 
 const DATA_DIR = "d:/市场方案agent/宜化价格预测/宜化价格预测/资料/数据";
 
@@ -15,19 +19,23 @@ async function main() {
   const client = postgres(connectionString);
   const db = drizzle(client);
 
+  // 动态导入 schema（避免 tsx 路径别名问题）
+  const schema = await import("../src/db/schema");
+  const { sulfurPrices, portInventory } = schema;
+
   console.log("开始导入数据...\n");
 
   // 1. 导入隆众市场价格数据
-  await importMarketPrices(db);
+  await importMarketPrices(db, sulfurPrices);
 
   // 2. 导入港口库存数据
-  await importPortInventory(db);
+  await importPortInventory(db, portInventory);
 
   await client.end();
   console.log("\n数据导入完成!");
 }
 
-async function importMarketPrices(db: ReturnType<typeof drizzle>) {
+async function importMarketPrices(db: ReturnType<typeof drizzle>, sulfurPrices: any) {
   const filePath = `${DATA_DIR}/隆众市场价格-硫磺-20250909103019.xlsx`;
   console.log(`读取文件: ${filePath}`);
 
@@ -56,6 +64,7 @@ async function importMarketPrices(db: ReturnType<typeof drizzle>) {
 
     return {
       date,
+      commodityCode: "sulfur",
       productName: String(row[1] || "硫磺"),
       region: String(row[2] || ""),
       market: String(row[3] || ""),
@@ -64,7 +73,7 @@ async function importMarketPrices(db: ReturnType<typeof drizzle>) {
       maxPrice: row[6] ? String(row[6]) : null,
       mainPrice: row[7] ? String(row[7]) : null,
       changeValue: row[8] ? String(row[8]) : null,
-      changePercent: String(row[9] || ""),
+      changePercent: row[9] ? String(row[9]) : null,
       unit: String(row[10] || "元/吨"),
       source: "隆众资讯",
     };
@@ -79,7 +88,7 @@ async function importMarketPrices(db: ReturnType<typeof drizzle>) {
   }
 }
 
-async function importPortInventory(db: ReturnType<typeof drizzle>) {
+async function importPortInventory(db: ReturnType<typeof drizzle>, portInventory: any) {
   const filePath = `${DATA_DIR}/港口库存.xlsx`;
   console.log(`\n读取文件: ${filePath}`);
 
@@ -105,6 +114,7 @@ async function importPortInventory(db: ReturnType<typeof drizzle>) {
 
     return {
       date,
+      commodityCode: "sulfur",
       inventory: row[1] ? String(row[1]) : "0",
       price: row[2] ? String(row[2]) : null,
     };
