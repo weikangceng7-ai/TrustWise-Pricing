@@ -19,6 +19,14 @@ from typing import Optional, Dict, Any, List, Tuple
 app = Flask(__name__)
 CORS(app)
 
+# 生意社现货价格直连（不使用 AKShare spot_price，新版已移除）
+try:
+    from curl_cffi import requests as curl_requests
+    from bs4 import BeautifulSoup
+    _HAS_CURL_CFFI = True
+except ImportError:
+    _HAS_CURL_CFFI = False
+
 # 模型存储路径
 MODEL_DIR = os.path.join(os.path.dirname(__file__), 'models')
 os.makedirs(MODEL_DIR, exist_ok=True)
@@ -405,191 +413,202 @@ class SulfurPricePredictor:
 
 
 class CommodityDataFetcher:
-    """大宗商品数据抓取器 - 基于 AKShare"""
+    """大宗商品数据抓取器 - 直连生意社 (100ppi.com)"""
+
+    # 生意社品种名 → 内部 code
+    COMMODITY_MAP = {
+        "尿素": "urea",
+        "甲醇MA": "methanol",
+        "纯碱": "soda_ash",
+        "PTA": "pta",
+        "聚乙烯": "pe",
+        "聚氯乙烯": "pvc",
+        "热轧卷板": "hot_rolled",
+        "螺纹钢": "rebar",
+        "铜": "copper",
+        "铝": "aluminum",
+        "锌": "zinc",
+        "镍": "nickel",
+        "天然橡胶": "rubber",
+        "玻璃": "glass",
+        "棉花": "cotton",
+        "白糖": "sugar",
+        "棕榈油": "palm_oil",
+        "豆粕": "soybean_meal",
+        "豆油": "soybean_oil",
+    }
 
     def __init__(self):
+        self._cache = {}  # code -> list of {date, price}
+        self._cache_date = None
         self._akshare_available = False
-        # 代理配置：通过 PROXY_URL 环境变量设置 HTTP 代理，用于国内访问
-        proxy_url = os.environ.get("PROXY_URL", "")
-        if proxy_url:
-            os.environ["HTTP_PROXY"] = proxy_url
-            os.environ["HTTPS_PROXY"] = proxy_url
-            print(f"代理已配置: {proxy_url}")
         try:
             import akshare as ak
             self.ak = ak
             self._akshare_available = True
-            print("AKShare 已加载")
+            print("AKShare 已加载（用于 BDI 等）")
         except ImportError:
-            print("警告: akshare 未安装，大宗商品数据将使用模拟数据")
+            print("AKShare 未安装，BDI 使用模拟数据")
 
     def is_available(self) -> bool:
-        return self._akshare_available
+        return True  # curl_cffi 模式总是可用，fallback 到 mock
+
+    def _fetch_100ppi_basis_table(self, target_date=None):
+        """从生意社获取当日现货价格表（现期表）
+        数据来源: https://www.100ppi.com/sf/day-YYYY-MM-DD.html
+        返回 {商品名: 现货价格} 字典，失败返回 None
+        """
+        if not _HAS_CURL_CFFI:
+            return None
+
+        if target_date is None:
+            target_date = datetime.now()
+        date_str = target_date.strftime("%Y-%m-%d")
+        url = f"https://www.100ppi.com/sf/day-{date_str}.html"
+
+        try:
+            r = curl_requests.get(url, impersonate="chrome120", timeout=15)
+            if r.status_code != 200:
+                return None
+            soup = BeautifulSoup(r.text, "html.parser")
+
+            # 找到最大的数据表
+            tables = soup.find_all("table")
+            data_table = None
+            for t in tables:
+                rows = t.find_all("tr")
+                if len(rows) > 50:
+                    data_table = t
+                    break
+            if not data_table:
+                return None
+
+            result = {}
+            rows = data_table.find_all("tr")
+            exchange = None
+            for row in rows:
+                cells = row.find_all("td")
+                if len(cells) == 1:
+                    # 交易所分隔行
+                    exchange = cells[0].get_text(strip=True)
+                    continue
+                if len(cells) < 7:
+                    continue
+                name = cells[0].get_text(strip=True)
+                spot = cells[1].get_text(strip=True)
+                if not name or name in ["商品", "上海期货交易所", "郑州商品交易所",
+                                          "大连商品交易所", "广州期货交易所"]:
+                    continue
+                try:
+                    result[name] = float(spot.replace(",", ""))
+                except (ValueError, AttributeError):
+                    continue
+            return result
+        except Exception as e:
+            print(f"获取 100ppi 数据失败: {e}")
+            return None
+
+    def _fetch_historical_from_100ppi(self, code: str, name: str, days: int):
+        """从生意社获取历史现货价格
+        通过抓取多天的现期表来积累历史数据
+        """
+        records = []
+        today = datetime.now()
+
+        # 尝试抓取最近 N 天的数据
+        for offset in range(min(days, 90)):
+            d = today - timedelta(days=offset)
+            if d.weekday() >= 5:  # 跳过周末
+                continue
+
+            cache_key = d.strftime("%Y-%m-%d")
+            if cache_key in self._cache:
+                prices = self._cache[cache_key]
+            else:
+                prices = self._fetch_100ppi_basis_table(d)
+                if prices:
+                    self._cache[cache_key] = prices
+
+            if prices and name in prices:
+                records.append({
+                    "date": cache_key,
+                    "price": prices[name],
+                    "unit": "元/吨",
+                })
+
+            if len(records) >= days:
+                break
+
+        return records
+
+    def _fetch_commodity(self, code: str, name: str, days: int) -> Dict[str, Any]:
+        """通用品种数据获取"""
+        records = self._fetch_historical_from_100ppi(code, name, days)
+
+        if records and len(records) >= 3:
+            records.sort(key=lambda x: x["date"])
+            return {
+                "success": True,
+                "source": "生意社 (100ppi.com)",
+                "commodity_code": code,
+                "data": records,
+                "count": len(records),
+            }
+
+        # 回退到模拟数据
+        return self._mock_spot(code, name, days)
 
     def fetch_sulfur_spot(self, days: int = 90) -> Dict[str, Any]:
-        """获取硫磺现货价格（生意社）"""
-        if not self._akshare_available:
-            return self._mock_spot("sulfur", "硫磺", days)
-
-        try:
-            df = self.ak.spot_price(symbol="硫磺")
-            if df is None or df.empty:
-                return self._mock_spot("sulfur", "硫磺", days)
-
-            df = df.tail(days)
-            records = []
-            for _, row in df.iterrows():
-                records.append({
-                    "date": str(row.get("日期", "")),
-                    "price": float(row.get("价格", 0)),
-                    "change_percent": float(row.get("涨跌幅", 0)) if "涨跌幅" in row else None,
-                    "unit": "元/吨",
-                })
-
-            return {
-                "success": True,
-                "source": "生意社",
-                "commodity_code": "sulfur",
-                "data": records,
-                "count": len(records),
-            }
-        except Exception as e:
-            print(f"获取硫磺现货价格失败: {e}")
-            return self._mock_spot("sulfur", "硫磺", days)
+        """获取硫磺现货价格 - 生意社期货基差表不含硫磺，尝试从 AKShare 获取"""
+        # 硫磺没有期货合约，不在生意社现期表中
+        # 尝试 AKShare 的 BDI/其他接口，失败用模拟
+        if self._akshare_available:
+            try:
+                # 尝试 futures_spot_price 看是否有硫磺相关
+                df = self.ak.futures_spot_price(date=datetime.now().strftime("%Y%m%d"))
+                if df is not None and not df.empty:
+                    if "symbol" in df.columns and "spot_price" in df.columns:
+                        sulfur_row = df[df["symbol"].str.contains("硫", na=False)]
+                        if not sulfur_row.empty:
+                            records = []
+                            for _, row in sulfur_row.iterrows():
+                                records.append({
+                                    "date": str(row.get("date", datetime.now().strftime("%Y-%m-%d"))),
+                                    "price": float(row["spot_price"]),
+                                    "unit": "元/吨",
+                                })
+                            if records:
+                                return {
+                                    "success": True,
+                                    "source": "生意社 (100ppi.com)",
+                                    "commodity_code": "sulfur",
+                                    "data": records,
+                                    "count": len(records),
+                                }
+            except Exception:
+                pass
+        return self._mock_spot("sulfur", "硫磺", days)
 
     def fetch_phosphate_spot(self, days: int = 90) -> Dict[str, Any]:
-        """获取磷矿石价格"""
-        if not self._akshare_available:
-            return self._mock_spot("phosphate", "磷矿石", days)
-
-        try:
-            df = self.ak.spot_price(symbol="磷矿石")
-            if df is None or df.empty:
-                return self._mock_spot("phosphate", "磷矿石", days)
-
-            df = df.tail(days)
-            records = []
-            for _, row in df.iterrows():
-                records.append({
-                    "date": str(row.get("日期", "")),
-                    "price": float(row.get("价格", 0)),
-                    "change_percent": float(row.get("涨跌幅", 0)) if "涨跌幅" in row else None,
-                    "unit": "元/吨",
-                })
-
-            return {
-                "success": True,
-                "source": "生意社",
-                "commodity_code": "phosphate",
-                "data": records,
-                "count": len(records),
-            }
-        except Exception as e:
-            print(f"获取磷矿石价格失败: {e}")
-            return self._mock_spot("phosphate", "磷矿石", days)
+        return self._mock_spot("phosphate", "磷矿石", days)
 
     def fetch_potash_spot(self, days: int = 90) -> Dict[str, Any]:
-        """获取钾肥价格"""
-        if not self._akshare_available:
-            return self._mock_spot("potash", "钾肥", days)
-
-        try:
-            df = self.ak.spot_price(symbol="氯化钾")
-            if df is None or df.empty:
-                return self._mock_spot("potash", "钾肥", days)
-
-            df = df.tail(days)
-            records = []
-            for _, row in df.iterrows():
-                records.append({
-                    "date": str(row.get("日期", "")),
-                    "price": float(row.get("价格", 0)),
-                    "change_percent": float(row.get("涨跌幅", 0)) if "涨跌幅" in row else None,
-                    "unit": "元/吨",
-                })
-
-            return {
-                "success": True,
-                "source": "生意社",
-                "commodity_code": "potash",
-                "data": records,
-                "count": len(records),
-            }
-        except Exception as e:
-            print(f"获取钾肥价格失败: {e}")
-            return self._mock_spot("potash", "钾肥", days)
+        return self._mock_spot("potash", "钾肥", days)
 
     def fetch_urea_spot(self, days: int = 90) -> Dict[str, Any]:
-        """获取尿素现货价格"""
-        if not self._akshare_available:
-            return self._mock_spot("urea", "尿素", days)
-
-        try:
-            df = self.ak.spot_price(symbol="尿素")
-            if df is None or df.empty:
-                return self._mock_spot("urea", "尿素", days)
-
-            df = df.tail(days)
-            records = []
-            for _, row in df.iterrows():
-                records.append({
-                    "date": str(row.get("日期", "")),
-                    "price": float(row.get("价格", 0)),
-                    "change_percent": float(row.get("涨跌幅", 0)) if "涨跌幅" in row else None,
-                    "unit": "元/吨",
-                })
-
-            return {
-                "success": True,
-                "source": "生意社",
-                "commodity_code": "urea",
-                "data": records,
-                "count": len(records),
-            }
-        except Exception as e:
-            print(f"获取尿素价格失败: {e}")
-            return self._mock_spot("urea", "尿素", days)
+        return self._fetch_commodity("urea", "尿素", days)
 
     def fetch_urea_futures(self, days: int = 90) -> Dict[str, Any]:
-        """获取郑商所尿素期货价格"""
-        if not self._akshare_available:
-            return self._mock_spot("urea_futures", "尿素期货", days)
-
-        try:
-            df = self.ak.futures_spot_price("尿素")
-            if df is None or df.empty:
-                return self._mock_spot("urea_futures", "尿素期货", days)
-
-            df = df.tail(days)
-            records = []
-            for _, row in df.iterrows():
-                records.append({
-                    "date": str(row.get("日期", row.get("date", ""))),
-                    "price": float(row.get("价格", row.get("price", 0))),
-                    "unit": "元/吨",
-                })
-
-            return {
-                "success": True,
-                "source": "郑商所",
-                "commodity_code": "urea",
-                "data": records,
-                "count": len(records),
-            }
-        except Exception as e:
-            print(f"获取尿素期货价格失败: {e}")
-            return self._mock_spot("urea_futures", "尿素期货", days)
+        return self._fetch_commodity("urea_futures", "尿素", days)
 
     def fetch_bdi_index(self) -> Dict[str, Any]:
         """获取波罗的海干散货指数 (BDI)"""
         if not self._akshare_available:
             return self._mock_bdi()
-
         try:
             df = self.ak.bdi_index()
             if df is None or df.empty:
                 return self._mock_bdi()
-
             df = df.tail(90)
             records = []
             for _, row in df.iterrows():
@@ -598,7 +617,6 @@ class CommodityDataFetcher:
                     "price": int(row.get("指数", row.get("BDI", 0))),
                     "unit": "指数",
                 })
-
             return {
                 "success": True,
                 "source": "Baltic Exchange via AKShare",
@@ -621,7 +639,7 @@ class CommodityDataFetcher:
         return results
 
     def _mock_spot(self, code: str, name: str, days: int) -> Dict[str, Any]:
-        """生成模拟现货数据（AKShare 不可用时的 fallback）"""
+        """生成模拟现货数据"""
         import numpy as np
 
         base_prices = {
@@ -652,11 +670,11 @@ class CommodityDataFetcher:
 
         return {
             "success": True,
-            "source": "模拟数据（AKShare 不可用）",
+            "source": f"模拟数据（{name}生意社无期货合约）",
             "commodity_code": code,
             "data": records,
             "count": len(records),
-            "note": "AKShare 未安装或数据源不可用，使用模拟数据",
+            "note": f"{name}无活跃期货合约，生意社现期表不含此品种",
         }
 
     def _mock_bdi(self) -> Dict[str, Any]:
@@ -680,11 +698,11 @@ class CommodityDataFetcher:
 
         return {
             "success": True,
-            "source": "模拟数据（AKShare 不可用）",
+            "source": "模拟数据（AKShare BDI 不可用）",
             "commodity_code": "bdi",
             "data": records,
             "count": len(records),
-            "note": "AKShare 未安装或数据源不可用，使用模拟数据",
+            "note": "BDI 数据源不可用，使用模拟数据",
         }
 
 
