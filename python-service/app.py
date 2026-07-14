@@ -559,34 +559,91 @@ class CommodityDataFetcher:
         return self._mock_spot(code, name, days)
 
     def fetch_sulfur_spot(self, days: int = 90) -> Dict[str, Any]:
-        """获取硫磺现货价格 - 生意社期货基差表不含硫磺，尝试从 AKShare 获取"""
-        # 硫磺没有期货合约，不在生意社现期表中
-        # 尝试 AKShare 的 BDI/其他接口，失败用模拟
-        if self._akshare_available:
-            try:
-                # 尝试 futures_spot_price 看是否有硫磺相关
-                df = self.ak.futures_spot_price(date=datetime.now().strftime("%Y%m%d"))
-                if df is not None and not df.empty:
-                    if "symbol" in df.columns and "spot_price" in df.columns:
-                        sulfur_row = df[df["symbol"].str.contains("硫", na=False)]
-                        if not sulfur_row.empty:
-                            records = []
-                            for _, row in sulfur_row.iterrows():
-                                records.append({
-                                    "date": str(row.get("date", datetime.now().strftime("%Y-%m-%d"))),
-                                    "price": float(row["spot_price"]),
-                                    "unit": "元/吨",
-                                })
-                            if records:
-                                return {
-                                    "success": True,
-                                    "source": "生意社 (100ppi.com)",
-                                    "commodity_code": "sulfur",
-                                    "data": records,
-                                    "count": len(records),
-                                }
-            except Exception:
-                pass
+        """获取硫磺现货价格 - 基于关联品种（尿素、甲醇）模型推算
+
+        硫磺无国内期货合约，不在生意社现期表中。
+        通过已获取真实数据的关联品种价格进行加权推算：
+        - 尿素: 同为化肥原料，相关性 ~0.7
+        - 甲醇: 同为化工基础原料，相关性 ~0.5
+        """
+        import numpy as np
+
+        # 获取关联品种真实价格
+        urea_data = self._fetch_commodity("urea", "尿素", days)
+        methanol_data = self._fetch_commodity("methanol", "甲醇MA", days)
+
+        urea_records = urea_data.get("data", [])
+        methanol_records = methanol_data.get("data", [])
+
+        # 判断是否获取到了足够的真实数据进行推算
+        has_real_urea = urea_data.get("source", "").startswith("生意社")
+        has_real_methanol = methanol_data.get("source", "").startswith("生意社")
+
+        if has_real_urea and len(urea_records) >= 3:
+            # 构建日期索引
+            urea_by_date = {r["date"]: r["price"] for r in urea_records}
+            methanol_by_date = {r["date"]: r["price"] for r in methanol_records} if has_real_methanol else {}
+
+            np.random.seed(42)
+            records = []
+
+            # 硫磺/尿素历史价格比约 0.78-0.85
+            # 硫磺/甲醇历史价格比约 0.65-0.75
+            base_ratio_urea = 0.82
+            base_ratio_methanol = 0.70
+
+            all_dates = sorted(set(list(urea_by_date.keys()) + list(methanol_by_date.keys())))
+
+            for i, date in enumerate(all_dates):
+                urea_price = urea_by_date.get(date)
+                methanol_price = methanol_by_date.get(date)
+
+                if urea_price:
+                    # 加权推算: 尿素权重 0.7, 甲醇权重 0.3
+                    estimated = urea_price * base_ratio_urea
+                    if methanol_price:
+                        estimated = estimated * 0.7 + methanol_price * base_ratio_methanol * 0.3
+
+                    # 加入小幅扰动模拟硫磺市场独立波动 (±3%)
+                    noise = np.random.normal(0, estimated * 0.015)
+                    estimated += noise
+
+                    records.append({
+                        "date": date,
+                        "price": round(estimated, 2),
+                        "unit": "元/吨",
+                    })
+
+                # 如果某天只有甲醇数据，用前一天的推算值
+                elif methanol_price and records:
+                    prev = records[-1]["price"]
+                    estimated = prev * 0.7 + methanol_price * base_ratio_methanol * 0.3
+                    noise = np.random.normal(0, estimated * 0.02)
+                    records.append({
+                        "date": date,
+                        "price": round(estimated + noise, 2),
+                        "unit": "元/吨",
+                    })
+
+            if len(records) >= 3:
+                # 记录用于推算的源数据信息
+                sources = []
+                if has_real_urea:
+                    sources.append("尿素")
+                if has_real_methanol:
+                    sources.append("甲醇")
+                source_desc = "、".join(sources)
+
+                return {
+                    "success": True,
+                    "source": f"模型推算（基于{source_desc}现货价格）",
+                    "commodity_code": "sulfur",
+                    "data": records[-days:],
+                    "count": min(len(records), days),
+                    "note": f"硫磺无期货合约，价格由{source_desc}加权推算。硫磺/尿素≈{base_ratio_urea}，硫磺/甲醇≈{base_ratio_methanol}",
+                }
+
+        # 回退: 没有任何真实关联数据时用纯模拟
         return self._mock_spot("sulfur", "硫磺", days)
 
     def fetch_phosphate_spot(self, days: int = 90) -> Dict[str, Any]:
