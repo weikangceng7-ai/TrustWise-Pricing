@@ -29,3 +29,4 @@ ENV MCP_TRANSPORT=http
 ENV MCP_PORT=3100
 
 CMD ["node", "dist/index.js"]
+
