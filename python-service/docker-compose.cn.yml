@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  sulfur-predictor:
+    build:
+      context: ..
+      dockerfile: python-service/Dockerfile.cn
+    container_name: sulfur-predictor
+    ports:
+      - "5001:5001"
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
