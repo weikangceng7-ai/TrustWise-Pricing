@@ -409,6 +409,12 @@ class CommodityDataFetcher:
 
     def __init__(self):
         self._akshare_available = False
+        # 代理配置：通过 PROXY_URL 环境变量设置 HTTP 代理，用于国内访问
+        proxy_url = os.environ.get("PROXY_URL", "")
+        if proxy_url:
+            os.environ["HTTP_PROXY"] = proxy_url
+            os.environ["HTTPS_PROXY"] = proxy_url
+            print(f"代理已配置: {proxy_url}")
         try:
             import akshare as ak
             self.ak = ak
