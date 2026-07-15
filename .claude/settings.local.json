@@ -144,7 +144,10 @@
       "Bash(python -c \"from app import SulfurPricePredictor; sp = SulfurPricePredictor\\(\\); print\\([m for m in dir\\(sp\\) if 'fetch' in m]\\)\")",
       "Bash(python -c \"import py_compile; py_compile.compile\\('app.py', doraise=True\\)\")",
       "Bash(python -c \"import py_compile; py_compile.compile\\('app.py', doraise=True\\); print\\('OK'\\)\")",
-      "Bash(python -c \"import py_compile; py_compile.compile\\('app.py', doraise=True\\); print\\('app.py OK'\\)\")"
+      "Bash(python -c \"import py_compile; py_compile.compile\\('app.py', doraise=True\\); print\\('app.py OK'\\)\")",
+      "WebFetch(domain:www.mintlify.com)",
+      "Bash(npm i:*)",
+      "Bash(mint dev:*)"
     ]
   }
 }

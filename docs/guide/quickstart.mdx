@@ -1,0 +1,84 @@
+---
+title: 快速开始
+description: 5 分钟上手硫磺采购决策系统 API
+---
+
+# 快速开始
+
+## 环境要求
+
+所有 API 均通过 HTTPS 访问，无需安装 SDK。支持任意 HTTP 客户端（curl、Postman、Python requests 等）。
+
+## 基础地址
+
+```
+https://sulfur-agent-web.vercel.app
+```
+
+## 第一个请求
+
+### 查询最新硫磺价格
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/prices?limit=5"
+```
+
+响应示例：
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1283,
+      "date": "2026-07-14",
+      "price": 1250.00,
+      "region": "华东",
+      "market": "镇江港",
+      "commodity": "sulfur",
+      "specification": "颗粒硫磺",
+      "unit": "元/吨"
+    }
+  ],
+  "total": 365
+}
+```
+
+### 查询港口库存
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/inventory?limit=3"
+```
+
+### 价格预测
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/prediction?action=trend&days=7"
+```
+
+## Python 示例
+
+```python
+import requests
+
+BASE = "https://sulfur-agent-web.vercel.app"
+
+# 获取价格
+prices = requests.get(f"{BASE}/api/prices", params={"limit": 10}).json()
+print(f"共 {prices['total']} 条价格记录")
+
+# 获取趋势预测
+trend = requests.get(f"{BASE}/api/prediction", params={"action": "trend", "days": 7}).json()
+print(f"预测趋势: {trend}")
+```
+
+## 公开接口 vs 需认证接口
+
+| 类型 | 路径 | 说明 |
+|------|------|------|
+| 公开 | `/api/prices`, `/api/inventory`, `/api/prediction`, `/api/reports` | 无需认证 |
+| API Key | `/api/v1/*` | 需 `Authorization: Bearer <key>` |
+| Session | `/api/conversations/*`, `/api/notifications/*` | Web 登录后可用 |
+| Cron | `/api/cron/*` | 仅限服务端定时触发 |
+
+公开接口已经足够满足大多数数据查询场景。如需高频调用或访问企业决策接口，请参考 [认证方式](/guide/authentication)。

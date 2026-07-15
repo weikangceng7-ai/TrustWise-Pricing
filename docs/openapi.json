@@ -1,0 +1,213 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "硫磺采购决策系统 API",
+    "version": "1.0.0",
+    "description": "硫磺价格预测、库存管理、企业采购决策辅助系统的 REST API",
+    "contact": {
+      "name": "GitHub",
+      "url": "https://github.com/weikangceng7-ai/TrustWise-Pricing"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://sulfur-agent-web.vercel.app",
+      "description": "生产环境"
+    },
+    {
+      "url": "http://localhost:3000",
+      "description": "本地开发"
+    }
+  ],
+  "tags": [
+    { "name": "价格", "description": "硫磺价格查询" },
+    { "name": "预测", "description": "价格预测与决策" },
+    { "name": "库存", "description": "港口库存数据" },
+    { "name": "对话", "description": "AI 对话接口" },
+    { "name": "企业", "description": "企业管理与预测" }
+  ],
+  "paths": {
+    "/api/prices": {
+      "get": {
+        "tags": ["价格"],
+        "summary": "查询价格列表",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "commodity", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "成功" }
+        }
+      }
+    },
+    "/api/prices/summary": {
+      "get": {
+        "tags": ["价格"],
+        "summary": "价格摘要统计",
+        "parameters": [
+          { "name": "commodity", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "成功" }
+        }
+      }
+    },
+    "/api/prices/chart-data": {
+      "get": {
+        "tags": ["价格"],
+        "summary": "图表价格数据",
+        "responses": {
+          "200": { "description": "成功" }
+        }
+      }
+    },
+    "/api/prediction": {
+      "get": {
+        "tags": ["预测"],
+        "summary": "查询预测/趋势",
+        "parameters": [
+          { "name": "action", "in": "query", "schema": { "type": "string", "enum": ["health", "trend", "predict"] } },
+          { "name": "days", "in": "query", "schema": { "type": "integer", "default": 7 } }
+        ],
+        "responses": {
+          "200": { "description": "成功" }
+        }
+      },
+      "post": {
+        "tags": ["预测"],
+        "summary": "提交预测/决策请求",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "action": { "type": "string", "enum": ["predict", "decision", "trend"] },
+                  "days": { "type": "integer" },
+                  "current_inventory": { "type": "number" },
+                  "daily_consumption": { "type": "number" },
+                  "safety_days": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "成功" }
+        }
+      }
+    },
+    "/api/inventory": {
+      "get": {
+        "tags": ["库存"],
+        "summary": "查询港口库存",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "commodity", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "成功" }
+        }
+      }
+    },
+    "/api/inventory/summary": {
+      "get": {
+        "tags": ["库存"],
+        "summary": "库存摘要统计",
+        "responses": {
+          "200": { "description": "成功" }
+        }
+      }
+    },
+    "/api/chat": {
+      "post": {
+        "tags": ["对话"],
+        "summary": "发送对话消息",
+        "parameters": [
+          { "name": "stream", "in": "query", "schema": { "type": "boolean", "default": true } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "messages": { "type": "array" },
+                  "enterprise": { "type": "string" }
+                },
+                "required": ["messages"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "成功（stream=false 返回 JSON，stream=true 返回 SSE）" }
+        }
+      }
+    },
+    "/api/enterprises": {
+      "get": {
+        "tags": ["企业"],
+        "summary": "获取企业列表",
+        "responses": {
+          "200": { "description": "成功" }
+        }
+      }
+    },
+    "/api/enterprises/manage": {
+      "get": {
+        "tags": ["企业"],
+        "summary": "查询企业档案",
+        "parameters": [
+          { "name": "code", "in": "query", "schema": { "type": "string" } },
+          { "name": "activeOnly", "in": "query", "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": { "description": "成功" }
+        }
+      },
+      "post": {
+        "tags": ["企业"],
+        "summary": "创建企业",
+        "responses": {
+          "201": { "description": "创建成功" }
+        }
+      },
+      "put": {
+        "tags": ["企业"],
+        "summary": "更新企业信息",
+        "responses": {
+          "200": { "description": "更新成功" }
+        }
+      },
+      "delete": {
+        "tags": ["企业"],
+        "summary": "删除企业",
+        "responses": {
+          "200": { "description": "删除成功" }
+        }
+      }
+    },
+    "/api/enterprises/predictions": {
+      "get": {
+        "tags": ["企业"],
+        "summary": "企业价格预测结果",
+        "parameters": [
+          { "name": "commodity", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "成功" }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": ["系统"],
+        "summary": "健康检查",
+        "responses": {
+          "200": { "description": "服务正常" }
+        }
+      }
+    }
+  }
+}

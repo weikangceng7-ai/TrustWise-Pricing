@@ -1,0 +1,46 @@
+---
+title: 硫磺采购决策系统 API 文档
+description: 硫磺价格预测、库存管理、企业采购决策辅助系统的完整 API 参考
+---
+
+# 硫磺采购决策系统
+
+为企业提供硫磺市场价格预测、趋势分析和采购决策辅助。
+
+## 核心能力
+
+- **价格预测** — Hybrid ARIMA + XGBoost 多模型集成预测
+- **库存分析** — 港口库存监控与环比变化分析
+- **企业决策** — 基于影响因子权重的个性化采购建议
+- **AI 对话** — 基于 DeepSeek 的市场分析助手
+- **知识图谱** — Neo4j 双层知识图谱（宏观 + 企业）推理
+- **外部数据** — EIA / FRED / GDELT / 生意社多源数据接入
+
+## 快速导航
+
+<CardGroup cols={3}>
+  <Card title="快速开始" icon="rocket" href="/guide/quickstart">
+    5 分钟上手 API
+  </Card>
+  <Card title="认证方式" icon="key" href="/guide/authentication">
+    Session / API Key / Cron Secret
+  </Card>
+  <Card title="API 参考" icon="code" href="/api-reference/prices">
+    完整接口文档
+  </Card>
+</CardGroup>
+
+## 系统架构
+
+```
+用户端（Web / API / Claude Desktop）
+        │
+        ▼
+Next.js App Router（Vercel 部署）
+  ├── 展示层: React 19 + Tailwind CSS + Shadcn UI
+  ├── 业务层: Hono API + 服务层 + AI 集成
+  └── 数据层: PostgreSQL (Drizzle ORM) + Neo4j + 外部数据源
+        │
+        ▼
+外部服务: Python 预测服务 / EIA / FRED / GDELT / 生意社
+```

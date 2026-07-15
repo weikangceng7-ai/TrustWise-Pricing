@@ -1,0 +1,154 @@
+---
+title: 价格数据
+description: 硫磺价格查询、趋势数据、多维度价格接口
+---
+
+# 价格数据 API
+
+## GET /api/prices
+
+查询硫磺历史价格数据。
+
+### 查询参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `limit` | number | 全部 | 返回条数 |
+| `commodity` | string | `sulfur` | 商品类型 |
+
+### 响应
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1283,
+      "date": "2026-07-14",
+      "price": 1250.00,
+      "region": "华东",
+      "market": "镇江港",
+      "commodity": "sulfur",
+      "specification": "颗粒硫磺",
+      "unit": "元/吨"
+    }
+  ],
+  "total": 365
+}
+```
+
+### 示例
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/prices?limit=10&commodity=sulfur"
+```
+
+---
+
+## GET /api/prices/summary
+
+获取价格摘要统计（均价、最高、最低、环比变化）。
+
+### 查询参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `commodity` | string | `sulfur` | 商品类型 |
+
+### 响应
+
+```json
+{
+  "success": true,
+  "data": {
+    "latestPrice": 1250.00,
+    "avgPrice": 1180.50,
+    "maxPrice": 1350.00,
+    "minPrice": 1020.00,
+    "weekChange": 2.5,
+    "monthChange": -1.8,
+    "updateDate": "2026-07-14"
+  }
+}
+```
+
+---
+
+## GET /api/prices/chart-data
+
+获取图表展示用的价格与预测数据。
+
+### 响应
+
+```json
+{
+  "success": true,
+  "data": [
+    { "date": "2026-07-01", "actualPrice": 1230, "predictedPrice": 1225 },
+    { "date": "2026-07-02", "actualPrice": 1245, "predictedPrice": 1240 }
+  ],
+  "source": "database"
+}
+```
+
+---
+
+## GET /api/multi-dimensional-prices
+
+多维度价格数据，支持按类别筛选。
+
+### 查询参数
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `category` | string | `supply` / `demand` / `middle-east-cob` / `port-inventory` / `domestic` / `market-news` |
+| `startDate` | string | 起始日期 `YYYY-MM-DD` |
+| `endDate` | string | 结束日期 `YYYY-MM-DD` |
+| `limit` | number | 返回条数 |
+
+### 示例
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/multi-dimensional-prices?category=middle-east-cob&limit=10"
+```
+
+---
+
+## GET /api/v1/prices
+
+<Info>需要 API Key 认证</Info>
+
+带筛选条件的版本化价格接口。
+
+### 请求
+
+```bash
+curl -H "Authorization: Bearer sk_your_key" \
+  "https://sulfur-agent-web.vercel.app/api/v1/prices?region=华东&market=镇江港&startDate=2026-06-01&endDate=2026-07-01"
+```
+
+### 查询参数
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `startDate` | string | 起始日期 |
+| `endDate` | string | 结束日期 |
+| `region` | string | 地区筛选 |
+| `market` | string | 市场筛选 |
+| `limit` | number | 返回条数 |
+
+### 响应
+
+```json
+{
+  "success": true,
+  "data": {
+    "prices": [...],
+    "total": 30,
+    "query": {
+      "region": "华东",
+      "market": "镇江港"
+    }
+  }
+}
+```

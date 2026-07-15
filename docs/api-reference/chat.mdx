@@ -1,0 +1,149 @@
+---
+title: AI 对话
+description: 市场分析 AI 对话接口，支持流式输出和知识库检索
+---
+
+# AI 对话 API
+
+## POST /api/chat
+
+主对话接口，支持多模态输入（文本 + 图片）和流式输出。
+
+### 请求
+
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {"role": "user", "content": "最近硫磺价格走势怎么样？"}
+    ]
+  }' \
+  "https://sulfur-agent-web.vercel.app/api/chat?stream=false"
+```
+
+### 请求参数
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `messages` | array | 对话历史，含 `role` 和 `content` |
+| `enterprise` | string | 可选，关联企业名称 |
+| `stream` | query | `true`（默认，SSE流式）/ `false`（JSON） |
+
+### 流式响应（`stream=true`）
+
+SSE 格式，逐 token 推送：
+
+```
+data: {"content": "根据"}
+data: {"content": "最近"}
+data: {"content": "数据"}
+...
+data: [DONE]
+```
+
+### 非流式响应（`stream=false`）
+
+```json
+{
+  "message": "根据最近30天的数据，华东地区硫磺价格在1200-1350元/吨区间波动..."
+}
+```
+
+### 多模态输入
+
+支持图片分析：
+
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "分析这张价格走势图"},
+        {"type": "image_url", "image_url": {"url": "https://example.com/chart.png"}}
+      ]
+    }
+  ]
+}
+```
+
+### 自动上下文注入
+
+系统会根据问题自动注入以下上下文：
+- 最新价格和库存数据
+- 知识图谱推理结果（检测到中文价格/预测/决策关键词时）
+- Python 预测服务结果
+
+---
+
+## POST /api/v1/chat
+
+<Info>需要 API Key 认证</Info>
+
+版本化对话接口，支持多轮对话和知识库检索。
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer sk_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "中东硫磺价格近期走势",
+    "conversationId": "conv_abc123",
+    "history": [
+      {"role": "user", "content": "你好"},
+      {"role": "assistant", "content": "你好，有什么可以帮助你的？"}
+    ]
+  }' \
+  "https://sulfur-agent-web.vercel.app/api/v1/chat"
+```
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `message` | string | 是 | 用户消息 |
+| `conversationId` | string | 否 | 继续已有对话 |
+| `history` | array | 否 | 历史消息列表 |
+
+---
+
+## 对话历史管理（Session 认证）
+
+以下接口需要 Web 登录后的 Session 认证。
+
+### GET /api/conversations
+
+获取用户的对话列表。
+
+### POST /api/conversations
+
+创建新对话。
+
+```json
+{
+  "title": "硫磺市场分析",
+  "firstMessage": "分析当前市场形势"
+}
+```
+
+### GET /api/conversations/[id]
+
+获取指定对话的完整消息历史。
+
+### POST /api/conversations/[id]
+
+向已有对话追加消息。
+
+```json
+{
+  "role": "user",
+  "content": "继续分析库存情况"
+}
+```
+
+### PATCH /api/conversations/[id]
+
+修改对话标题。
+
+### DELETE /api/conversations/[id]
+
+删除对话。

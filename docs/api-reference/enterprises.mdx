@@ -1,0 +1,194 @@
+---
+title: 企业与库存
+description: 企业管理、库存查询、采购预测接口
+---
+
+# 企业与库存 API
+
+## 企业档案
+
+### GET /api/enterprises
+
+获取所有企业列表（静态数据）。
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/enterprises"
+```
+
+响应包含企业名称、省份、行业、上市状态等基本信息。
+
+### GET /api/enterprises/manage
+
+查询企业详细档案。
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `code` | string | - | 企业代码，传则返回单个 |
+| `activeOnly` | boolean | `true` | 仅返回活跃企业 |
+
+```bash
+# 查询单个企业
+curl "https://sulfur-agent-web.vercel.app/api/enterprises/manage?code=COMPANY_A"
+
+# 查询所有活跃企业
+curl "https://sulfur-agent-web.vercel.app/api/enterprises/manage"
+```
+
+### POST /api/enterprises/manage
+
+创建企业档案。
+
+```json
+{
+  "code": "COMPANY_D",
+  "name": "示例化工有限公司",
+  "location": "山东",
+  "industry": "磷化工",
+  "inventory": 8000,
+  "dailyConsumption": 300
+}
+```
+
+### PUT /api/enterprises/manage
+
+更新企业信息。
+
+```json
+{
+  "id": 4,
+  "inventory": 7500,
+  "dailyConsumption": 280
+}
+```
+
+### DELETE /api/enterprises/manage
+
+删除企业。
+
+```bash
+curl -X DELETE "https://sulfur-agent-web.vercel.app/api/enterprises/manage?id=4"
+```
+
+---
+
+## 企业价格预测
+
+### GET /api/enterprises/predictions
+
+获取所有企业的预测结果。
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/enterprises/predictions?commodity=sulfur"
+```
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "企业A",
+      "price": 1280,
+      "trend": "up",
+      "confidence": 0.85,
+      "predictedDate": "2026-07-21",
+      "source": "ARIMA+XGBoost"
+    }
+  ]
+}
+```
+
+### GET /api/enterprise-predictions
+
+模拟企业预测数据（含历史）。
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `enterprise` | string | - | 企业名称，不传返回全部摘要 |
+| `days` | number | `30` | 预测天数 |
+
+```bash
+# 单个企业详细预测
+curl "https://sulfur-agent-web.vercel.app/api/enterprise-predictions?enterprise=企业A&days=14"
+
+# 全部企业摘要
+curl "https://sulfur-agent-web.vercel.app/api/enterprise-predictions"
+```
+
+---
+
+## 库存数据
+
+### GET /api/inventory
+
+查询港口库存历史数据。
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `limit` | number | 全部 | 返回条数 |
+| `commodity` | string | `sulfur` | 商品类型 |
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/inventory?limit=10"
+```
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "date": "2026-07-14",
+      "portName": "镇江港",
+      "inventory": 125000,
+      "commodity": "sulfur",
+      "unit": "吨",
+      "changePercent": -2.3
+    }
+  ],
+  "total": 180
+}
+```
+
+### GET /api/inventory/summary
+
+库存摘要统计。
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/inventory/summary"
+```
+
+### GET /api/v1/data/inventory
+
+<Info>需要 API Key 认证</Info>
+
+版本化库存接口，支持日期筛选。
+
+```bash
+curl -H "Authorization: Bearer sk_your_key" \
+  "https://sulfur-agent-web.vercel.app/api/v1/data/inventory?startDate=2026-06-01&endDate=2026-07-01"
+```
+
+---
+
+## 供需分析
+
+### GET /api/supply-demand
+
+获取供需综合分析数据。
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/supply-demand"
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "price": { "current": 1250, "trend": "上涨" },
+    "inventory": { "total": 450000, "trend": "下降" },
+    "supply": { "status": "偏紧", "factors": ["中东装置检修"] },
+    "demand": { "status": "平稳", "factors": ["磷肥开工率稳定"] },
+    "oilPrice": { "current": 72.5, "trend": "震荡" }
+  }
+}
+```

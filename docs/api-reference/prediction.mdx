@@ -1,0 +1,128 @@
+---
+title: 预测与决策
+description: 价格预测、趋势分析、采购决策接口
+---
+
+# 预测与决策 API
+
+## GET /api/prediction
+
+查询预测信息或健康检查。
+
+### 查询参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `action` | string | `predict` | `health` / `trend` / `predict` |
+| `days` | number | `7` | 预测天数 |
+
+### 示例
+
+```bash
+# 健康检查
+curl "https://sulfur-agent-web.vercel.app/api/prediction?action=health"
+
+# 趋势分析
+curl "https://sulfur-agent-web.vercel.app/api/prediction?action=trend&days=7"
+
+# 价格预测
+curl "https://sulfur-agent-web.vercel.app/api/prediction?action=predict&days=14"
+```
+
+---
+
+## POST /api/prediction
+
+提交预测或决策请求，支持传递企业参数。
+
+### 请求体
+
+```json
+{
+  "action": "predict",
+  "days": 14
+}
+```
+
+```json
+{
+  "action": "decision",
+  "current_inventory": 5000,
+  "daily_consumption": 200,
+  "safety_days": 30,
+  "days": 30
+}
+```
+
+### 参数说明
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `action` | string | `predict` / `decision` / `trend` / `format` / `format-decision` |
+| `days` | number | 预测/决策天数 |
+| `current_inventory` | number | 当前库存（吨），决策时使用 |
+| `daily_consumption` | number | 日均消耗（吨），决策时使用 |
+| `safety_days` | number | 安全库存天数，决策时使用 |
+
+### 决策响应示例
+
+```json
+{
+  "recommendation": "建议采购",
+  "urgency": "medium",
+  "suggested_volume": 3000,
+  "suggested_timing": "2026-07-20 前",
+  "reasoning": "当前库存可维持 25 天，预测未来 30 天价格呈上涨趋势...",
+  "confidence": 0.82
+}
+```
+
+---
+
+## POST /api/v1/prices/predict
+
+<Info>需要 API Key 认证</Info>
+
+版本化价格预测接口。
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer sk_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{"days": 14}' \
+  "https://sulfur-agent-web.vercel.app/api/v1/prices/predict"
+```
+
+| 参数 | 类型 | 范围 | 说明 |
+|------|------|------|------|
+| `days` | number | 1-90 | 预测天数 |
+| `model` | string | 可选 | 模型选择 |
+
+---
+
+## POST /api/v1/decision
+
+<Info>需要 API Key 认证</Info>
+
+版本化采购决策接口。
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer sk_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "enterpriseCode": "COMPANY_A",
+    "current_inventory": 5000,
+    "daily_consumption": 200,
+    "safety_days": 30
+  }' \
+  "https://sulfur-agent-web.vercel.app/api/v1/decision"
+```
+
+## 预测模型说明
+
+系统使用 **Hybrid ARIMA + XGBoost** 集成模型：
+
+- **ARIMA** — 捕捉时间序列的线性趋势和季节性
+- **XGBoost** — 学习外部因子（原油价格、汇率、BDI 指数等）与硫磺价格的非线性关系
+- **加权融合** — 动态权重根据近期预测误差自适应调整

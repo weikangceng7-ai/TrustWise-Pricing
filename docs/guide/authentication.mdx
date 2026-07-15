@@ -1,0 +1,70 @@
+---
+title: 认证方式
+description: 三种认证方式：Session、API Key、Cron Secret
+---
+
+# 认证方式
+
+系统提供三种认证方式，适用于不同场景。
+
+## 1. Session 认证（Web 端）
+
+Better Auth 会话认证，登录后浏览器自动携带 Cookie。
+
+**适用场景**：Dashboard 页面、企业管理、对话历史、通知查看等 Web 功能。
+
+**无需手动处理**，前端页面会自动管理登录态。
+
+## 2. API Key 认证（对外接口）
+
+`/api/v1/*` 路径的接口使用 API Key 认证。
+
+### 获取 API Key
+
+1. 登录 [sulfur-agent-web.vercel.app](https://sulfur-agent-web.vercel.app)
+2. 进入设置页面 → **API 密钥管理**
+3. 点击 **创建密钥**
+
+<Warning>API Key 仅在创建时显示一次，请妥善保存。格式为 `sk_` 开头。</Warning>
+
+### 使用方式
+
+在请求 Header 中传入：
+
+```bash
+curl -H "Authorization: Bearer sk_your_api_key_here" \
+  "https://sulfur-agent-web.vercel.app/api/v1/prices"
+```
+
+```python
+import requests
+
+headers = {"Authorization": "Bearer sk_your_api_key_here"}
+response = requests.get(
+    "https://sulfur-agent-web.vercel.app/api/v1/prices",
+    headers=headers
+)
+```
+
+### API Key 限流
+
+| 套餐 | 每日请求数 | 并发限制 |
+|------|-----------|---------|
+| 免费 | 100 | 1 |
+| 基础 | 1,000 | 5 |
+| 专业 | 10,000 | 20 |
+
+## 3. Cron Secret 认证（定时任务）
+
+`/api/cron/*` 和 `/api/tracker/cron/*` 路径仅供服务端定时任务触发，使用 `CRON_SECRET` 环境变量认证。
+
+<Info>此类接口不对外开放，仅供 Vercel Cron Jobs 内部调用。</Info>
+
+## 认证方式对比
+
+| 方式 | 路径 | 获取难度 | 适用场景 |
+|------|------|---------|---------|
+| 无认证 | `/api/prices` 等 | 无需获取 | 公开数据查询 |
+| Session | `/api/conversations` 等 | Web 登录 | 前端页面交互 |
+| API Key | `/api/v1/*` | 登录后创建 | 第三方集成 |
+| Cron Secret | `/api/cron/*` | 不对外开放 | 服务端定时任务 |
