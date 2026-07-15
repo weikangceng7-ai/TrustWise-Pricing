@@ -27,29 +27,29 @@ const COMMODITY_PRICE_CONFIG: Record<CommodityCode, {
   specifications: string[]
 }> = {
   sulfur: {
-    basePrice: 1850,
-    volatility: 40,
+    basePrice: 9000,
+    volatility: 200,
     regions: ["华东", "华南", "华中"],
     markets: ["镇江港", "湛江港", "防城港"],
     specifications: ["颗粒", "块粉"],
   },
   phosphate: {
-    basePrice: 1080,
-    volatility: 25,
+    basePrice: 1130,
+    volatility: 20,
     regions: ["湖北", "云南", "贵州"],
     markets: ["宜昌", "昆明", "贵阳"],
     specifications: ["28%品位", "30%品位"],
   },
   potash: {
-    basePrice: 3500,
-    volatility: 80,
+    basePrice: 3570,
+    volatility: 15,
     regions: ["华东", "华北", "东北"],
     markets: ["青岛港", "天津港", "大连港"],
     specifications: ["60%红钾", "62%白钾"],
   },
   urea: {
-    basePrice: 2350,
-    volatility: 50,
+    basePrice: 1810,
+    volatility: 25,
     regions: ["山东", "河南", "河北"],
     markets: ["临沂", "郑州", "石家庄"],
     specifications: ["小颗粒", "大颗粒"],
@@ -161,9 +161,8 @@ async function main() {
   const codes = Object.values(COMMODITY_CODES)
 
   if (!append) {
-    // 清空现有的非硫磺数据（append 模式下保留已有数据）
+    // 清空现有数据（append 模式下保留已有数据）
     for (const code of codes) {
-      if (code === "sulfur") continue
       console.log(`清空 ${COMMODITY_INFO[code].name} 现有数据...`)
       await db.delete(sulfurPrices).where(eq(sulfurPrices.commodityCode, code))
       await db.delete(portInventory).where(eq(portInventory.commodityCode, code))

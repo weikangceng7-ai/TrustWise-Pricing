@@ -4,6 +4,7 @@
 """
 
 import os
+import re
 import json
 import numpy as np
 import pandas as pd
@@ -85,13 +86,13 @@ class SulfurPricePredictor:
     def _create_mock_data(self) -> pd.DataFrame:
         """创建模拟数据用于测试"""
         dates = pd.date_range(start='2023-01-01', end=datetime.now(), freq='D')
-        np.random.seed(42)
+        rng = np.random.default_rng(42)
 
         # 模拟价格数据：基础价格 + 趋势 + 季节性 + 随机波动
         n = len(dates)
         trend = np.linspace(800, 1000, n)
         seasonal = 50 * np.sin(np.linspace(0, 4*np.pi, n))
-        noise = np.random.normal(0, 30, n)
+        noise = rng.normal(0, 30, n)
         prices = trend + seasonal + noise
 
         data = pd.DataFrame({
@@ -439,8 +440,7 @@ class CommodityDataFetcher:
     }
 
     def __init__(self):
-        self._cache = {}  # code -> list of {date, price}
-        self._cache_date = None
+        self._cache = {}  # {date_str: {商品名: 价格}}
         self._akshare_available = False
         try:
             import akshare as ak
@@ -515,8 +515,8 @@ class CommodityDataFetcher:
         records = []
         today = datetime.now()
 
-        # 尝试抓取最近 N 天的数据
-        for offset in range(min(days, 90)):
+        # 尝试抓取最近的数据，直到获得足够记录（最多回溯90天）
+        for offset in range(90):
             d = today - timedelta(days=offset)
             if d.weekday() >= 5:  # 跳过周末
                 continue
@@ -541,6 +541,63 @@ class CommodityDataFetcher:
 
         return records
 
+    def _fetch_100ppi_benchmark_news(self, product_id: int, name: str, days: int):
+        """从生意社新闻列表页抓取基准价历史数据
+
+        数据来源: https://chem.100ppi.com/news/list--{product_id}-{page}.html
+        从标题 "X月X日生意社{name}基准价为XXXX.XX元/吨" 中提取日期和价格
+        """
+        if not _HAS_CURL_CFFI:
+            return []
+
+        records = []
+        seen_dates = set()
+        current_year = datetime.now().year
+        current_month = datetime.now().month
+
+        # 预编译正则，支持名称后缀如 "氯化钾(进口)" 或 "磷酸(湿法)"
+        pattern = re.compile(
+            rf"(\d{{1,2}})月(\d{{1,2}})日生意社{re.escape(name)}.*?基准价为([\d,]+\.?\d*)元/吨"
+        )
+
+        for page in range(1, 20):
+            url = f"https://chem.100ppi.com/news/list--{product_id}-{page}.html"
+            try:
+                r = curl_requests.get(url, impersonate="chrome120", timeout=15)
+                if r.status_code != 200:
+                    break
+                soup = BeautifulSoup(r.text, "html.parser")
+                links = soup.find_all("a")
+                page_has_data = False
+
+                for a in links:
+                    text = a.get_text(strip=True)
+                    match = pattern.search(text)
+                    if match:
+                        page_has_data = True
+                        month, day, price_str = match.groups()
+                        month_i, day_i = int(month), int(day)
+                        year = current_year if month_i <= current_month else current_year - 1
+                        date_str = f"{year}-{month_i:02d}-{day_i:02d}"
+                        if date_str not in seen_dates:
+                            seen_dates.add(date_str)
+                            records.append({
+                                "date": date_str,
+                                "price": float(price_str.replace(",", "")),
+                                "unit": "元/吨",
+                            })
+
+                if not page_has_data:
+                    break
+
+                if len(records) >= days:
+                    break
+            except Exception as e:
+                print(f"抓取生意社{name}基准价第{page}页失败: {e}")
+                break
+
+        return records
+
     def _fetch_commodity(self, code: str, name: str, days: int) -> Dict[str, Any]:
         """通用品种数据获取"""
         records = self._fetch_historical_from_100ppi(code, name, days)
@@ -559,97 +616,112 @@ class CommodityDataFetcher:
         return self._mock_spot(code, name, days)
 
     def fetch_sulfur_spot(self, days: int = 90) -> Dict[str, Any]:
-        """获取硫磺现货价格 - 基于关联品种（尿素、甲醇）模型推算
+        """获取硫磺现货价格 - 生意社基准价
 
-        硫磺无国内期货合约，不在生意社现期表中。
-        通过已获取真实数据的关联品种价格进行加权推算：
-        - 尿素: 同为化肥原料，相关性 ~0.7
-        - 甲醇: 同为化工基础原料，相关性 ~0.5
+        直接从生意社新闻页抓取每日硫磺基准价，不再使用模型推算。
+        数据来源: https://chem.100ppi.com/news/list--404-{page}.html
+        """
+        records = self._fetch_100ppi_benchmark_news(404, "硫磺", days)
+
+        if records and len(records) >= 3:
+            records.sort(key=lambda x: x["date"])
+            return {
+                "success": True,
+                "source": "生意社硫磺基准价 (100ppi.com)",
+                "commodity_code": "sulfur",
+                "data": records[-days:],
+                "count": min(len(records), days),
+            }
+
+        return self._mock_spot("sulfur", "硫磺", days)
+
+    def fetch_phosphate_spot(self, days: int = 90) -> Dict[str, Any]:
+        """获取磷矿石价格 - 基于尿素模型推算
+
+        磷矿石30%品位真实价格约970-1030元/吨。
+        磷矿石/尿素历史价格比约0.40-0.45，用尿素现货价格加权推算。
+        同时参考磷酸基准价(生意社ID 558)作为辅助校准。
         """
         import numpy as np
 
-        # 获取关联品种真实价格
         urea_data = self._fetch_commodity("urea", "尿素", days)
-        methanol_data = self._fetch_commodity("methanol", "甲醇MA", days)
-
         urea_records = urea_data.get("data", [])
-        methanol_records = methanol_data.get("data", [])
-
-        # 判断是否获取到了足够的真实数据进行推算
         has_real_urea = urea_data.get("source", "").startswith("生意社")
-        has_real_methanol = methanol_data.get("source", "").startswith("生意社")
+
+        # 尝试获取磷酸基准价作为辅助校准
+        pa_records = self._fetch_100ppi_benchmark_news(558, "磷酸", days)
 
         if has_real_urea and len(urea_records) >= 3:
-            # 构建日期索引
             urea_by_date = {r["date"]: r["price"] for r in urea_records}
-            methanol_by_date = {r["date"]: r["price"] for r in methanol_records} if has_real_methanol else {}
+            pa_by_date = {r["date"]: r["price"] for r in pa_records} if pa_records else {}
 
-            np.random.seed(42)
+            rng = np.random.default_rng(99)
             records = []
 
-            # 硫磺/尿素历史价格比约 0.78-0.85
-            # 硫磺/甲醇历史价格比约 0.65-0.75
-            base_ratio_urea = 0.82
-            base_ratio_methanol = 0.70
+            all_dates = sorted(set(list(urea_by_date.keys()) + list(pa_by_date.keys())))
 
-            all_dates = sorted(set(list(urea_by_date.keys()) + list(methanol_by_date.keys())))
-
-            for i, date in enumerate(all_dates):
+            for date in all_dates:
                 urea_price = urea_by_date.get(date)
-                methanol_price = methanol_by_date.get(date)
+                pa_price = pa_by_date.get(date)
 
                 if urea_price:
-                    # 加权推算: 尿素权重 0.7, 甲醇权重 0.3
-                    estimated = urea_price * base_ratio_urea
-                    if methanol_price:
-                        estimated = estimated * 0.7 + methanol_price * base_ratio_methanol * 0.3
+                    # 磷矿石/尿素 ≈ 0.56（当前市场比值，尿素~1775，磷矿石30%~1000）
+                    estimated = urea_price * 0.56
+                    # 磷酸基准价辅助校准: 磷酸/磷矿石 ≈ 9.0
+                    if pa_price:
+                        pa_estimated = pa_price / 9.0
+                        estimated = estimated * 0.4 + pa_estimated * 0.6
 
-                    # 加入小幅扰动模拟硫磺市场独立波动 (±3%)
-                    noise = np.random.normal(0, estimated * 0.015)
-                    estimated += noise
-
+                    noise = rng.normal(0, estimated * 0.015)
+                    records.append({
+                        "date": date,
+                        "price": round(estimated + noise, 2),
+                        "unit": "元/吨",
+                    })
+                elif pa_price and records:
+                    prev = records[-1]["price"]
+                    pa_estimated = pa_price / 9.0
+                    estimated = prev * 0.5 + pa_estimated * 0.5
                     records.append({
                         "date": date,
                         "price": round(estimated, 2),
                         "unit": "元/吨",
                     })
 
-                # 如果某天只有甲醇数据，用前一天的推算值
-                elif methanol_price and records:
-                    prev = records[-1]["price"]
-                    estimated = prev * 0.7 + methanol_price * base_ratio_methanol * 0.3
-                    noise = np.random.normal(0, estimated * 0.02)
-                    records.append({
-                        "date": date,
-                        "price": round(estimated + noise, 2),
-                        "unit": "元/吨",
-                    })
-
             if len(records) >= 3:
-                # 记录用于推算的源数据信息
-                sources = []
-                if has_real_urea:
-                    sources.append("尿素")
-                if has_real_methanol:
-                    sources.append("甲醇")
-                source_desc = "、".join(sources)
+                source_parts = ["尿素现货价格"]
+                if pa_records:
+                    source_parts.append("磷酸基准价")
+                source_desc = "、".join(source_parts)
 
                 return {
                     "success": True,
-                    "source": f"模型推算（基于{source_desc}现货价格）",
-                    "commodity_code": "sulfur",
+                    "source": f"模型推算（基于{source_desc}）",
+                    "commodity_code": "phosphate",
                     "data": records[-days:],
                     "count": min(len(records), days),
-                    "note": f"硫磺无期货合约，价格由{source_desc}加权推算。硫磺/尿素≈{base_ratio_urea}，硫磺/甲醇≈{base_ratio_methanol}",
                 }
 
-        # 回退: 没有任何真实关联数据时用纯模拟
-        return self._mock_spot("sulfur", "硫磺", days)
-
-    def fetch_phosphate_spot(self, days: int = 90) -> Dict[str, Any]:
         return self._mock_spot("phosphate", "磷矿石", days)
 
     def fetch_potash_spot(self, days: int = 90) -> Dict[str, Any]:
+        """获取钾肥(氯化钾)现货价格 - 生意社基准价
+
+        直接从生意社新闻页抓取每日氯化钾(进口)基准价。
+        数据来源: https://chem.100ppi.com/news/list--927-{page}.html
+        """
+        records = self._fetch_100ppi_benchmark_news(927, "氯化钾", days)
+
+        if records and len(records) >= 3:
+            records.sort(key=lambda x: x["date"])
+            return {
+                "success": True,
+                "source": "生意社氯化钾基准价 (100ppi.com)",
+                "commodity_code": "potash",
+                "data": records[-days:],
+                "count": min(len(records), days),
+            }
+
         return self._mock_spot("potash", "钾肥", days)
 
     def fetch_urea_spot(self, days: int = 90) -> Dict[str, Any]:
@@ -659,11 +731,11 @@ class CommodityDataFetcher:
         return self._fetch_commodity("urea_futures", "尿素", days)
 
     def fetch_bdi_index(self) -> Dict[str, Any]:
-        """获取波罗的海干散货指数 (BDI)"""
+        """获取波罗的海干散货指数 (BDI) - 新浪财经"""
         if not self._akshare_available:
             return self._mock_bdi()
         try:
-            df = self.ak.bdi_index()
+            df = self.ak.spot_goods(symbol="波罗的海干散货指数")
             if df is None or df.empty:
                 return self._mock_bdi()
             df = df.tail(90)
@@ -671,12 +743,12 @@ class CommodityDataFetcher:
             for _, row in df.iterrows():
                 records.append({
                     "date": str(row.get("日期", "")),
-                    "price": int(row.get("指数", row.get("BDI", 0))),
+                    "price": int(row.get("指数", 0)),
                     "unit": "指数",
                 })
             return {
                 "success": True,
-                "source": "Baltic Exchange via AKShare",
+                "source": "新浪财经 (Baltic Exchange)",
                 "commodity_code": "bdi",
                 "data": records,
                 "count": len(records),
@@ -700,21 +772,21 @@ class CommodityDataFetcher:
         import numpy as np
 
         base_prices = {
-            "sulfur": 1900, "phosphate": 1080,
-            "potash": 3500, "urea": 2350,
-            "urea_futures": 2300,
+            "sulfur": 9000, "phosphate": 1130,
+            "potash": 3570, "urea": 1810,
+            "urea_futures": 1800,
         }
         volatility_map = {
-            "sulfur": 15, "phosphate": 8,
-            "potash": 20, "urea": 12,
+            "sulfur": 200, "phosphate": 15,
+            "potash": 10, "urea": 12,
             "urea_futures": 10,
         }
         base = base_prices.get(code, 1000)
         vol = volatility_map.get(code, 15)
 
-        np.random.seed(hash(code) % 2**32)
+        rng = np.random.default_rng(abs(hash(code)) % (2**31))
         dates = pd.date_range(end=datetime.now(), periods=days, freq="D")
-        noise = np.random.normal(0, vol, days)
+        noise = rng.normal(0, vol, days)
         prices = base + np.cumsum(noise)
 
         records = []
@@ -738,10 +810,10 @@ class CommodityDataFetcher:
         """生成模拟 BDI 数据"""
         import numpy as np
 
-        np.random.seed(12345)
+        rng = np.random.default_rng(12345)
         dates = pd.date_range(end=datetime.now(), periods=90, freq="D")
         bdi_base = 1800
-        noise = np.random.normal(0, 25, 90)
+        noise = rng.normal(0, 25, 90)
         bdi_values = bdi_base + np.cumsum(noise)
         bdi_values = np.clip(bdi_values, 500, 5000)
 
