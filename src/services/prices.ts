@@ -37,13 +37,24 @@ export async function getPriceSummary(commodityCode?: string) {
   const latestPrice = prices[0]
   const avgPrice = prices.reduce((sum, p) => sum + Number(p.mainPrice || 0), 0) / prices.length
 
+  // 存储的 changePercent 缺失或为 0 时，用价格序列计算近30日真实涨跌幅（最新 vs 最早）
+  let changePercent = latestPrice.changePercent
+  let changeValue = latestPrice.changeValue
+  const oldestPrice = prices[prices.length - 1]
+  if ((!changePercent || Number(changePercent) === 0) && prices.length > 1 && Number(oldestPrice.mainPrice) > 0) {
+    const diff = Number(latestPrice.mainPrice) - Number(oldestPrice.mainPrice)
+    changeValue = diff.toFixed(2)
+    changePercent = ((diff / Number(oldestPrice.mainPrice)) * 100).toFixed(2)
+  }
+
   return {
     currentPrice: latestPrice.mainPrice,
     minPrice: latestPrice.minPrice,
     maxPrice: latestPrice.maxPrice,
     avgPrice: avgPrice.toFixed(2),
-    changeValue: latestPrice.changeValue,
-    changePercent: latestPrice.changePercent,
+    changeValue,
+    changePercent,
+    changePeriodDays: prices.length,
     date: latestPrice.date,
     market: latestPrice.market,
     specification: latestPrice.specification,

@@ -725,6 +725,9 @@ export function YihuaCodeKnowledgeGraph() {
                 <span className="flex items-center gap-1.5">
                   <BarChart3 className="h-3 w-3" />
                   WTI原油
+                  {marketData.oil?.isMock && (
+                    <Badge variant="secondary" className="text-[10px] px-1 py-0 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">模拟</Badge>
+                  )}
                 </span>
                 {marketData.oil?.data?.latest && (
                   <span className={marketData.oil.data.latest.changePercent > 0 ? "text-red-500" : marketData.oil.data.latest.changePercent < 0 ? "text-green-500" : "text-muted-foreground"}>
@@ -743,6 +746,9 @@ export function YihuaCodeKnowledgeGraph() {
                 <span className="flex items-center gap-1.5">
                   <DollarSign className="h-3 w-3" />
                   美元汇率
+                  {marketData.usdcny?.isMock && (
+                    <Badge variant="secondary" className="text-[10px] px-1 py-0 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">模拟</Badge>
+                  )}
                 </span>
                 {marketData.usdcny?.data?.latest && (
                   <span className={marketData.usdcny.data.latest.changePercent > 0 ? "text-red-500" : marketData.usdcny.data.latest.changePercent < 0 ? "text-green-500" : "text-muted-foreground"}>
@@ -761,6 +767,9 @@ export function YihuaCodeKnowledgeGraph() {
                 <span className="flex items-center gap-1.5">
                   <TrendingUp className="h-3 w-3" />
                   BDI指数
+                  {marketData.bdi?.isMock && (
+                    <Badge variant="secondary" className="text-[10px] px-1 py-0 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">模拟</Badge>
+                  )}
                 </span>
                 {marketData.bdi?.data?.latest && (
                   <span className={marketData.bdi.data.latest.changePercent > 0 ? "text-red-500" : marketData.bdi.data.latest.changePercent < 0 ? "text-green-500" : "text-muted-foreground"}>

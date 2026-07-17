@@ -26,6 +26,12 @@
               "guide/quickstart",
               "guide/authentication"
             ]
+          },
+          {
+            "group": "MCP 接入",
+            "pages": [
+              "guide/mcp"
+            ]
           }
         ]
       },
@@ -44,6 +50,30 @@
             "pages": [
               "api-reference/chat",
               "api-reference/enterprises"
+            ]
+          },
+          {
+            "group": "外部数据源",
+            "pages": [
+              "api-reference/external-data"
+            ]
+          },
+          {
+            "group": "报告与数据",
+            "pages": [
+              "api-reference/reports"
+            ]
+          },
+          {
+            "group": "追踪与告警",
+            "pages": [
+              "api-reference/tracker"
+            ]
+          },
+          {
+            "group": "知识图谱与管理",
+            "pages": [
+              "api-reference/knowledge-graph"
             ]
           }
         ]

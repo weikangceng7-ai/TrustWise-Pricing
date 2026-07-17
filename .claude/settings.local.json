@@ -147,7 +147,20 @@
       "Bash(python -c \"import py_compile; py_compile.compile\\('app.py', doraise=True\\); print\\('app.py OK'\\)\")",
       "WebFetch(domain:www.mintlify.com)",
       "Bash(npm i:*)",
-      "Bash(mint dev:*)"
+      "Bash(mint dev:*)",
+      "Bash(git:*)",
+      "Bash(sed:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(node scripts/tmp-gen-enterprises.js)",
+      "Bash(rm scripts/tmp-gen-enterprises.js)",
+      "Bash(grep -h \"name: \\\\\"\" tools/*.ts)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('docs/docs.json','utf8'\\)\\); console.log\\('docs.json 格式正确'\\)\")",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{const j=JSON.parse\\(s\\);const rows=\\(j.data||[]\\).map\\(r=>\\\\`\\\\${r.date} \\\\${r.mainPrice} \\\\${r.source}\\\\`\\);console.log\\(rows.join\\('\\\\n'\\)\\)}\\)\")",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{const j=JSON.parse\\(s\\);console.log\\('source:',j.source\\);console.log\\('count:',j.count\\);const d=j.data||[];console.log\\('最新3条:',JSON.stringify\\(d.slice\\(-3\\)\\)\\)}\\)\")",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{const j=JSON.parse\\(s\\);\\(j.data||[]\\).forEach\\(r=>console.log\\(r.date,r.price\\)\\)}\\)\")",
+      "Bash(node -e \"const j=require\\('/tmp/akshare_all.json'\\);for\\(const [k,v] of Object.entries\\(j.data||{}\\)\\){console.log\\(k, '|', v.source, '|', v.count, '条'\\)}\")",
+      "Bash(node -e \"const j=require\\('./akshare_all.json'\\);for\\(const [k,v] of Object.entries\\(j.data||{}\\)\\){console.log\\(k,'|',v.source,'|',v.count,'条'\\)}\")",
+      "Bash(ls -a .env*)"
     ]
   }
 }

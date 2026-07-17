@@ -1,0 +1,152 @@
+---
+title: MCP 接入
+description: 通过 MCP 协议让 Claude 等 AI 客户端直接调用系统数据与预测能力
+---
+
+# MCP 接入指南
+
+**MCP（Model Context Protocol）** 是一种标准协议，让 AI 客户端能够调用外部工具获取实时数据。本系统提供独立的 MCP Server，接入后可在 Claude Desktop 中直接提问，AI 会自动调用系统数据回答。
+
+<Info>
+本页在线地址：**https://weikang.mintlify.app/guide/mcp**（文档站首页：https://weikang.mintlify.app）
+</Info>
+
+<Info>MCP Server 是独立的 Node.js 程序（位于仓库 `mcp-server/` 目录），通过 API Key 调用主后端接口。</Info>
+
+## 架构
+
+```
+AI 客户端（Claude Desktop / DeepSeek 等）
+        ↓ stdio 或 HTTP
+   MCP Server（Node.js，默认监听 3100 端口）
+        ↓ 带 API Key 调用
+   主后端（https://sulfur-agent-web.vercel.app）
+```
+
+## 可用工具（共 18 个）
+
+| 分类 | 工具 | 说明 |
+|------|------|------|
+| 行情数据 | `get_prices` | 查询硫磺价格走势，支持地区/市场筛选 |
+| 行情数据 | `get_inventory` | 港口库存水平及环比变化 |
+| 行情数据 | `get_news` | 市场新闻，标注情绪倾向（利好/利空） |
+| 价格预测 | `predict_prices` | ARIMA + XGBoost 混合模型预测 |
+| 价格预测 | `predict_with_transformer` | Transformer 深度学习模型预测 |
+| 价格预测 | `get_combined_prediction` | 多模型组合预测 |
+| 预测评估 | `get_accuracy_metrics` | 预测准确率指标（MAPE、MAE 等） |
+| 多品种分析 | `list_commodities` | 支持的品种列表 |
+| 多品种分析 | `get_commodity_analysis` | 单品种行情分析 |
+| 多品种分析 | `cross_commodity_analysis` | 跨品种对比、相关性矩阵、协同采购建议 |
+| 智能追踪 | `subscribe_alert` | 创建价格/库存/新闻告警订阅 |
+| 智能追踪 | `list_subscriptions` | 列出所有订阅 |
+| 智能追踪 | `update_subscription` | 更新或删除订阅 |
+| 智能追踪 | `get_alerts` | 获取告警列表 |
+| 智能追踪 | `get_tracker_status` | Tracker 服务运行状态 |
+| 知识与报告 | `query_knowledge_graph` | 查询价格影响因子、供应链关系 |
+| 知识与报告 | `generate_report` | 手动触发生成追踪报告 |
+| 知识与报告 | `get_success_cases` | 查询应用案例 |
+
+## 快速开始
+
+### 1. 编译 MCP Server
+
+```bash
+cd mcp-server
+npm install
+npm run build
+```
+
+编译成功后生成 `dist/index.js`。
+
+### 2. 环境变量
+
+| 变量名 | 说明 | 示例 |
+|--------|------|------|
+| `API_BASE_URL` | 主后端地址 | `https://sulfur-agent-web.vercel.app` |
+| `API_KEY` | API 密钥（在线平台登录后获取） | `sk_xxxxxx` |
+| `INDUSTRY_CODE` | 行业代码 | `sulfur` |
+| `MCP_TRANSPORT` | 传输模式：`stdio` / `http` | `stdio` |
+| `MCP_PORT` | HTTP 模式监听端口 | `3100` |
+
+API Key 的获取方式见 [认证方式](/guide/authentication)。
+
+## 接入方式：Claude Desktop（stdio 模式）
+
+<Steps>
+  <Step title="编译 MCP Server">
+    确认已完成上文"快速开始"中的编译，`mcp-server/dist/index.js` 文件存在。
+  </Step>
+  <Step title="打开 Claude Desktop 配置文件">
+    Claude Desktop → **Settings**（设置）→ **Developer**（开发者）→ **Edit Config**（编辑配置），会打开 `claude_desktop_config.json`。
+  </Step>
+  <Step title="添加 MCP Server 配置">
+    在配置文件中添加以下内容（替换为你的实际路径和 API Key）：
+
+    ```json
+    {
+      "mcpServers": {
+        "sulfur-tracker-agent": {
+          "command": "node",
+          "args": ["<仓库绝对路径>/mcp-server/dist/index.js"],
+          "env": {
+            "API_BASE_URL": "https://sulfur-agent-web.vercel.app",
+            "API_KEY": "sk_你的API_KEY",
+            "INDUSTRY_CODE": "sulfur"
+          }
+        }
+      }
+    }
+    ```
+
+    <Warning>Windows 路径中反斜杠必须双写（`\\`），且需为绝对路径。JSON 最后一个对象后面不能有逗号。</Warning>
+  </Step>
+  <Step title="重启 Claude Desktop">
+    保存配置后，**完全退出** Claude Desktop 并重新打开（不是最小化，是退出进程）。
+  </Step>
+  <Step title="验证接入">
+    重启后在对话输入框附近可看到工具图标（锤子/扳手），点击可见 `sulfur-tracker-agent` 的 18 个工具。直接提问测试：
+
+    ```
+    最近硫磺价格走势怎么样？
+    ```
+
+    Claude 会自动调用 MCP 工具获取真实数据后回复。
+  </Step>
+</Steps>
+
+## 可选：HTTP 模式（公网部署）
+
+除本地 stdio 模式外，MCP Server 也可以以 HTTP 模式部署到公网，供支持 HTTP 传输的 MCP 客户端远程连接。
+
+### 本地启动
+
+```bash
+MCP_TRANSPORT=http npm run dev
+```
+
+访问 `http://localhost:3100/health` 返回 `{"status":"ok"}` 即启动成功，MCP 端点为 `http://localhost:3100/mcp`。
+
+### Docker / Railway 部署
+
+仓库已内置 `mcp-server/Dockerfile` 和 `railway.json`：
+
+1. 在 [Railway](https://railway.app/) 新建项目，选择 **Deploy from GitHub repo**；
+2. 在 Variables 面板配置上表中的环境变量（`MCP_TRANSPORT` 设为 `http`）；
+3. 开启 Public Networking，部署完成后 MCP 端点为 `https://<你的域名>/mcp`。
+
+## 常见问题
+
+<AccordionGroup>
+  <Accordion title="Claude Desktop 中没有显示工具图标">
+    依次检查：`dist/index.js` 是否存在（重新 `npm run build`）、配置中路径是否为绝对路径且反斜杠双写、JSON 是否有语法错误，最后完全退出并重启 Claude Desktop。
+  </Accordion>
+  <Accordion title="工具调用报错 fetch failed 或 API Key 无效">
+    确认 `API_KEY` 无多余空格、`API_BASE_URL` 正确。若后端正在部署或维护，稍后重试。
+  </Accordion>
+  <Accordion title="工具返回数据为空">
+    说明后端数据库中暂无对应数据，可换用其他工具验证连通性，如查询港口库存或市场新闻。
+  </Accordion>
+  <Accordion title="如何查看调用日志">
+    Claude Desktop → Settings → Developer → View MCP Server Logs。
+  </Accordion>
+</AccordionGroup>

@@ -1,0 +1,160 @@
+---
+title: 报告与数据采集
+description: 报告生成、每日数据、数据采集接口
+---
+
+# 报告与数据采集 API
+
+## GET /api/reports
+
+查询采购报告列表，支持筛选和统计。
+
+### 查询参数
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `stats` | boolean | 返回统计摘要 |
+| `generate` | boolean | 触发生成新报告 |
+| `limit` | number | 返回条数 |
+| `keyword` | string | 关键词搜索 |
+| `trend` | string | 趋势筛选 |
+| `risk` | string | 风险等级筛选 |
+| `startDate` | string | 起始日期 |
+| `endDate` | string | 结束日期 |
+
+### 示例
+
+```bash
+# 查询最近报告 + 统计
+curl "https://sulfur-agent-web.vercel.app/api/reports?stats=true&limit=5"
+
+# 关键词搜索
+curl "https://sulfur-agent-web.vercel.app/api/reports?keyword=镇江港&limit=10"
+```
+
+### 响应
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 42,
+      "title": "硫磺市场周报 2026-07-14",
+      "summary": "本周华东地区硫磺价格震荡上行...",
+      "trend": "上涨",
+      "risk": "低",
+      "createdAt": "2026-07-14T08:00:00.000Z"
+    }
+  ],
+  "total": 180,
+  "stats": {
+    "totalReports": 180,
+    "avgPrice": 1180.50,
+    "priceChangePercent": 2.3
+  },
+  "dataSource": "database"
+}
+```
+
+---
+
+## POST /api/reports
+
+手动生成一份采购报告。
+
+```bash
+curl -X POST "https://sulfur-agent-web.vercel.app/api/reports"
+```
+
+```json
+{
+  "success": true,
+  "data": { "id": 43, "title": "..." },
+  "message": "报告生成成功"
+}
+```
+
+---
+
+## GET /api/reports/daily-data
+
+获取每日追踪数据，适合定时轮询场景。
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `mode` | string | `stats` | `reports` / `stats` |
+| `days` | number | `7` | 查询天数 |
+| `includeExternal` | boolean | `false` | 是否包含外部数据源 |
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/reports/daily-data?mode=stats&days=7&includeExternal=true"
+```
+
+---
+
+## POST /api/reports/daily-data
+
+Cron 友好接口，触发每日数据入库。适合通过 Vercel Cron Jobs 自动调用。
+
+```bash
+curl -X POST "https://sulfur-agent-web.vercel.app/api/reports/daily-data"
+```
+
+---
+
+## 数据采集
+
+### POST /api/data-collection
+
+向系统录入新数据（价格或库存）。
+
+```json
+{
+  "type": "price",
+  "data": {
+    "date": "2026-07-15",
+    "price": 1260,
+    "region": "华东",
+    "market": "镇江港",
+    "commodity": "sulfur"
+  }
+}
+```
+
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"type":"price","data":{"date":"2026-07-15","price":1260,"region":"华东","market":"镇江港","commodity":"sulfur"}}' \
+  "https://sulfur-agent-web.vercel.app/api/data-collection"
+```
+
+---
+
+## 数据处理统计
+
+### GET /api/data-processing/stats
+
+查看系统数据处理效率和统计信息。
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/data-processing/stats"
+```
+
+```json
+{
+  "success": true,
+  "timestamp": "2026-07-15T08:00:00.000Z",
+  "data": {
+    "processingStats": {
+      "totalPrices": 3650,
+      "totalInventory": 720,
+      "totalReports": 180
+    },
+    "efficiency": {
+      "avgProcessTime": "120ms",
+      "successRate": 99.8
+    }
+  }
+}
+```

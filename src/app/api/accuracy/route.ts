@@ -105,9 +105,9 @@ function generateAccuracyData(): AccuracyData {
     accuracyTrend,
     historicalPredictions,
     byEnterprise: [
-      { code: "yihua", name: "湖北宜化", mape: 3.2, mae: 42, predictionCount: 365 },
-      { code: "luxi", name: "鲁西化工", mape: 3.8, mae: 38, predictionCount: 365 },
-      { code: "jinzhengda", name: "金正大", mape: 4.1, mae: 45, predictionCount: 365 },
+      { code: "yihua", name: "HX集团", mape: 3.2, mae: 42, predictionCount: 365 },
+      { code: "luxi", name: "HY集团", mape: 3.8, mae: 38, predictionCount: 365 },
+      { code: "jinzhengda", name: "TC集团", mape: 4.1, mae: 45, predictionCount: 365 },
     ],
   }
 }

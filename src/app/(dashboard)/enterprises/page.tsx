@@ -95,7 +95,7 @@ export default function EnterprisesPage() {
         <div>
           <h1 className="text-3xl font-bold">化工企业数据库</h1>
           <p className="text-muted-foreground mt-1">
-            实时更新 · 最后更新: {new Date(lastUpdated).toLocaleString('zh-CN')}
+            示例数据 · 企业信息已匿名化处理 · 最后更新: {new Date(lastUpdated).toLocaleString('zh-CN')}
           </p>
         </div>
         <Badge variant="outline" className="text-sm">
@@ -221,7 +221,7 @@ export default function EnterprisesPage() {
                 </div>
                 {enterprise.listed && (
                   <Badge variant="default" className="bg-green-500">
-                    {enterprise.stockCode}
+                    上市
                   </Badge>
                 )}
               </div>

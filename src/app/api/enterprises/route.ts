@@ -30,7 +30,7 @@ export async function GET() {
   return NextResponse.json({
     version: "1.0.0",
     lastUpdated: new Date().toISOString(),
-    dataSource: "中国化工企业100强榜单、全球化工企业50强榜单、中国化肥企业100强榜单、中国精细化工百强榜单",
+    dataSource: "示例数据（企业信息已匿名化处理，不对应任何真实企业）",
     stats,
     industryStats,
     provinceStats,

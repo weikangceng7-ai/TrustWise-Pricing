@@ -840,14 +840,14 @@ function TrustedBySection() {
   const { ref: sectionRef, isInView } = useInView()
 
   const clients = [
-    { name: "湖北宜化", industry: "磷化工", shortCode: "HX" },
-    { name: "鲁西化工", industry: "化肥制造", shortCode: "LY" },
-    { name: "金正大", industry: "复合肥", shortCode: "TC" },
-    { name: "云天化", industry: "磷化工", shortCode: "YT" },
-    { name: "新洋丰", industry: "磷复肥", shortCode: "XY" },
-    { name: "司尔特", industry: "化肥", shortCode: "ST" },
-    { name: "六国化工", industry: "化工", shortCode: "LG" },
-    { name: "芭田股份", industry: "复合肥", shortCode: "BT" },
+    { name: "HX集团", industry: "磷化工", shortCode: "HX" },
+    { name: "HY集团", industry: "化肥制造", shortCode: "HY" },
+    { name: "TC集团", industry: "复合肥", shortCode: "TC" },
+    { name: "YN集团", industry: "磷化工", shortCode: "YN" },
+    { name: "XF集团", industry: "磷复肥", shortCode: "XF" },
+    { name: "SD集团", industry: "化肥", shortCode: "SD" },
+    { name: "LH集团", industry: "化工", shortCode: "LH" },
+    { name: "BS集团", industry: "复合肥", shortCode: "BS" },
   ]
 
   return (
@@ -862,6 +862,7 @@ function TrustedBySection() {
             已服务行业龙头企业
           </h2>
           <p className="text-base text-slate-500 dark:text-slate-400">覆盖磷化工、化肥制造、复合肥等多个细分领域</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">* 演示示例数据，企业名称已匿名化处理</p>
         </div>
 
         <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
@@ -1141,7 +1142,7 @@ const QUICK_NAV_PAGES = [
     title: "TC集团",
     icon: TrendingUp,
     href: "/enterprise/jinzhengda",
-    description: "化肥行业龙头",
+    description: "华东地区复合肥企业",
     color: "amber"
   },
   {

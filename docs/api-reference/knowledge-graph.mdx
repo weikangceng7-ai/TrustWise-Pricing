@@ -1,0 +1,170 @@
+---
+title: 知识图谱与管理
+description: Neo4j 知识图谱、通知系统、文件上传、系统健康检查
+---
+
+# 知识图谱与管理 API
+
+## Neo4j 知识图谱
+
+### GET /api/neo4j
+
+检查 Neo4j 连接状态和配置信息。
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/neo4j"
+```
+
+```json
+{
+  "neo4j": {
+    "connected": true,
+    "version": "5.15.0"
+  },
+  "config": {
+    "uri": "bolt://localhost:7687",
+    "user": "neo4j",
+    "configured": true
+  }
+}
+```
+
+### POST /api/neo4j
+
+执行 Cypher 查询或管理知识图谱。
+
+| action | 说明 |
+|--------|------|
+| `query` | 执行 Cypher 查询语句 |
+| `init` | 初始化知识图谱 Schema |
+| `clear` | 清空知识图谱数据 |
+
+```bash
+# 执行查询
+curl -X POST "https://sulfur-agent-web.vercel.app/api/neo4j?action=query" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "MATCH (n:Factor)-[r:INFLUENCES]->(p:Price) RETURN n, r, p LIMIT 10"}'
+```
+
+### GET /api/neo4j/graph
+
+获取企业知识图谱可视化数据。
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `enterprise` | string | `yihua` | 企业标识 |
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/neo4j/graph?enterprise=yihua"
+```
+
+```json
+{
+  "nodes": [
+    { "id": "sulfur_price", "label": "硫磺价格", "group": "price" },
+    { "id": "crude_oil", "label": "原油价格", "group": "factor" }
+  ],
+  "edges": [
+    { "source": "crude_oil", "target": "sulfur_price", "label": "影响", "weight": 0.75 }
+  ],
+  "enterprise": "yihua",
+  "timestamp": "2026-07-15T08:00:00.000Z"
+}
+```
+
+### GET /api/neo4j/seed
+
+初始化并填充知识图谱种子数据。
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/neo4j/seed"
+```
+
+<Info>仅在首次部署或需要重置知识图谱时使用。</Info>
+
+---
+
+## 系统健康检查
+
+### GET /api/health
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/health"
+```
+
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-07-15T08:00:00.000Z",
+  "version": "1.0.0"
+}
+```
+
+---
+
+## 文件上传（Cloudflare R2）
+
+### POST /api/r2
+
+上传文件到 Cloudflare R2 存储。
+
+```bash
+curl -X POST \
+  -F "file=@screenshot.png" \
+  -F "key=screenshots/screenshot-20260715.png" \
+  "https://sulfur-agent-web.vercel.app/api/r2"
+```
+
+```json
+{
+  "success": true,
+  "key": "screenshots/screenshot-20260715.png",
+  "url": "https://xxx.r2.cloudflarestorage.com/screenshots/screenshot-20260715.png",
+  "publicUrl": "https://cdn.example.com/screenshots/screenshot-20260715.png",
+  "size": 245760,
+  "contentType": "image/png"
+}
+```
+
+### GET /api/r2
+
+列出已上传的图片文件。
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/r2"
+```
+
+---
+
+## 预测精度指标
+
+### GET /api/accuracy
+
+获取模型预测精度统计数据。
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/accuracy"
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "overview": {
+      "mae": 18.5,
+      "rmse": 24.3,
+      "mape": 1.52,
+      "r2": 0.94,
+      "totalPredictions": 365
+    },
+    "accuracyTrend": [
+      { "date": "2026-07-01", "mape": 1.2 },
+      { "date": "2026-07-08", "mape": 1.8 }
+    ],
+    "byEnterprise": [
+      { "name": "企业A", "mape": 1.3 },
+      { "name": "企业B", "mape": 1.7 }
+    ]
+  }
+}
+```

@@ -61,6 +61,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
+      isMock: true,
       source: "AkShare",
       type: type,
       data: mockData,
@@ -145,6 +146,7 @@ async function fetchRealtimeExchangeRate() {
 
     return NextResponse.json({
       success: true,
+      isMock: false,
       source: "Frankfurter API (欧洲央行)",
       type: "usdcny",
       data: {
@@ -172,6 +174,7 @@ async function fetchRealtimeExchangeRate() {
     const mockData = getMockData("usdcny")
     return NextResponse.json({
       success: true,
+      isMock: true,
       source: "AkShare (模拟)",
       type: "usdcny",
       data: mockData,
@@ -225,6 +228,7 @@ async function fetchRealtimeOilPrice() {
 
             return NextResponse.json({
               success: true,
+              isMock: false,
               source: "FRED API",
               type: "oil",
               data: {
@@ -250,6 +254,7 @@ async function fetchRealtimeOilPrice() {
     const mockData = getMockData("oil")
     return NextResponse.json({
       success: true,
+      isMock: true,
       source: "FRED (模拟)",
       type: "oil",
       data: mockData,
@@ -261,6 +266,7 @@ async function fetchRealtimeOilPrice() {
     const mockData = getMockData("oil")
     return NextResponse.json({
       success: true,
+      isMock: true,
       source: "FRED (模拟)",
       type: "oil",
       data: mockData,
@@ -314,6 +320,7 @@ async function fetchRealtimeBrentPrice() {
 
             return NextResponse.json({
               success: true,
+              isMock: false,
               source: "FRED API",
               type: "brent",
               data: {
@@ -339,6 +346,7 @@ async function fetchRealtimeBrentPrice() {
     const mockData = getMockData("brent")
     return NextResponse.json({
       success: true,
+      isMock: true,
       source: "FRED (模拟)",
       type: "brent",
       data: mockData,
@@ -350,6 +358,7 @@ async function fetchRealtimeBrentPrice() {
     const mockData = getMockData("brent")
     return NextResponse.json({
       success: true,
+      isMock: true,
       source: "FRED (模拟)",
       type: "brent",
       data: mockData,
@@ -399,6 +408,7 @@ async function fetchRealtimeBDI() {
 
     return NextResponse.json({
       success: true,
+      isMock: true,
       source: "BDI (模拟)",
       type: "bdi",
       data: {
@@ -420,6 +430,7 @@ async function fetchRealtimeBDI() {
     const mockData = getMockData("bdi")
     return NextResponse.json({
       success: true,
+      isMock: true,
       source: "AkShare (模拟)",
       type: "bdi",
       data: mockData,
@@ -438,6 +449,7 @@ async function fetchRealtimeBDIFromService() {
     if (data && data.data.length > 0) {
       return NextResponse.json({
         success: true,
+        isMock: data.source.includes("模拟"),
         source: data.source,
         type: "bdi",
         data: {
@@ -470,6 +482,7 @@ async function fetchCommoditySpotFromService(code: string) {
       }
       return NextResponse.json({
         success: true,
+        isMock: data.source.includes("模拟"),
         source: data.source,
         type: code,
         data: {
@@ -492,6 +505,7 @@ async function fetchCommoditySpotFromService(code: string) {
   const mockData = getMockData(code)
   return NextResponse.json({
     success: true,
+    isMock: true,
     source: "AKShare (模拟)",
     type: code,
     data: mockData,

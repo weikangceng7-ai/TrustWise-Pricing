@@ -47,6 +47,7 @@ export async function GET(request: Request) {
     // 返回模拟数据
     return NextResponse.json({
       success: true,
+      isMock: true,
       source: "FRED",
       series_id: seriesId,
       data: getMockSeriesData(seriesId),
@@ -68,6 +69,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
+      isMock: false,
       source: "FRED",
       series_id: seriesId,
       series_info: {
@@ -82,6 +84,7 @@ export async function GET(request: Request) {
     console.error("FRED API error:", error)
     return NextResponse.json({
       success: true,
+      isMock: true,
       source: "FRED",
       series_id: seriesId,
       data: getMockSeriesData(seriesId),

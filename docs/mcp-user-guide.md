@@ -11,7 +11,7 @@
 你可以把 Sulfur Agent MCP Server 理解为一个 **"硫磺数据中转站"**：
 
 ```
-AI 客户端（Claude Desktop / DeepSeek 等）
+AI 客户端（Claude Desktop 等）
         ↓ HTTP 请求
    MCP Server（Node.js，监听 3100 端口）
         ↓ 带 API Key 调用
@@ -59,7 +59,7 @@ dir dist\index.js
 
 如果能看到文件，说明编译成功。
 
-> **补充说明**：MCP Server 是一个独立的 Node.js 程序，不是 Next.js 的一部分。它编译后生成 `dist/index.js`，Claude Desktop 和浏览器扩展都依赖这个文件。
+> **补充说明**：MCP Server 是一个独立的 Node.js 程序，不是 Next.js 的一部分。它编译后生成 `dist/index.js`，Claude Desktop 依赖这个文件。
 
 ### 2.2 本地测试运行
 
@@ -116,11 +116,7 @@ Railway 是一个帮你托管服务器的云平台，**用 Docker 一键部署**
 
 ---
 
-## 四、第三步：在 AI 客户端中使用
-
-这里有 **两种用法**，根据场景选择：
-
-### 用法 A：Claude Desktop 本地运行（stdio 模式，适合深度分析）
+## 四、第三步：在 Claude Desktop 中使用（stdio 模式）
 
 #### 4.1 配置
 
@@ -171,44 +167,6 @@ Claude 会自动调用 MCP 工具获取真实数据后回复你。
 
 ---
 
-### 用法 B：浏览器扩展连接公网 MCP 服务（适合日常快速查询）
-
-除了 Claude Desktop，你也可以直接在**浏览器中使用 MCP 扩展**，连接到已部署的公网 MCP 服务。这种方式无需编译代码，配置更简单。
-
-#### 4.3 安装与配置
-
-1. 在 Chrome/Edge 扩展商店搜索并安装支持 MCP 协议的浏览器扩展（例如 "硫磺市场数据助手"）
-2. 打开扩展配置页面，按以下方式填写：
-   - **启用扩展**：打开开关
-   - **MCP Server 地址**：填写 `https://sulfur-agent-web.vercel.app/mcp`（或你部署的 Railway 地址）
-   - **API Key（可选）**：填写你的 API Key（格式 `sk_xxxxxx`）
-   - 点击 **保存配置**
-3. 如果扩展支持"使用默认公共服务器"选项，勾选后可自动填入默认地址
-
-#### 4.4 验证是否生效
-
-1. 打开 DeepSeek / 豆包等支持的 AI 聊天页面
-2. 点击页面右下角的扩展浮动按钮
-3. 硫磺市场数据助手应显示为已连接状态
-4. 在聊天中输入问题测试：
-
-```
-最近硫磺价格走势怎么样？
-```
-
-扩展会自动获取硫磺市场数据并注入到你的聊天输入框中。
-
-### 用法 A vs 用法 B 对比
-
-| 对比项 | 浏览器扩展（用法 B） | Claude Desktop（用法 A） |
-|--------|-----------|---------------|
-| 配置难度 | 简单，只需填地址 | 需编译和配置 JSON |
-| 运行方式 | 连接公网服务 | 本地运行 MCP Server |
-| 适用场景 | 日常快速查询 | 深度分析、本地开发 |
-| 数据延迟 | 公网网络延迟 | 本地直连更快 |
-
----
-
 ## 五、常见问题
 
 ### Q1：Claude Desktop 中没有显示 MCP 工具图标
@@ -246,11 +204,7 @@ Claude Desktop → Settings → Developer → View MCP Server Logs，可以看�
 
 ### Q5：我想用其他 AI 客户端
 
-目前支持两种接入方式：
-- **Claude Desktop**：本地 stdio 模式（见第四部分用法 A）
-- **浏览器扩展**：连接公网 MCP 服务（见第四部分用法 B），兼容 DeepSeek、豆包等 AI 聊天页面
-
-其他客户端的配置方式请参考项目仓库中的完整文档。
+目前推荐使用 **Claude Desktop** 本地 stdio 模式接入（见第四部分）。其他支持 MCP 协议 HTTP 传输的客户端，可连接公网部署的 MCP 端点，配置方式请参考项目仓库中的完整文档。
 
 ---
 

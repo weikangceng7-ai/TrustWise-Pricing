@@ -51,7 +51,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useTrackerSubscriptions, useTrackerSubscription } from "@/hooks/use-tracker-subscriptions"
 import type { UpdateSubscriptionInput } from "@/hooks/use-tracker-subscriptions"
-import type { TrackerSubscription } from "@/db/schema-tracker"
+import type { TrackerSubscription, AlertRuleConfig } from "@/db/schema-tracker"
 
 // ==================== 频率映射 ====================
 
@@ -270,7 +270,38 @@ function CreateSubscriptionDialog() {
     scheduleTime: "09:00",
     reportEnabled: true,
     reportType: "daily",
+    alertRules: [] as Array<{
+      type: string
+      priceChangeThreshold?: string
+      priceUpperThreshold?: string
+      priceLowerThreshold?: string
+      inventoryChangeThreshold?: string
+      inventoryUpperThreshold?: string
+      inventoryLowerThreshold?: string
+      newsKeywords?: string
+      urgency: string
+    }>,
   })
+
+  const addAlertRule = () => {
+    setFormData({
+      ...formData,
+      alertRules: [...formData.alertRules, { type: "price_change", urgency: "normal" }],
+    })
+  }
+
+  const removeAlertRule = (index: number) => {
+    setFormData({
+      ...formData,
+      alertRules: formData.alertRules.filter((_, i) => i !== index),
+    })
+  }
+
+  const updateAlertRule = (index: number, updates: Record<string, unknown>) => {
+    const newRules = [...formData.alertRules]
+    newRules[index] = { ...newRules[index], ...updates }
+    setFormData({ ...formData, alertRules: newRules })
+  }
 
   const handleSubmit = async () => {
     await createSubscription({
@@ -281,7 +312,23 @@ function CreateSubscriptionDialog() {
       targetMarket: formData.targetMarket || undefined,
       frequency: formData.frequency as "hourly" | "daily" | "weekly",
       scheduleTime: formData.scheduleTime,
-      alertRules: [],
+      alertRules: formData.alertRules.map((r) => {
+        const base = { type: r.type as AlertRuleConfig["type"], urgency: r.urgency as AlertRuleConfig["urgency"] }
+        switch (r.type) {
+          case "price_change":
+            return { ...base, priceChangeThreshold: Number(r.priceChangeThreshold) || undefined }
+          case "price_threshold":
+            return { ...base, priceUpperThreshold: Number(r.priceUpperThreshold) || undefined, priceLowerThreshold: Number(r.priceLowerThreshold) || undefined }
+          case "inventory_change":
+            return { ...base, inventoryChangeThreshold: Number(r.inventoryChangeThreshold) || undefined }
+          case "inventory_threshold":
+            return { ...base, inventoryUpperThreshold: Number(r.inventoryUpperThreshold) || undefined, inventoryLowerThreshold: Number(r.inventoryLowerThreshold) || undefined }
+          case "news_keyword":
+            return { ...base, newsKeywords: r.newsKeywords ? r.newsKeywords.split(",").map((s) => s.trim()).filter(Boolean) : undefined }
+          default:
+            return base
+        }
+      }) as AlertRuleConfig[],
       reportEnabled: formData.reportEnabled,
       reportType: formData.reportType as "daily" | "weekly" | "monthly",
       notificationChannels: { email: true, inApp: true, sms: false },
@@ -298,6 +345,7 @@ function CreateSubscriptionDialog() {
       scheduleTime: "09:00",
       reportEnabled: true,
       reportType: "daily",
+      alertRules: [],
     })
   }
 
@@ -307,7 +355,7 @@ function CreateSubscriptionDialog() {
         <Plus className="h-4 w-4" />
         新建订阅
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>创建追踪订阅</DialogTitle>
           <DialogDescription>配置追踪目标、频率和通知方式</DialogDescription>
@@ -420,6 +468,99 @@ function CreateSubscriptionDialog() {
             </div>
           )}
         </div>
+
+          {/* 告警规则 */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>告警规则</Label>
+              <Button variant="outline" size="sm" onClick={addAlertRule} className="gap-1">
+                <Plus className="h-3 w-3" />
+                添加规则
+              </Button>
+            </div>
+
+            {formData.alertRules.length === 0 ? (
+              <p className="text-sm text-muted-foreground">暂未设置告警规则，添加规则以在数据异常时触发告警</p>
+            ) : (
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {formData.alertRules.map((rule, index) => (
+                  <div key={index} className="border rounded-lg p-3 space-y-2 relative">
+                    <div className="flex items-center gap-2">
+                      <Select value={rule.type} onValueChange={(v) => updateAlertRule(index, { type: v })}>
+                        <SelectTrigger className="flex-1 h-8 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="price_change">价格变化阈值</SelectItem>
+                          <SelectItem value="price_threshold">价格绝对区间</SelectItem>
+                          <SelectItem value="inventory_change">库存变化阈值</SelectItem>
+                          <SelectItem value="inventory_threshold">库存绝对区间</SelectItem>
+                          <SelectItem value="news_keyword">新闻关键词</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={rule.urgency} onValueChange={(v) => updateAlertRule(index, { urgency: v })}>
+                        <SelectTrigger className="w-20 h-8 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">低</SelectItem>
+                          <SelectItem value="normal">中</SelectItem>
+                          <SelectItem value="high">高</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive" onClick={() => removeAlertRule(index)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+
+                    {(rule.type === "price_change" || rule.type === "inventory_change") && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">变化幅度 &gt;</span>
+                        <Input
+                          type="number"
+                          className="h-8 w-24 text-sm"
+                          placeholder="5"
+                          value={rule.type === "price_change" ? (rule.priceChangeThreshold || "") : (rule.inventoryChangeThreshold || "")}
+                          onChange={(e) => updateAlertRule(index, rule.type === "price_change" ? { priceChangeThreshold: e.target.value } : { inventoryChangeThreshold: e.target.value })}
+                        />
+                        <span className="text-sm text-muted-foreground">%</span>
+                      </div>
+                    )}
+
+                    {(rule.type === "price_threshold" || rule.type === "inventory_threshold") && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">区间</span>
+                        <Input
+                          type="number"
+                          className="h-8 w-24 text-sm"
+                          placeholder="下限"
+                          value={rule.type === "price_threshold" ? (rule.priceLowerThreshold || "") : (rule.inventoryLowerThreshold || "")}
+                          onChange={(e) => updateAlertRule(index, rule.type === "price_threshold" ? { priceLowerThreshold: e.target.value } : { inventoryLowerThreshold: e.target.value })}
+                        />
+                        <span className="text-sm text-muted-foreground">~</span>
+                        <Input
+                          type="number"
+                          className="h-8 w-24 text-sm"
+                          placeholder="上限"
+                          value={rule.type === "price_threshold" ? (rule.priceUpperThreshold || "") : (rule.inventoryUpperThreshold || "")}
+                          onChange={(e) => updateAlertRule(index, rule.type === "price_threshold" ? { priceUpperThreshold: e.target.value } : { inventoryUpperThreshold: e.target.value })}
+                        />
+                      </div>
+                    )}
+
+                    {rule.type === "news_keyword" && (
+                      <Input
+                        className="h-8 text-sm"
+                        placeholder="多个关键词用逗号分隔，如: 检修,停产,制裁"
+                        value={rule.newsKeywords || ""}
+                        onChange={(e) => updateAlertRule(index, { newsKeywords: e.target.value })}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>

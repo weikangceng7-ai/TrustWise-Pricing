@@ -1,0 +1,174 @@
+---
+title: 追踪与告警
+description: 数据追踪订阅、告警管理、定时任务接口
+---
+
+# 追踪与告警 API
+
+<Info>本章接口均需 Session 认证（Web 登录后使用）</Info>
+
+## 订阅管理
+
+### GET /api/tracker/subscriptions
+
+获取所有订阅列表。
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `activeOnly` | boolean | 仅返回活跃订阅 |
+| `includeStatus` | boolean | 包含运行状态 |
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/tracker/subscriptions?activeOnly=true&includeStatus=true"
+```
+
+### POST /api/tracker/subscriptions
+
+创建新的数据追踪订阅。
+
+```json
+{
+  "name": "华东硫磺价格监控",
+  "targetType": "price",
+  "targetRegion": "华东",
+  "targetMarket": "镇江港",
+  "frequency": "daily",
+  "scheduleTime": "09:00",
+  "alertRules": {
+    "priceUpPercent": 5,
+    "priceDownPercent": 3
+  },
+  "notificationChannels": ["email"]
+}
+```
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `name` | string | 是 | 订阅名称 |
+| `targetType` | string | 是 | 追踪目标：`price` / `inventory` / `news` / `all` |
+| `targetRegion` | string | 否 | 目标地区 |
+| `targetMarket` | string | 否 | 目标市场 |
+| `frequency` | string | 是 | 执行频率：`hourly` / `daily` / `weekly` |
+| `scheduleTime` | string | 否 | 每日执行时刻，如 `09:00` |
+| `alertRules` | object | 否 | 告警规则配置 |
+| `reportEnabled` | boolean | 否 | 是否生成报告 |
+| `notificationChannels` | array | 否 | 通知渠道 |
+
+### GET /api/tracker/subscriptions/[id]
+
+获取单个订阅详情。
+
+### PATCH /api/tracker/subscriptions/[id]
+
+更新订阅配置或启停。
+
+```json
+{
+  "frequency": "hourly",
+  "isActive": false
+}
+```
+
+### DELETE /api/tracker/subscriptions/[id]
+
+删除订阅。
+
+---
+
+## 告警管理
+
+### GET /api/tracker/alerts
+
+获取告警列表。
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `subscriptionId` | number | 按订阅筛选 |
+| `alertType` | string | 告警类型 |
+| `urgency` | string | 紧急程度 |
+| `isRead` | boolean | 是否已读 |
+| `isHandled` | boolean | 是否已处理 |
+| `limit` | number | 返回条数 |
+| `offset` | number | 分页偏移 |
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/tracker/alerts?isRead=false&limit=20"
+```
+
+### GET /api/tracker/alerts/[id]
+
+查看某条告警详情。
+
+### PATCH /api/tracker/alerts
+
+批量标记告警。
+
+```json
+{ "markAllAsRead": true }
+```
+
+### PATCH /api/tracker/alerts/[id]
+
+处理单条告警。
+
+```json
+{
+  "isHandled": true,
+  "handleNote": "已采购 2000 吨，库存恢复安全线"
+}
+```
+
+---
+
+## 运行状态
+
+### GET /api/tracker/status
+
+查看 Tracker 整体运行状态。
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/tracker/status"
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "activeSubscriptions": 5,
+    "totalSubscriptions": 8,
+    "runningTasks": 2,
+    "recentAlerts": 3,
+    "unreadAlerts": 1,
+    "lastRunTime": "2026-07-15 09:00:00",
+    "nextScheduledRun": "2026-07-15 10:00:00"
+  }
+}
+```
+
+### POST /api/tracker/start
+
+手动启动追踪任务。
+
+```json
+{
+  "subscriptionId": 1,
+  "immediate": true,
+  "frequency": "daily"
+}
+```
+
+---
+
+## 定时任务（Cron）
+
+以下接口由 Vercel Cron Jobs 定时触发，不对外开放。
+
+| 路径 | 频率 | 说明 |
+|------|------|------|
+| `/api/tracker/cron/hourly` | 每小时 | 执行所有 hourly 订阅 |
+| `/api/tracker/cron/daily` | 每日 | 执行所有 daily 订阅 |
+| `/api/tracker/cron/weekly` | 每周 | 执行所有 weekly 订阅 |
+| `/api/cron/global-news` | 每小时 | 拉取 GDELT 全球新闻 |
+| `/api/cron/ingest-commodity-data` | 每日 | 采集全品类商品数据 |
+
+<Info>定时任务接口使用 `CRON_SECRET` 认证，仅限 Vercel Cron 内部调用。</Info>

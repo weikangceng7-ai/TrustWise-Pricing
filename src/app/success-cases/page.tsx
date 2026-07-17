@@ -107,9 +107,9 @@ const COLORS = {
 const CASE_STUDIES: CaseStudy[] = [
   {
     logo: "HX",
-    name: "湖北宜化集团",
+    name: "HX集团",
     industry: "磷化工",
-    subtitle: "中国最大的磷化工企业之一",
+    subtitle: "华中地区大型磷化工企业",
     challenge: "年硫磺采购量120万吨，价格波动导致采购成本不可控。传统依赖人工经验判断，缺乏数据支撑，采购时机经常错失。",
     solution: "部署 SulfurAI 智能预测与决策系统，利用 Hybrid ARIMA + XGBoost 模型进行7-30天价格预测，结合知识图谱进行企业个性化因子权重分析，输出最优采购时机和数量建议。",
     results: [
@@ -122,8 +122,8 @@ const CASE_STUDIES: CaseStudy[] = [
     color: "cyan",
   },
   {
-    logo: "LY",
-    name: "鲁西化工集团",
+    logo: "HY",
+    name: "HY集团",
     industry: "化肥制造",
     subtitle: "华北地区大型化工企业",
     challenge: "分析团队5人，每天需手动整理港口库存、国际报价、运费等数十个数据源。人工分析效率低，响应市场变化滞后，难以支撑快速决策。",
@@ -139,9 +139,9 @@ const CASE_STUDIES: CaseStudy[] = [
   },
   {
     logo: "TC",
-    name: "金正大集团",
+    name: "TC集团",
     industry: "复合肥",
-    subtitle: "化肥行业龙头企业",
+    subtitle: "华东地区大型复合肥企业",
     challenge: "多品类原料（硫磺、磷矿、钾肥）采购协同困难，各品类独立决策导致库存成本高、资金占用大。需要统一平台进行多品类协调。",
     solution: "部署 SulfurAI 多维度价格分析模块 + 库存优化引擎，通过 AI Agent 对多品类进行联合预测和协同优化，自动生成综合采购策略，平衡各品类采购节奏。",
     results: [
@@ -194,8 +194,11 @@ export default function SuccessCasesPage() {
               实现采购数字化转型
             </span>
           </h1>
-          <p className="text-lg text-slate-400 max-w-2xl mx-auto mb-8">
+          <p className="text-lg text-slate-400 max-w-2xl mx-auto mb-4">
             已服务 100+ 化工企业，覆盖磷化工、化肥制造、复合肥等多个细分领域，助力客户实现显著的成本节约与效率提升。
+          </p>
+          <p className="text-xs text-slate-500 max-w-2xl mx-auto mb-8">
+            * 本页为产品演示示例，案例与数据均为模拟场景，企业名称已匿名化处理，不代表真实客户合作情况。
           </p>
           <div className="flex items-center justify-center gap-8 text-sm">
             <div className="flex items-center gap-2">

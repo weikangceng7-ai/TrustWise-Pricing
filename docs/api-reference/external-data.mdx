@@ -1,0 +1,190 @@
+---
+title: 外部数据源
+description: EIA / FRED / GDELT / AKShare 多源数据接入 API
+---
+
+# 外部数据源 API
+
+## GET /api/external-data/akshare
+
+统一外部数据网关，一次查询获取多种市场数据。
+
+### 查询参数
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `type` | string | 数据类型，必填 |
+
+支持的 `type` 值：
+
+| type | 数据内容 |
+|------|---------|
+| `oil` | WTI 原油价格 |
+| `brent` | 布伦特原油价格 |
+| `usdcny` | 美元/人民币汇率 |
+| `bdi` | 波罗的海干散货指数 |
+| `sulfur_spot` | 硫磺现货价格 |
+| `phosphate` | 磷酸一铵价格 |
+| `potash` | 钾肥价格 |
+| `urea` | 尿素价格 |
+| `commodity_all` | 全部商品数据 |
+
+### 响应
+
+```json
+{
+  "success": true,
+  "source": "AKShare",
+  "type": "sulfur_spot",
+  "data": {
+    "name": "硫磺现货",
+    "unit": "元/吨",
+    "latest": {
+      "date": "2026-07-14",
+      "value": 1250,
+      "change": 15,
+      "changePercent": 1.21
+    },
+    "history": [
+      { "date": "2026-07-13", "value": 1235 },
+      { "date": "2026-07-12", "value": 1220 }
+    ]
+  },
+  "timestamp": "2026-07-15T08:00:00.000Z"
+}
+```
+
+### 示例
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/external-data/akshare?type=sulfur_spot"
+```
+
+<Info>上游数据源不可用时自动降级为模拟数据，保证接口始终可用。</Info>
+
+---
+
+## GET /api/external-data/fred
+
+查询 FRED（美联储经济数据库）宏观经济指标。
+
+### 查询参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `series_id` | string | `DCOILWTICO` | FRED 数据系列代码 |
+
+可用系列：
+
+| series_id | 指标名称 |
+|-----------|---------|
+| `DCOILWTICO` | WTI 原油现货价 |
+| `DHHNGSP` | 天然气现货价 |
+| `DEXCHUS` | 美元/人民币汇率 |
+| `FEDFUNDS` | 联邦基金利率 |
+| `UNRATE` | 失业率 |
+| `CPIAUCSL` | CPI 消费者价格指数 |
+| `GDP` | 国内生产总值 |
+
+### 响应
+
+```json
+{
+  "success": true,
+  "source": "FRED",
+  "series_id": "DCOILWTICO",
+  "series_info": {
+    "title": "Crude Oil Prices: West Texas Intermediate",
+    "units": "Dollars per Barrel",
+    "frequency": "Daily"
+  },
+  "data": [
+    { "date": "2026-07-14", "value": 72.50 },
+    { "date": "2026-07-13", "value": 73.10 }
+  ],
+  "timestamp": "2026-07-15T08:00:00.000Z"
+}
+```
+
+### 示例
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/external-data/fred?series_id=DCOILWTICO"
+```
+
+---
+
+## GET /api/external-data/eia/oil-price
+
+查询 EIA（美国能源信息署）油价数据。
+
+### 查询参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `type` | string | `summary` | `brent` / `wti` / `comparison` / `summary` |
+| `days` | number | `30` | 历史天数 |
+
+### 示例
+
+```bash
+# 布伦特原油
+curl "https://sulfur-agent-web.vercel.app/api/external-data/eia/oil-price?type=brent&days=30"
+
+# WTI vs Brent 对比
+curl "https://sulfur-agent-web.vercel.app/api/external-data/eia/oil-price?type=comparison"
+```
+
+---
+
+## GET /api/external-data/gdelt
+
+查询 GDELT 全球新闻事件数据库。
+
+### 查询参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `q` | string | - | 搜索关键词 |
+| `mode` | string | `summary` | `timeline` / `search` / `summary` |
+
+### 示例
+
+```bash
+# 硫磺相关新闻
+curl "https://sulfur-agent-web.vercel.app/api/external-data/gdelt?q=sulfur&mode=search"
+
+# 时间线分析
+curl "https://sulfur-agent-web.vercel.app/api/external-data/gdelt?q=crude+oil&mode=timeline"
+```
+
+---
+
+## GET /api/public-news
+
+公开市场资讯（无需认证）。
+
+```bash
+curl "https://sulfur-agent-web.vercel.app/api/public-news"
+```
+
+返回新浪财经、东方财富、生意社等来源的最新市场资讯链接和标题。
+
+---
+
+## GET /api/v1/data/news
+
+<Info>需要 API Key 认证</Info>
+
+版本化市场资讯接口，支持分类筛选。
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `category` | string | 新闻分类 |
+| `limit` | number | 返回条数 |
+| `offset` | number | 分页偏移 |
+
+```bash
+curl -H "Authorization: Bearer sk_your_key" \
+  "https://sulfur-agent-web.vercel.app/api/v1/data/news?category=market-news&limit=10"
+```

@@ -14,6 +14,7 @@ export interface AkShareDataPoint {
 // 后端 `/api/external-data/akshare` 的响应结构
 export interface AkShareResponse {
   success: boolean
+  isMock?: boolean
   source: string
   type: string
   data: {
@@ -84,6 +85,7 @@ export interface GDELTTopicSummary {
 // data 会随 mode 不同而变化（时间线 / 搜索结果 / 摘要）
 export interface GDELTResponse {
   success: boolean
+  isMock?: boolean
   source: string
   query?: string
   mode: string
@@ -138,6 +140,7 @@ export interface FREDDataPoint {
 // 后端 `/api/external-data/fred` 的响应结构
 export interface FREDResponse {
   success: boolean
+  isMock?: boolean
   source: string
   series_id: string
   data: {

@@ -75,10 +75,12 @@ export async function fetchBDI(): Promise<CommodityDataResponse | null> {
 
 /**
  * 批量获取所有品种数据
+ * 批量抓取生意社数据耗时较长，超时放宽到 55 秒（cron 路由 maxDuration 60 秒内）
  */
 export async function fetchAllCommodities(days = 30): Promise<Record<string, CommodityDataResponse> | null> {
   const result = await fetchAKShare<{ success: boolean; data: Record<string, CommodityDataResponse> }>(
-    `all?days=${days}`
+    `all?days=${days}`,
+    55000
   )
   return result?.data ?? null
 }

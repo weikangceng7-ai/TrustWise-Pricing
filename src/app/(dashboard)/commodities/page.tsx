@@ -85,6 +85,7 @@ function CommodityOverviewCards({
         const trend: "up" | "down" | "flat" = changePercent > 1 ? "up" : changePercent < -1 ? "down" : "flat"
         const changeStr = `${changePercent >= 0 ? "+" : ""}${changePercent.toFixed(1)}%`
         const market = priceData?.market || ""
+        const source = priceData?.source || ""
 
         return (
           <button
@@ -109,7 +110,18 @@ function CommodityOverviewCards({
                 <span className="text-sm text-slate-400">暂无数据</span>
               )}
             </div>
-            <div className="text-xs text-slate-400 dark:text-slate-500">{market || "现货均价"}</div>
+            <div className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
+              <span>{market || "现货均价"}</span>
+              {source && (
+                <span className={`px-1 py-0.5 rounded text-[10px] font-medium ${
+                  source.includes("模拟") ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" :
+                  source.includes("推算") ? "bg-sky-500/10 text-sky-600 dark:text-sky-400" :
+                  "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                }`}>
+                  {source.includes("模拟") ? "模拟" : source.includes("推算") ? "推算" : "真实"}
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-3 mt-3 pt-3 border-t border-slate-200/50 dark:border-white/10">
               <div className="flex items-center gap-1">
                 <Activity className="h-3 w-3 text-slate-400" />

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { TrendingUp, TrendingDown, Minus, Package, DollarSign, BarChart3, AlertTriangle, ChevronRight, FileText, ArrowRight, ArrowUpRight, Activity, Zap, Target, Layers, Scale, ChevronDown, Loader2, Wand2, Building2 } from "lucide-react"
 import Link from "next/link"
@@ -256,8 +256,8 @@ export default function DashboardPage() {
 
       const trendDirection = (changePercent > 1 ? "up" : changePercent < -1 ? "down" : "flat") as "up" | "down" | "flat"
       const inventoryLevel = invData?.currentInventory ? Number(invData.currentInventory) : null
-      const marketHeat = inventoryLevel ? (inventoryLevel > 500000 ? "旺盛" : inventoryLevel > 200000 ? "活跃" : "温和") : "正常"
-      const marketHeatLabel = inventoryLevel ? (inventoryLevel > 500000 ? "需求旺盛" : inventoryLevel > 200000 ? "供需平衡" : "需求一般") : ""
+      const marketHeat = inventoryLevel ? (inventoryLevel > 500000 ? "旺盛" : inventoryLevel > 200000 ? "活跃" : "温和") : "暂无数据"
+      const marketHeatLabel = inventoryLevel ? (inventoryLevel > 500000 ? "需求旺盛" : inventoryLevel > 200000 ? "供需平衡" : "需求一般") : "待接入库存数据"
       const risk = changePercent > 3 ? "高" : changePercent > 1 ? "中等" : "低"
       const riskLabel = changePercent > 3 ? "波动较大" : changePercent > 1 ? "关注走势" : "相对稳定"
 
@@ -282,7 +282,7 @@ export default function DashboardPage() {
         else freshness = `${diffDays} 天前`
       }
       const priceSource = priceData?.source || "未知来源"
-      const invSource = invData?.source || "未知来源"
+      const invSource = invData?.source || "暂无库存数据"
 
       return {
         avgPrice: `¥${currentPrice.toLocaleString()}`,
@@ -307,6 +307,13 @@ export default function DashboardPage() {
 
   const isLoading = priceSummary.isLoading || inventorySummary.isLoading
   const isError = priceSummary.isError || inventorySummary.isError
+
+  // 切换品种时缓存上次有效数据，保持局部加载而非整页替换
+  const cachedDataRef = useRef<typeof data>(null)
+  if (data) cachedDataRef.current = data
+  const displayData = data || cachedDataRef.current
+  const isTransitioning = !data && !!cachedDataRef.current && isLoading
+
   const colors = COMMODITY_COLORS[commodity]
   const bgImage = getBackgroundImage("dashboardBackground")
 
@@ -337,8 +344,8 @@ export default function DashboardPage() {
           <CommoditySelector selected={commodity} onChange={setCommodity} />
         </div>
 
-        {/* 数据加载/错误状态 */}
-        {!data && (
+        {/* 初始加载状态（无缓存数据） */}
+        {!displayData && (
           <div className="flex-1 flex items-center justify-center">
             {isLoading ? (
               <div className="text-center">
@@ -365,11 +372,18 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* 数据可用时的正常渲染 */}
-        {data && (
+        {/* 数据展示（切换品种时保留上次数据 + 局部 loading 指示） */}
+        {displayData && (
         <>
+        {/* 切换品种时的加载指示条 */}
+        {isTransitioning && (
+          <div className="flex items-center gap-2 mb-3 px-1">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />
+            <span className="text-xs text-slate-400">正在刷新 {COMMODITY_INFO[commodity].name} 数据...</span>
+          </div>
+        )}
         {/* 统计概览四卡片 - 平铺整行 */}
-        <div className="grid grid-cols-4 gap-2 mb-3">
+        <div className={`grid grid-cols-4 gap-2 mb-3 transition-opacity duration-200 ${isTransitioning ? "opacity-60" : ""}`}>
           {/* 当前均价 */}
           <div className={`bg-gradient-to-br ${colors.card} backdrop-blur-sm rounded-lg p-3 border ${colors.border}`}>
             <div className="flex items-center justify-between mb-0.5">
@@ -384,7 +398,16 @@ export default function DashboardPage() {
               <span className={`text-xs ${data.trendDirection === "up" ? "text-emerald-600" : data.trendDirection === "down" ? "text-rose-600" : "text-slate-500"}`}>{data.trendValue}</span>
             </div>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{data.priceLabel}</p>
-            <p className="text-[10px] text-slate-300/70 dark:text-slate-600/70 mt-0.5">来源: {data.priceSource}</p>
+            <p className="text-[10px] mt-0.5 flex items-center gap-1">
+              <span className={`px-1 py-0.5 rounded font-medium ${
+                data.priceSource.includes("模拟") ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" :
+                data.priceSource.includes("推算") ? "bg-sky-500/10 text-sky-600 dark:text-sky-400" :
+                "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+              }`}>
+                {data.priceSource.includes("模拟") ? "模拟数据" : data.priceSource.includes("推算") ? "模型推算" : "真实数据"}
+              </span>
+              <span className="text-slate-400/80 dark:text-slate-500/80 truncate">来源: {data.priceSource}</span>
+            </p>
           </div>
 
           {/* 月度趋势 */}
@@ -399,6 +422,7 @@ export default function DashboardPage() {
               <span className="text-xs text-slate-500">近30日走势</span>
             </div>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">月度价格趋势判断</p>
+            <p className="text-[10px] text-slate-300/70 dark:text-slate-600/70 mt-0.5">来源: {data.priceSource} 价格序列计算</p>
           </div>
 
           {/* 市场热度 */}
@@ -407,7 +431,7 @@ export default function DashboardPage() {
               <span className="text-sm text-slate-500 dark:text-slate-400">热度</span>
               <Zap className={`h-4 w-4 ${colors.icon}`} />
             </div>
-            <span className="text-lg font-bold text-slate-900 dark:text-white">{data.marketHeat}</span>
+            <span className={`text-lg font-bold ${data.marketHeat === "暂无数据" ? "text-slate-400 dark:text-slate-500" : "text-slate-900 dark:text-white"}`}>{data.marketHeat}</span>
             <div className="flex items-center gap-0.5 mt-0.5">
               <div className="flex -space-x-0.5">
                 <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
@@ -432,6 +456,7 @@ export default function DashboardPage() {
               <span className="text-xs text-slate-500">{data.riskLabel}</span>
             </div>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">采购决策风险评估</p>
+            <p className="text-[10px] text-slate-300/70 dark:text-slate-600/70 mt-0.5">规则评估 · 基于近30日价格波动</p>
           </div>
         </div>
 
@@ -506,13 +531,13 @@ export default function DashboardPage() {
             </div>
             <div className="text-lg font-bold text-slate-900 dark:text-white">3<span className="text-sm font-normal text-slate-400 ml-1">家</span></div>
             <div className="flex items-center gap-1 mt-0.5">
-              <span className="text-[10px] text-slate-400">宜化·鲁西·金正大</span>
+              <span className="text-[10px] text-slate-400">HX·HY·TC</span>
             </div>
           </Link>
         </div>
 
         {/* 主内容区域：左列、右列各占一半，占满页面 */}
-        <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
+        <div className={`grid grid-cols-2 gap-3 flex-1 min-h-0 transition-opacity duration-200 ${isTransitioning ? "opacity-60" : ""}`}>
           {/* 左列 - 功能模块入口、市场洞察和价格知识图谱 */}
           <div className="space-y-3 flex flex-col flex-1 min-h-0 overflow-y-auto pr-1">
             {/* 多品种扩展预览 */}
