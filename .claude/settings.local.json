@@ -160,7 +160,14 @@
       "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{const j=JSON.parse\\(s\\);\\(j.data||[]\\).forEach\\(r=>console.log\\(r.date,r.price\\)\\)}\\)\")",
       "Bash(node -e \"const j=require\\('/tmp/akshare_all.json'\\);for\\(const [k,v] of Object.entries\\(j.data||{}\\)\\){console.log\\(k, '|', v.source, '|', v.count, '条'\\)}\")",
       "Bash(node -e \"const j=require\\('./akshare_all.json'\\);for\\(const [k,v] of Object.entries\\(j.data||{}\\)\\){console.log\\(k,'|',v.source,'|',v.count,'条'\\)}\")",
-      "Bash(ls -a .env*)"
+      "Bash(ls -a .env*)",
+      "Bash(npx eslint:*)",
+      "Bash(grep -o 'slideLayout[0-9]*\\\\.xml' ppt/slides/_rels/*.rels)",
+      "Bash(python -)",
+      "Bash(node -e \"const pkg = require\\('./node_modules/lucide-react/package.json'\\); console.log\\(pkg.version\\)\")",
+      "Bash(node -e \"const l = require\\('lucide-react'\\); console.log\\('Activity' in l ? 'exists' : 'missing'\\)\")",
+      "Bash(node -e \"const l = require\\('lucide-react'\\); const names = Object.keys\\(l\\).filter\\(k => k.toLowerCase\\(\\).includes\\('activity'\\)\\); console.log\\(names\\)\")",
+      "WebFetch(domain:weikang.mintlify.app)"
     ]
   }
 }

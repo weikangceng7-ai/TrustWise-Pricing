@@ -391,22 +391,22 @@ export default function DashboardPage() {
               <DollarSign className={`h-4 w-4 ${colors.icon}`} />
             </div>
             <div className="flex items-baseline gap-0.5">
-              <span className="text-lg font-bold text-slate-900 dark:text-white">{data.avgPrice}</span>
+              <span className="text-lg font-bold text-slate-900 dark:text-white">{displayData.avgPrice}</span>
             </div>
             <div className="flex items-center gap-0.5 mt-0.5">
-              {data.trendDirection === "up" ? <TrendingUp className="h-2.5 w-2.5 text-emerald-500" /> : data.trendDirection === "down" ? <TrendingDown className="h-2.5 w-2.5 text-rose-500" /> : <Minus className="h-2.5 w-2.5 text-slate-400" />}
-              <span className={`text-xs ${data.trendDirection === "up" ? "text-emerald-600" : data.trendDirection === "down" ? "text-rose-600" : "text-slate-500"}`}>{data.trendValue}</span>
+              {displayData.trendDirection === "up" ? <TrendingUp className="h-2.5 w-2.5 text-emerald-500" /> : displayData.trendDirection === "down" ? <TrendingDown className="h-2.5 w-2.5 text-rose-500" /> : <Minus className="h-2.5 w-2.5 text-slate-400" />}
+              <span className={`text-xs ${displayData.trendDirection === "up" ? "text-emerald-600" : displayData.trendDirection === "down" ? "text-rose-600" : "text-slate-500"}`}>{displayData.trendValue}</span>
             </div>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{data.priceLabel}</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{displayData.priceLabel}</p>
             <p className="text-[10px] mt-0.5 flex items-center gap-1">
               <span className={`px-1 py-0.5 rounded font-medium ${
-                data.priceSource.includes("模拟") ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" :
-                data.priceSource.includes("推算") ? "bg-sky-500/10 text-sky-600 dark:text-sky-400" :
+                displayData.priceSource.includes("模拟") ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" :
+                displayData.priceSource.includes("推算") ? "bg-sky-500/10 text-sky-600 dark:text-sky-400" :
                 "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
               }`}>
-                {data.priceSource.includes("模拟") ? "模拟数据" : data.priceSource.includes("推算") ? "模型推算" : "真实数据"}
+                {displayData.priceSource.includes("模拟") ? "模拟数据" : displayData.priceSource.includes("推算") ? "模型推算" : "真实数据"}
               </span>
-              <span className="text-slate-400/80 dark:text-slate-500/80 truncate">来源: {data.priceSource}</span>
+              <span className="text-slate-400/80 dark:text-slate-500/80 truncate">来源: {displayData.priceSource}</span>
             </p>
           </div>
 
@@ -414,15 +414,15 @@ export default function DashboardPage() {
           <div className={`bg-gradient-to-br ${colors.card} backdrop-blur-sm rounded-lg p-3 border ${colors.border}`}>
             <div className="flex items-center justify-between mb-0.5">
               <span className="text-sm text-slate-500 dark:text-slate-400">趋势</span>
-              {data.trendDirection === "up" ? <TrendingUp className={`h-4 w-4 ${colors.icon}`} /> : data.trendDirection === "down" ? <TrendingDown className={`h-4 w-4 ${colors.icon}`} /> : <Minus className={`h-4 w-4 ${colors.icon}`} />}
+              {displayData.trendDirection === "up" ? <TrendingUp className={`h-4 w-4 ${colors.icon}`} /> : displayData.trendDirection === "down" ? <TrendingDown className={`h-4 w-4 ${colors.icon}`} /> : <Minus className={`h-4 w-4 ${colors.icon}`} />}
             </div>
-            <span className="text-lg font-bold text-slate-900 dark:text-white">{data.trend}</span>
+            <span className="text-lg font-bold text-slate-900 dark:text-white">{displayData.trend}</span>
             <div className="flex items-center gap-0.5 mt-0.5">
               <Activity className={`h-2.5 w-2.5 ${colors.icon}`} />
               <span className="text-xs text-slate-500">近30日走势</span>
             </div>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">月度价格趋势判断</p>
-            <p className="text-[10px] text-slate-300/70 dark:text-slate-600/70 mt-0.5">来源: {data.priceSource} 价格序列计算</p>
+            <p className="text-[10px] text-slate-300/70 dark:text-slate-600/70 mt-0.5">来源: {displayData.priceSource} 价格序列计算</p>
           </div>
 
           {/* 市场热度 */}
@@ -431,17 +431,17 @@ export default function DashboardPage() {
               <span className="text-sm text-slate-500 dark:text-slate-400">热度</span>
               <Zap className={`h-4 w-4 ${colors.icon}`} />
             </div>
-            <span className={`text-lg font-bold ${data.marketHeat === "暂无数据" ? "text-slate-400 dark:text-slate-500" : "text-slate-900 dark:text-white"}`}>{data.marketHeat}</span>
+            <span className={`text-lg font-bold ${displayData.marketHeat === "暂无数据" ? "text-slate-400 dark:text-slate-500" : "text-slate-900 dark:text-white"}`}>{displayData.marketHeat}</span>
             <div className="flex items-center gap-0.5 mt-0.5">
               <div className="flex -space-x-0.5">
                 <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
                 <div className={`w-2 h-2 rounded-full ${colors.dot} opacity-70`} />
                 <div className={`w-2 h-2 rounded-full ${colors.dot} opacity-40`} />
               </div>
-              <span className="text-xs text-slate-500">{data.marketHeatLabel}</span>
+              <span className="text-xs text-slate-500">{displayData.marketHeatLabel}</span>
             </div>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">采购需求活跃度</p>
-            <p className="text-[10px] text-slate-300/70 dark:text-slate-600/70 mt-0.5">来源: {data.invSource}</p>
+            <p className="text-[10px] text-slate-300/70 dark:text-slate-600/70 mt-0.5">来源: {displayData.invSource}</p>
           </div>
 
           {/* 风险等级 */}
@@ -450,10 +450,10 @@ export default function DashboardPage() {
               <span className="text-sm text-slate-500 dark:text-slate-400">风险</span>
               <AlertTriangle className={`h-4 w-4 ${colors.icon}`} />
             </div>
-            <span className={`text-lg font-bold ${data.risk === "高" ? "text-rose-600 dark:text-rose-400" : data.risk === "中等" ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`}>{data.risk}</span>
+            <span className={`text-lg font-bold ${displayData.risk === "高" ? "text-rose-600 dark:text-rose-400" : displayData.risk === "中等" ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`}>{displayData.risk}</span>
             <div className="flex items-center gap-0.5 mt-0.5">
               <Target className={`h-2.5 w-2.5 ${colors.icon}`} />
-              <span className="text-xs text-slate-500">{data.riskLabel}</span>
+              <span className="text-xs text-slate-500">{displayData.riskLabel}</span>
             </div>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">采购决策风险评估</p>
             <p className="text-[10px] text-slate-300/70 dark:text-slate-600/70 mt-0.5">规则评估 · 基于近30日价格波动</p>
@@ -463,20 +463,20 @@ export default function DashboardPage() {
         {/* 数据新鲜度指示器 */}
         <div className="flex items-center justify-between mb-3 px-1">
           <div className="flex items-center gap-2">
-            <span className={`w-1.5 h-1.5 rounded-full ${data.freshness === "今日更新" ? "bg-emerald-400" : "bg-amber-400"}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${displayData.freshness === "今日更新" ? "bg-emerald-400" : "bg-amber-400"}`} />
             <span className="text-[11px] text-slate-400 dark:text-slate-500">
-              数据更新: {data.freshness}
+              数据更新: {displayData.freshness}
             </span>
           </div>
           <span className="text-[11px] text-slate-400/60 dark:text-slate-500/60">
-            价格来源: {data.priceSource} | 库存来源: {data.invSource}
+            价格来源: {displayData.priceSource} | 库存来源: {displayData.invSource}
           </span>
         </div>
 
         {/* 系统能力概览 */}
         <div className="grid grid-cols-4 gap-2 mb-3">
           {/* 品种覆盖 */}
-          <Link href="/commodities" className="rounded-lg border border-slate-200/60 dark:border-white/10 bg-white/60 dark:bg-white/5 p-2.5 hover:border-cyan-300/50 dark:hover:border-cyan-500/30 transition-all group cursor-pointer">
+          <Link href="/market-analysis?tab=commodities" className="rounded-lg border border-slate-200/60 dark:border-white/10 bg-white/60 dark:bg-white/5 p-2.5 hover:border-cyan-300/50 dark:hover:border-cyan-500/30 transition-all group cursor-pointer">
             <div className="flex items-center gap-1.5 mb-1">
               <Layers className="h-3.5 w-3.5 text-violet-500" />
               <span className="text-xs text-slate-500">品种覆盖</span>
@@ -494,7 +494,7 @@ export default function DashboardPage() {
           </Link>
 
           {/* 模型精度 */}
-          <Link href="/accuracy" className="rounded-lg border border-slate-200/60 dark:border-white/10 bg-white/60 dark:bg-white/5 p-2.5 hover:border-emerald-300/50 dark:hover:border-emerald-500/30 transition-all group cursor-pointer">
+          <Link href="/market-analysis?tab=accuracy" className="rounded-lg border border-slate-200/60 dark:border-white/10 bg-white/60 dark:bg-white/5 p-2.5 hover:border-emerald-300/50 dark:hover:border-emerald-500/30 transition-all group cursor-pointer">
             <div className="flex items-center gap-1.5 mb-1">
               <Target className="h-3.5 w-3.5 text-emerald-500" />
               <span className="text-xs text-slate-500">模型精度</span>
@@ -604,7 +604,7 @@ export default function DashboardPage() {
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-white">市场洞察</h3>
               </div>
               <p className="text-sm text-slate-600 dark:text-slate-400 mb-3 leading-relaxed">
-                {data.marketInsight}
+                {displayData.marketInsight}
               </p>
               <Link href="/agent-chat" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium transition-colors">
                 深入分析
@@ -734,7 +734,7 @@ export default function DashboardPage() {
 
             {/* 企业价格预测 - flex-1 占满剩余空间 */}
             <div className="bg-white/80 dark:bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-slate-200 dark:border-white/10 shadow-sm flex-1 flex flex-col min-h-0">
-              <EnterprisePredictionOverviewCompact enterprises={data.enterprisePrices} />
+              <EnterprisePredictionOverviewCompact enterprises={displayData.enterprisePrices} />
             </div>
           </div>
         </div>

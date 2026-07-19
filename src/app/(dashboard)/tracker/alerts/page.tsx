@@ -398,10 +398,10 @@ export default function TrackerAlertsPage() {
           <h1 className="text-2xl font-bold">异动事件列表</h1>
           <p className="text-muted-foreground">查看和管理 Tracker 检测到的异动事件</p>
         </div>
-        <Link href="/tracker">
+        <Link href="/market-analysis?tab=tracker">
           <Button variant="outline" className="gap-2">
             <Activity className="h-4 w-4" />
-            返回仪表盘
+            返回追踪面板
           </Button>
         </Link>
       </div>

@@ -63,9 +63,10 @@ dir dist\index.js
 
 ### 2.2 本地测试运行
 
+先在 `.env` 中设置 `MCP_TRANSPORT=http`，然后：
+
 ```bash
-# 以 HTTP 模式启动
-MCP_TRANSPORT=http npm run dev
+npm run dev
 ```
 
 启动后浏览器访问 `http://localhost:3100/health`，看到 `{"status":"ok"}` 就说明跑起来了。
