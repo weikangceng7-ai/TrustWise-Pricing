@@ -5,7 +5,7 @@
  */
 import { z } from "zod";
 export function registerAccuracyTools(server, config, client) {
-    server.tool("get_accuracy_metrics", `获取${config.INDUSTRY_CODE === "sulfur" ? "硫磺" : "行业"}价格预测模型的精度评估数据，包括 MAPE、MAE、RMSE、R² 等核心指标，以及精度趋势和各企业精度分布`, {
+    server.tool("get_accuracy_metrics", `当用户询问模型准不准、预测精度、预测准确率、模型可靠性、MAPE/MAE等指标时使用。获取${config.INDUSTRY_CODE === "sulfur" ? "硫磺" : "行业"}价格预测模型的精度评估数据，包括 MAPE、MAE、RMSE、R² 等核心指标`, {
         enterpriseCode: z.string().optional().describe("可选，指定企业代码（如 yihua、luxi）筛选精度数据"),
     }, async ({ enterpriseCode }, _extra) => {
         try {

@@ -16,7 +16,7 @@ export function registerGetTrackerStatus(
 ) {
   server.tool(
     "get_tracker_status",
-    "获取 Tracker 运行状态统计，包括活跃订阅数、未读告警数等",
+    "当用户询问系统运行状态、有没有告警、订阅是否正常、系统是否在监控时使用。获取 Tracker 运行状态统计，包括活跃订阅数、未读告警数、最近/下次运行时间",
     {},
     async (
       {},

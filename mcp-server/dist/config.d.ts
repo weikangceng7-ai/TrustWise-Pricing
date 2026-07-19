@@ -2,7 +2,8 @@
  * MCP Server 配置
  *
  * 从环境变量读取配置，MCP Server 启动时加载。
- * 环境变量由 Claude Desktop 配置注入。
+ * 环境变量优先级：系统环境变量 > .env 文件 > 默认值。
+ * 支持 .env 文件，避免不同终端（CMD/PowerShell/bash）语法差异问题。
  */
 export interface McpConfig {
     /** API Server 地址，如 https://sulfur-agent-web.vercel.app */

@@ -167,7 +167,11 @@
       "Bash(node -e \"const pkg = require\\('./node_modules/lucide-react/package.json'\\); console.log\\(pkg.version\\)\")",
       "Bash(node -e \"const l = require\\('lucide-react'\\); console.log\\('Activity' in l ? 'exists' : 'missing'\\)\")",
       "Bash(node -e \"const l = require\\('lucide-react'\\); const names = Object.keys\\(l\\).filter\\(k => k.toLowerCase\\(\\).includes\\('activity'\\)\\); console.log\\(names\\)\")",
-      "WebFetch(domain:weikang.mintlify.app)"
+      "WebFetch(domain:weikang.mintlify.app)",
+      "Bash(ls:*)",
+      "Read(//c/Users/**)",
+      "Read(//mnt/c/**)",
+      "Bash(node:*)"
     ]
   }
 }

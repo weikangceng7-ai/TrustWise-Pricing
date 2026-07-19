@@ -3,8 +3,8 @@
  */
 import { z } from "zod";
 export function registerPredictPrices(server, config, client) {
-    server.tool("predict_prices", `预测${config.INDUSTRY_CODE === "sulfur" ? "硫磺" : "行业"}未来价格走势，基于 ARIMA + XGBoost 混合模型`, {
-        days: z.number().optional(),
+    server.tool("predict_prices", `当用户询问未来价格预测、价格走势预判、价格还会涨/跌吗、什么时候买合适（统计预测）时使用。基于 ARIMA + XGBoost 混合模型预测${config.INDUSTRY_CODE === "sulfur" ? "硫磺" : "行业"}未来价格走势。如需深度学习预测用 predict_with_transformer，如需综合预测用 get_combined_prediction`, {
+        days: z.number().optional().describe("预测未来天数，默认7天，支持7/14/30天"),
     }, async ({ days }, _extra) => {
         const daysCount = days || 7;
         try {

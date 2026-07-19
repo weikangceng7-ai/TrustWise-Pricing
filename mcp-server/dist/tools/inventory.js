@@ -3,8 +3,8 @@
  */
 import { z } from "zod";
 export function registerGetInventory(server, config, client) {
-    server.tool("get_inventory", `获取${config.INDUSTRY_CODE === "sulfur" ? "港口硫磺" : "行业"}库存数据`, {
-        limit: z.number().optional(),
+    server.tool("get_inventory", `当用户询问港口库存、库存水平、库存变化、港口存货情况时使用。获取${config.INDUSTRY_CODE === "sulfur" ? "港口硫磺" : "行业"}库存数据，包括当前库存量和环比变化`, {
+        limit: z.number().optional().describe("返回数据条数，默认2条（用于计算环比变化）"),
     }, async ({ limit }, _extra) => {
         const limitCount = limit || 2;
         try {

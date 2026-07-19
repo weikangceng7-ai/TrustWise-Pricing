@@ -18,7 +18,7 @@ export function registerSuccessCasesTools(
 ) {
   server.tool(
     "get_success_cases",
-    "获取 SulfurAI 平台的客户成功案例，包括实施前后对比、可量化价值（成本节约、效率提升）以及行业最佳实践。适用于向客户展示产品价值或进行竞品对比分析。",
+    "当用户询问成功案例、客户案例、使用效果、ROI、能省多少钱、效率提升多少、竞品对比时使用。获取客户成功案例，包括实施前后对比和可量化价值（成本节约、效率提升）",
     {
       industry: z.string().optional().describe("可选筛选行业：磷化工、化肥制造、复合肥"),
     },

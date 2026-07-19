@@ -5,13 +5,13 @@ import { z } from "zod";
 const SUBSCRIPTION_TYPES = ["price", "inventory", "news", "all"];
 export function registerSubscriptionTools(server, config, client) {
     // ========== subscribe_alert ==========
-    server.tool("subscribe_alert", `订阅${config.INDUSTRY_CODE === "sulfur" ? "硫磺" : "行业"}价格预警，当价格达到阈值或触发规则时自动通知`, {
-        name: z.string().optional(),
-        threshold: z.number(),
-        direction: z.enum(["above", "below"]),
-        frequency: z.enum(["hourly", "daily", "weekly"]).optional(),
-        targetType: z.enum(SUBSCRIPTION_TYPES).optional(),
-        reportEnabled: z.boolean().optional(),
+    server.tool("subscribe_alert", `当用户要设置价格预警、价格监控、自动提醒、价格达到某阈值时通知我时使用。订阅${config.INDUSTRY_CODE === "sulfur" ? "硫磺" : "行业"}价格预警，当价格达到阈值或触发规则时自动通知`, {
+        name: z.string().optional().describe("订阅名称，如'硫磺价格上限预警'"),
+        threshold: z.number().describe("触发阈值，单位：元/吨"),
+        direction: z.enum(["above", "below"]).describe("触发方向：above=价格超过阈值时通知，below=价格低于阈值时通知"),
+        frequency: z.enum(["hourly", "daily", "weekly"]).optional().describe("检查频率，默认daily"),
+        targetType: z.enum(SUBSCRIPTION_TYPES).optional().describe("监控类型：price/price_threshold/inventory/news/all"),
+        reportEnabled: z.boolean().optional().describe("是否生成追踪报告，默认true"),
     }, async ({ name, threshold, direction, frequency, targetType, reportEnabled }, _extra) => {
         try {
             const result = await client.createSubscription({
@@ -50,8 +50,8 @@ export function registerSubscriptionTools(server, config, client) {
         }
     });
     // ========== list_subscriptions ==========
-    server.tool("list_subscriptions", "列出当前用户的所有追踪订阅", {
-        activeOnly: z.boolean().optional(),
+    server.tool("list_subscriptions", "当用户要查看已有的订阅、我有哪些预警、管理订阅时使用。列出当前用户的所有追踪订阅", {
+        activeOnly: z.boolean().optional().describe("是否只显示活跃订阅，默认true"),
     }, async ({ activeOnly }, _extra) => {
         try {
             const result = await client.getSubscriptions(activeOnly !== false);
@@ -88,11 +88,11 @@ export function registerSubscriptionTools(server, config, client) {
         }
     });
     // ========== update_subscription ==========
-    server.tool("update_subscription", "更新或删除已有的订阅", {
-        subscriptionId: z.number(),
-        action: z.enum(["update", "delete"]),
-        isActive: z.boolean().optional(),
-        name: z.string().optional(),
+    server.tool("update_subscription", "当用户要修改订阅、停用/启用预警、删除订阅时使用。更新或删除已有的订阅", {
+        subscriptionId: z.number().describe("订阅ID，从 list_subscriptions 获取"),
+        action: z.enum(["update", "delete"]).describe("操作类型：update=修改，delete=删除"),
+        isActive: z.boolean().optional().describe("是否启用该订阅"),
+        name: z.string().optional().describe("新的订阅名称"),
     }, async ({ subscriptionId, action, isActive, name }, _extra) => {
         try {
             if (action === "delete") {
@@ -139,8 +139,8 @@ export function registerSubscriptionTools(server, config, client) {
         }
     });
     // ========== get_alerts ==========
-    server.tool("get_alerts", "获取近期价格异动告警列表", {
-        limit: z.number().optional(),
+    server.tool("get_alerts", "当用户询问告警记录、有什么异常、触发了哪些预警、查看最近的价格异动时使用。获取近期价格异动告警列表", {
+        limit: z.number().optional().describe("返回条数，默认10条"),
     }, async ({ limit }, _extra) => {
         const limitCount = limit || 10;
         try {

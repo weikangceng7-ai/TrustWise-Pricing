@@ -4,7 +4,7 @@
  * 跨品种对比分析，返回价格对比、相关性矩阵和协同采购建议
  */
 export function registerCrossCommodityTools(server, _config, client) {
-    server.tool("cross_commodity_analysis", "跨品种大宗原料对比分析，返回价格对比、品种间相关性矩阵和协同采购建议。适用于多品类采购企业进行全局采购策略优化。", {}, async ({}, _extra) => {
+    server.tool("cross_commodity_analysis", "当用户询问品种对比、哪些品种相关、一起采购怎么省钱、多品种协同采购、相关性分析时使用。跨品种大宗原料对比分析，返回价格对比、品种间相关性矩阵和协同采购建议", {}, async ({}, _extra) => {
         try {
             const result = await client.crossCommodityAnalysis();
             if (!result.success || !result.data) {

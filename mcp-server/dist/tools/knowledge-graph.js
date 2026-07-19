@@ -5,8 +5,8 @@
  */
 import { z } from "zod";
 export function registerQueryKnowledgeGraph(server, config, client) {
-    server.tool("query_knowledge_graph", `查询${config.INDUSTRY_CODE === "sulfur" ? "硫磺" : "行业"}价格影响因子及其关系网络，返回供应链影响链、市场洞察与采购建议`, {
-        query: z.string().describe("用户关于硫磺市场、价格、企业采购的自然语言问题，例如'宜化集团采购硫磺需要注意什么'或'价格趋势如何'"),
+    server.tool("query_knowledge_graph", `当用户询问价格影响因素、为什么涨价/跌价、供应链分析、企业采购建议、中东局势/地缘政治对价格的影响、某个企业该如何采购时使用。查询${config.INDUSTRY_CODE === "sulfur" ? "硫磺" : "行业"}价格影响因子及关系网络，返回供应链影响链、市场洞察与采购建议`, {
+        query: z.string().describe("用户关于市场分析、价格影响、企业采购的自然语言问题，例如'中东局势对硫磺价格的影响'、'宜化集团采购硫磺需要注意什么'、'磷肥需求旺季硫磺会涨价吗'"),
     }, async ({ query }, _extra) => {
         const res = await client.queryKnowledgeGraph(query);
         if (!res.success) {

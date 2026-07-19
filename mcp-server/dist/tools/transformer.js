@@ -8,7 +8,7 @@ import { z } from "zod";
 const COMMODITY_CODES = ["sulfur", "phosphate", "potash", "urea"];
 export function registerTransformerTools(server, config, client) {
     // ========== predict_with_transformer ==========
-    server.tool("predict_with_transformer", `使用 Transformer 深度学习模型（PatchTST）预测${config.INDUSTRY_CODE === "sulfur" ? "硫磺" : "大宗原料"}未来价格走势。基于注意力机制的时间序列模型，擅长捕捉长期依赖关系和复杂价格模式，是对传统 ARIMA+XGBoost 模型的有力补充。`, {
+    server.tool("predict_with_transformer", `当用户询问AI预测、深度学习预测、高级预测、Transformer预测、用最新技术预测价格时使用。使用 Transformer 深度学习模型（PatchTST）预测${config.INDUSTRY_CODE === "sulfur" ? "硫磺" : "大宗原料"}未来价格走势，擅长捕捉长期依赖和复杂模式。如需传统统计模型预测用 predict_prices，综合预测用 get_combined_prediction`, {
         days: z.number().optional().describe("预测天数，默认 7 天"),
         commodityCode: z.enum(COMMODITY_CODES).optional().describe("品种代码，默认使用环境变量中的 INDUSTRY_CODE"),
     }, async ({ days, commodityCode }, _extra) => {
@@ -67,7 +67,7 @@ export function registerTransformerTools(server, config, client) {
         }
     });
     // ========== get_combined_prediction ==========
-    server.tool("get_combined_prediction", `获取 ARIMA+XGBoost 与 Transformer 模型的加权融合预测结果。两个模型并行预测后按权重（ARIMA+XGBoost 60%，Transformer 40%）融合，提供比单一模型更稳健的价格走势判断。`, {
+    server.tool("get_combined_prediction", `当用户询问综合预测、融合预测、多模型预测、哪个模型更准、综合判断未来价格时使用。获取 ARIMA+XGBoost 与 Transformer 模型的加权融合预测结果（权重 60%:40%），比单一模型更稳健`, {
         days: z.number().optional().describe("预测天数，默认 7 天"),
         commodityCode: z.enum(COMMODITY_CODES).optional().describe("品种代码，默认使用环境变量中的 INDUSTRY_CODE"),
     }, async ({ days, commodityCode }, _extra) => {

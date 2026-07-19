@@ -16,10 +16,10 @@ export function registerGenerateReport(
 ) {
   server.tool(
     "generate_report",
-    `手动触发${config.INDUSTRY_CODE === "sulfur" ? "硫磺" : "行业"}追踪任务并生成报告`,
+    `当用户要求生成报告、给我一份市场分析报告、生成追踪报告、帮我做市场总结时使用。手动触发${config.INDUSTRY_CODE === "sulfur" ? "硫磺" : "行业"}追踪任务并生成报告`,
     {
-      subscriptionId: z.string().optional(),
-      frequency: z.enum(["hourly", "daily", "weekly"]).optional(),
+      subscriptionId: z.string().optional().describe("可选，指定订阅ID执行单个订阅；不传则执行所有待处理订阅"),
+      frequency: z.enum(["hourly", "daily", "weekly"]).optional().describe("报告频率，默认执行所有未处理的订阅"),
     },
     async (
       { subscriptionId, frequency },

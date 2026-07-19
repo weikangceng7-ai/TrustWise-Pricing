@@ -3,10 +3,10 @@
  */
 import { z } from "zod";
 export function registerGetPrices(server, config, client) {
-    server.tool("get_prices", `获取${config.INDUSTRY_CODE === "sulfur" ? "硫磺" : "当前行业"}价格数据，包括近N天的价格走势和变化幅度`, {
-        days: z.number().optional(),
-        region: z.string().optional(),
-        market: z.string().optional(),
+    server.tool("get_prices", `当用户询问近期价格、当前价格、价格走势、报价、涨跌情况时使用。获取${config.INDUSTRY_CODE === "sulfur" ? "硫磺" : "当前行业"}价格数据，包括近N天的价格和变化幅度`, {
+        days: z.number().optional().describe("查询天数，默认7天，最多30天"),
+        region: z.string().optional().describe("地区筛选，如'华东'、'华南'、'华中'"),
+        market: z.string().optional().describe("市场筛选，如'镇江港'、'防城港'、'南通港'"),
     }, async ({ days, region, market }, _extra) => {
         const daysCount = days || 7;
         try {

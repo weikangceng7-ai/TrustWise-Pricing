@@ -21,7 +21,7 @@ export function registerCommodityTools(
   // ========== list_commodities ==========
   server.tool(
     "list_commodities",
-    "列出系统支持的所有大宗原料品种，包括硫磺、磷矿、钾肥、尿素，返回当前价格、趋势、波动性和风险等级",
+    "当用户询问有哪些品种、支持哪些大宗商品、所有原料的概览、各品种对比时使用。列出系统支持的所有大宗原料品种（硫磺、磷矿、钾肥、尿素），返回当前价格、趋势、波动性和风险等级。如需单个品种深入分析用 get_commodity_analysis，跨品种对比用 cross_commodity_analysis",
     {},
     async (
       {},
@@ -74,7 +74,7 @@ export function registerCommodityTools(
   // ========== get_commodity_analysis ==========
   server.tool(
     "get_commodity_analysis",
-    "获取指定品种的详细分析，包括关键驱动因素、市场展望、品种间相关性和行业对比",
+    "当用户询问某个具体品种的详细分析、磷矿行情、钾肥走势、尿素价格、某品种的驱动因素和市场展望时使用。获取指定品种的详细分析，包括关键驱动因素、市场展望、品种间相关性和行业对比",
     {
       commodityCode: z.enum(COMMODITY_CODES).describe("品种代码：sulfur（硫磺）、phosphate（磷矿）、potash（钾肥）、urea（尿素）"),
     },
