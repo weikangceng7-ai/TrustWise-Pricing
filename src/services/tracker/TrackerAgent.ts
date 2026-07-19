@@ -2,7 +2,7 @@
  * Tracker Agent 编排核心
  *
  * 主要职责：
- * 1. 协调数据采集（调用现有 API Server）
+ * 1. 协调数据采集（直接调用 service 层，不走 HTTP）
  * 2. 调用异动检测模块
  * 3. 调用报告生成模块
  * 4. 发送通知推送
@@ -24,15 +24,13 @@ import {
   type NewsSnapshot,
   type PredictionSnapshot,
 } from "@/db/schema-tracker"
-import { eq } from "drizzle-orm"
+import { multiDimensionalPrices } from "@/db/schema"
+import { desc, eq } from "drizzle-orm"
 import { AlertDetector } from "./AlertDetector"
 import { updateRunStatus, createRecord } from "./SubscriptionManager"
 import { reportGenerator } from "./ReportGenerator"
-import { predictPrices, type PredictionResponse } from "@/services/prediction"
-
-// ==================== 数据采集配置 ====================
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ""
+import { predictPrices } from "@/services/prediction"
+import { getPrices, getInventory } from "@/services/prices"
 
 // ==================== Tracker Agent 类 ====================
 
@@ -152,48 +150,23 @@ export class TrackerAgent {
   // ==================== 数据采集方法 ====================
 
   /**
-   * 获取价格数据
+   * 获取价格数据（直接调用 service 层）
    */
   private async fetchPriceData(
     subscription: TrackerSubscription
   ): Promise<PriceSnapshot | null> {
     try {
-      // 调用现有 API Server
-      const params = new URLSearchParams()
-      params.append("limit", "2") // 获取最近 2 天数据用于对比
+      const prices = await getPrices(2)
 
-      if (subscription.targetRegion) {
-        params.append("region", subscription.targetRegion)
-      }
-      if (subscription.targetMarket) {
-        params.append("market", subscription.targetMarket)
-      }
-
-      // 内部调用（使用环境变量中的内部 API Key）
-      const res = await fetch(`${API_BASE_URL}/api/v1/prices?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${process.env.INTERNAL_API_KEY || ""}`,
-        },
-      })
-
-      if (!res.ok) {
-        console.error("[TrackerAgent] 获取价格数据失败:", res.status)
+      if (prices.length < 2) {
         return null
       }
 
-      const data = await res.json()
-
-      if (!data.success || !data.data?.prices || data.data.prices.length < 2) {
-        return null
-      }
-
-      // 构建价格快照
-      const prices = data.data.prices
       const current = prices[0]
       const previous = prices[1]
 
-      const currentPrice = parseFloat(current.mainPrice || "0")
-      const previousPrice = parseFloat(previous.mainPrice || "0")
+      const currentPrice = Number(current.mainPrice || 0)
+      const previousPrice = Number(previous.mainPrice || 0)
       const changeValue = currentPrice - previousPrice
       const changePercent = previousPrice > 0 ? (changeValue / previousPrice) * 100 : 0
 
@@ -202,9 +175,9 @@ export class TrackerAgent {
         previousPrice,
         changeValue,
         changePercent,
-        date: current.date,
+        date: String(current.date),
         market: current.market || subscription.targetMarket || "镇江港",
-        region: current.region || subscription.targetRegion,
+        region: current.region || subscription.targetRegion || undefined,
       }
     } catch (error) {
       console.error("[TrackerAgent] 获取价格数据异常:", error)
@@ -213,38 +186,23 @@ export class TrackerAgent {
   }
 
   /**
-   * 获取库存数据
+   * 获取库存数据（直接调用 service 层）
    */
   private async fetchInventoryData(
     subscription: TrackerSubscription
   ): Promise<InventorySnapshot | null> {
     try {
-      const params = new URLSearchParams()
-      params.append("limit", "2")
+      const inventory = await getInventory(2)
 
-      const res = await fetch(`${API_BASE_URL}/api/v1/data/inventory?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${process.env.INTERNAL_API_KEY || ""}`,
-        },
-      })
-
-      if (!res.ok) {
-        console.error("[TrackerAgent] 获取库存数据失败:", res.status)
+      if (inventory.length < 2) {
         return null
       }
 
-      const data = await res.json()
-
-      if (!data.success || !data.data?.inventory || data.data.inventory.length < 2) {
-        return null
-      }
-
-      const inventory = data.data.inventory
       const current = inventory[0]
       const previous = inventory[1]
 
-      const currentInventory = parseFloat(current.inventory || "0")
-      const previousInventory = parseFloat(previous.inventory || "0")
+      const currentInventory = Number(current.inventory || 0)
+      const previousInventory = Number(previous.inventory || 0)
       const changeValue = currentInventory - previousInventory
       const changePercent = previousInventory > 0 ? (changeValue / previousInventory) * 100 : 0
 
@@ -253,7 +211,7 @@ export class TrackerAgent {
         previousInventory,
         changeValue,
         changePercent,
-        date: current.date,
+        date: String(current.date),
         location: "主要港口",
       }
     } catch (error) {
@@ -263,41 +221,32 @@ export class TrackerAgent {
   }
 
   /**
-   * 获取新闻数据
+   * 获取新闻数据（直接查询数据库）
    */
   private async fetchNewsData(
-    subscription: TrackerSubscription
+    _subscription: TrackerSubscription
   ): Promise<NewsSnapshot[] | null> {
     try {
-      const params = new URLSearchParams()
-      params.append("limit", "10")
-      params.append("category", "sulfur")
-
-      const res = await fetch(`${API_BASE_URL}/api/v1/data/news?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${process.env.INTERNAL_API_KEY || ""}`,
-        },
-      })
-
-      if (!res.ok) {
-        console.error("[TrackerAgent] 获取新闻数据失败:", res.status)
-        return null
-      }
-
-      const data = await res.json()
-
-      if (!data.success || !data.data?.news) {
+      if (!db) {
+        console.error("[TrackerAgent] 数据库未初始化")
         return []
       }
 
-      return data.data.news.map((item: any) => ({
-        id: item.id || `news-${Date.now()}`,
-        title: item.title,
+      const rows = await db
+        .select()
+        .from(multiDimensionalPrices)
+        .where(eq(multiDimensionalPrices.category, "market-news"))
+        .orderBy(desc(multiDimensionalPrices.date))
+        .limit(10)
+
+      return rows.map((item) => ({
+        id: String(item.id || `news-${Date.now()}`),
+        title: item.note || item.categoryName || "无标题",
         source: item.source || "未知来源",
-        date: item.date || new Date().toISOString(),
+        date: item.date ? String(item.date) : new Date().toISOString(),
         category: item.category || "市场动态",
-        relevanceScore: item.relevanceScore || 0.8,
-        sentiment: item.sentiment || "neutral",
+        relevanceScore: 0.8,
+        sentiment: "neutral" as const,
       }))
     } catch (error) {
       console.error("[TrackerAgent] 获取新闻数据异常:", error)
