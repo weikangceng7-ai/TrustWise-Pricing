@@ -171,7 +171,8 @@
       "Bash(ls:*)",
       "Read(//c/Users/**)",
       "Read(//mnt/c/**)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(python:*)"
     ]
   }
 }

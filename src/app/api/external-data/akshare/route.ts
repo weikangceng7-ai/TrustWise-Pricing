@@ -5,6 +5,14 @@ import {
   fetchAllCommodities,
   type CommodityDataResponse,
 } from "@/lib/akshare-client"
+import {
+  fetchSulfurSpot,
+  fetchPotashSpot,
+  fetchUreaSpot,
+  fetchPhosphateSpot,
+  fetchBDIIndex,
+  fetchAllCommoditiesDirect,
+} from "@/lib/commodity-scraper"
 
 /**
  * AkShare 数据 API
@@ -441,9 +449,36 @@ async function fetchRealtimeBDI() {
 }
 
 /**
- * 从 Python AKShare 服务获取 BDI 指数，不可用时 fallback
+ * 获取实时 BDI 指数
+ * 优先使用 TypeScript 直连新浪财经，不可用时 fallback 到 Python 服务
  */
 async function fetchRealtimeBDIFromService() {
+  // 先尝试 TypeScript 直连
+  try {
+    const direct = await fetchBDIIndex()
+    if (direct && direct.data.length > 0 && !direct.source.includes("模拟")) {
+      return NextResponse.json({
+        success: true,
+        isMock: false,
+        source: direct.source,
+        type: "bdi",
+        data: {
+          name: "波罗的海干散货指数",
+          unit: "指数",
+          history: direct.data.map((d) => ({
+            date: d.date,
+            value: d.price,
+          })),
+        },
+        timestamp: new Date().toISOString(),
+        note: "实时数据 - Baltic Exchange",
+      })
+    }
+  } catch (e) {
+    console.warn("Direct BDI scraper failed:", e)
+  }
+
+  // Fallback 到 Python 服务
   try {
     const data = await fetchBDI()
     if (data && data.data.length > 0) {
@@ -471,9 +506,50 @@ async function fetchRealtimeBDIFromService() {
 }
 
 /**
- * 从 Python AKShare 服务获取大宗商品现货价格
+ * 获取大宗商品现货价格
+ * 优先使用 TypeScript 直连生意社，不可用时 fallback 到 Python 服务
  */
 async function fetchCommoditySpotFromService(code: string) {
+  const nameMap: Record<string, string> = {
+    sulfur: "硫磺", phosphate: "磷矿石", potash: "钾肥", urea: "尿素",
+  }
+
+  // 先尝试 TypeScript 直连
+  try {
+    const scraperMap: Record<string, () => Promise<CommodityDataResponse>> = {
+      sulfur: () => fetchSulfurSpot(90),
+      phosphate: () => fetchPhosphateSpot(90),
+      potash: () => fetchPotashSpot(90),
+      urea: () => fetchUreaSpot(90),
+    }
+    const directFn = scraperMap[code]
+    if (directFn) {
+      const direct = await directFn()
+      if (direct && direct.data.length > 0 && !direct.source.includes("模拟")) {
+        return NextResponse.json({
+          success: true,
+          isMock: false,
+          source: direct.source,
+          type: code,
+          data: {
+            name: nameMap[code] || code,
+            unit: "元/吨",
+            history: direct.data.map((d) => ({
+              date: d.date,
+              value: d.price,
+              changePercent: d.change_percent ?? null,
+            })),
+          },
+          timestamp: new Date().toISOString(),
+          note: `实时数据 - ${direct.source}`,
+        })
+      }
+    }
+  } catch (e) {
+    console.warn(`Direct scraper failed for ${code}:`, e)
+  }
+
+  // Fallback 到 Python 服务
   try {
     const data = await fetchCommoditySpot(code)
     if (data && data.data.length > 0) {
@@ -516,8 +592,29 @@ async function fetchCommoditySpotFromService(code: string) {
 
 /**
  * 批量获取所有大宗商品数据
+ * 优先使用 TypeScript 直连，不可用时 fallback 到 Python 服务
  */
 async function fetchAllCommoditiesFromService() {
+  // 先尝试 TypeScript 直连
+  try {
+    const direct = await fetchAllCommoditiesDirect(30)
+    const mockCount = Object.values(direct).filter((r) =>
+      r.source.includes("模拟")
+    ).length
+    if (mockCount < Object.keys(direct).length) {
+      return NextResponse.json({
+        success: true,
+        source: "生意社 (100ppi.com)",
+        type: "commodity_all",
+        data: direct,
+        timestamp: new Date().toISOString(),
+      })
+    }
+  } catch (e) {
+    console.warn("Direct scraper batch failed:", e)
+  }
+
+  // Fallback 到 Python 服务
   try {
     const allData = await fetchAllCommodities()
     if (allData) {

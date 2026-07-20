@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { db } from "@/db"
 import { sulfurPrices, portInventory, notifications } from "@/db/schema"
 import { fetchAllCommodities, fetchCommoditySpot, fetchBDI, type CommodityDataResponse } from "@/lib/akshare-client"
+import { fetchAllCommoditiesDirect } from "@/lib/commodity-scraper"
 import { eq, and, desc } from "drizzle-orm"
 
 export const maxDuration = 60 // AKShare 批量获取可能需要较长时间
@@ -25,15 +26,34 @@ export async function GET(request: Request) {
     // 获取最新已有数据日期，避免重复入库
     const lastPrice = await getLatestDataDate()
 
-    // 从 Python AKShare 服务获取所有品种数据
-    const allData = await fetchAllCommodities(90)
+    // 优先使用 TypeScript 直连爬取（Vercel serverless 可直接运行）
+    let allData: Record<string, CommodityDataResponse> =
+      await fetchAllCommoditiesDirect(90)
 
-    if (!allData) {
-      return NextResponse.json({
-        success: false,
-        message: "AKShare 服务不可达，跳过本次入库",
-        timestamp: new Date().toISOString(),
-      })
+    // 如果有品种是模拟数据，尝试 Python 服务作为补充
+    const mockCount = Object.values(allData).filter((r) =>
+      r.source.includes("模拟")
+    ).length
+    if (mockCount > 0) {
+      console.warn(
+        `Direct scraper: ${mockCount}/5 commodities using mock data, trying Python service as fallback...`
+      )
+      const pythonData = await fetchAllCommodities(90)
+      if (pythonData) {
+        let replaced = 0
+        for (const [code, response] of Object.entries(pythonData)) {
+          if (
+            !response.source.includes("模拟") &&
+            allData[code]?.source.includes("模拟")
+          ) {
+            allData[code] = response
+            replaced++
+          }
+        }
+        if (replaced > 0) {
+          console.log(`Python service supplemented ${replaced} commodities`)
+        }
+      }
     }
 
     const results: Record<string, { inserted: number; skipped: number }> = {}
