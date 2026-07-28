@@ -1,0 +1,1 @@
+{"arima_order": [0, 1, 1], "lags": 3, "resid_mean": 3.580796248806802, "resid_std": 112.86937451452302, "last_price": 9535.67, "arima_is_pmdarima": true}
