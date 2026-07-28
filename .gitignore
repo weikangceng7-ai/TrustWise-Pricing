@@ -52,4 +52,7 @@ next-env.d.ts
 # gstack (local dev tool)
 .gstack/
 
-.vercel
+# yihua local data (client privacy)
+/public/yihua/
+
+src/data/yihua-knowledge.json
