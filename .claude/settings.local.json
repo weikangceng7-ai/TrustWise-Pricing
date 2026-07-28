@@ -172,7 +172,11 @@
       "Read(//c/Users/**)",
       "Read(//mnt/c/**)",
       "Bash(node:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(gh repo:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:www.everydev.ai)",
+      "WebFetch(domain:blog.csdn.net)"
     ]
   }
 }
