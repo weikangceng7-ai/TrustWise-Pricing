@@ -531,7 +531,7 @@ export default function DashboardPage() {
             </div>
             <div className="text-lg font-bold text-slate-900 dark:text-white">3<span className="text-sm font-normal text-slate-400 ml-1">家</span></div>
             <div className="flex items-center gap-1 mt-0.5">
-              <span className="text-[10px] text-slate-400">HX·HY·TC</span>
+              <span className="text-[10px] text-slate-400">宜化·HY·TC</span>
             </div>
           </Link>
         </div>
@@ -717,8 +717,43 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 右列 - 采购周报和企业价格预测 */}
+          {/* 右列 - 宜化企业信息、采购周报和企业价格预测 */}
           <div className="space-y-3 flex flex-col flex-1 min-h-0 overflow-y-auto">
+            {/* 湖北宜化企业信息 */}
+            <div className="rounded-lg p-3 bg-white/80 dark:bg-white/5 backdrop-blur-sm border border-cyan-200/50 dark:border-cyan-500/20">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-cyan-100 dark:bg-cyan-500/20 flex items-center justify-center">
+                  <Building2 className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white">湖北宜化集团</h3>
+                  <p className="text-[10px] text-slate-400">定制化服务企业</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="rounded bg-cyan-50/50 dark:bg-cyan-500/10 px-2 py-1.5">
+                  <div className="text-slate-400">产能</div>
+                  <div className="font-semibold text-slate-800 dark:text-slate-200">120<span className="font-normal text-slate-400">万吨/年</span></div>
+                </div>
+                <div className="rounded bg-cyan-50/50 dark:bg-cyan-500/10 px-2 py-1.5">
+                  <div className="text-slate-400">运输</div>
+                  <div className="font-semibold text-slate-800 dark:text-slate-200">水运</div>
+                </div>
+                <div className="rounded bg-cyan-50/50 dark:bg-cyan-500/10 px-2 py-1.5">
+                  <div className="text-slate-400">地区</div>
+                  <div className="font-semibold text-slate-800 dark:text-slate-200">华中</div>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1 mt-2">
+                {["硫磺", "磷矿", "煤炭", "甲醇", "工业盐"].map((p) => (
+                  <span key={p} className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-100/50 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300">{p}</span>
+                ))}
+              </div>
+              <Link href="/enterprise/yihua" className="inline-flex items-center gap-1 mt-2 text-xs text-cyan-600 dark:text-cyan-400 hover:text-cyan-700">
+                查看详情 <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+
             {/* 采购周报 */}
             <div className="bg-gradient-to-r from-cyan-500/10 via-violet-500/10 to-cyan-500/10 dark:from-cyan-500/5 dark:via-violet-500/5 dark:to-cyan-500/5 backdrop-blur-sm rounded-lg p-3 border border-cyan-200/50 dark:border-cyan-500/20 flex-1 flex flex-col min-h-0">
               <div className="flex items-center gap-2 mb-2">

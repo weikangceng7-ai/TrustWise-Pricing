@@ -75,7 +75,7 @@ export interface EnterpriseConfig {
 export const ENTERPRISE_CONFIGS: EnterpriseConfig[] = [
   {
     code: "yihua",
-    name: "HX集团",
+    name: "湖北宜化",
     location: "华中地区",
     province: "华中",
     capacity: 120,
@@ -83,10 +83,18 @@ export const ENTERPRISE_CONFIGS: EnterpriseConfig[] = [
     mainProducts: ["磷酸一铵", "磷酸二铵", "尿素"],
     customerRegions: ["华中", "华南", "西南"],
     inventoryStrategy: "moderate",
-    description: "国内最大硫磺制酸企业之一，依托水运优势，运输成本较低",
+    description: "国内最大硫磺制酸企业之一，依托水运优势，运输成本较低。主要大宗原料包括硫磺、磷矿、煤炭、兰炭、工业盐、甲醇等。",
     tailwindColor: "cyan",
-    shortDescription: "硫磺产能约120万吨/年",
-    priceConfig: { basePrice: 985, volatility: 35, trend: 0.3, modelAccuracy: 94.2 },
+    shortDescription: "硫磺制酸产能约120万吨/年，华中水运优势",
+    priceConfig: {
+      // 基于隆众镇江港硫磺市场真实数据 (2025-09-08): 均价¥2610/吨
+      basePrice: 2610,
+      // 近30日价格标准差 (2025-08至2025-09)
+      volatility: 95,
+      // 月度环比趋势 (2025-08-08 → 2025-09-08)
+      trend: 7.4,
+      modelAccuracy: 94.2
+    },
     inventory: {
       currentStock: 8500,
       maxCapacity: 15000,
@@ -112,7 +120,13 @@ export const ENTERPRISE_CONFIGS: EnterpriseConfig[] = [
     description: "华北地区主要化肥企业，依赖铁路运输，库存策略偏保守",
     tailwindColor: "violet",
     shortDescription: "华北地区大型化工企业",
-    priceConfig: { basePrice: 972, volatility: 28, trend: 0.15, modelAccuracy: 92.8 },
+    priceConfig: {
+      // 同市场基准价 + 华北铁路运输溢价
+      basePrice: 2660,
+      volatility: 95,
+      trend: 7.4,
+      modelAccuracy: 92.8
+    },
     inventory: {
       currentStock: 7800,
       maxCapacity: 12000,
@@ -138,7 +152,13 @@ export const ENTERPRISE_CONFIGS: EnterpriseConfig[] = [
     description: "专注于高端复合肥，出口占比高，库存周转快",
     tailwindColor: "amber",
     shortDescription: "化肥行业龙头",
-    priceConfig: { basePrice: 958, volatility: 32, trend: 0.25, modelAccuracy: 93.5 },
+    priceConfig: {
+      // 同市场基准价 + 华东公路运输溢价
+      basePrice: 2640,
+      volatility: 95,
+      trend: 7.4,
+      modelAccuracy: 93.5
+    },
     inventory: {
       currentStock: 4200,
       maxCapacity: 8000,
