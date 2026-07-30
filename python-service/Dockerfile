@@ -16,6 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # 复制源码
 COPY python-service/app.py .
+COPY python-service/external_data.py .
 RUN mkdir -p data models
 
 # 预热 AKShare（可选，减少首次请求延迟）
