@@ -78,7 +78,9 @@ export const sulfurPrices = pgTable("sulfur_prices", {
   unit: varchar("unit", { length: 20 }).default("元/吨"),
   source: varchar("source", { length: 100 }),
   createdAt: timestamp("created_at").defaultNow(),
-})
+}, (t) => [
+  uniqueIndex("sulfur_prices_date_commodity_uidx").on(t.date, t.commodityCode),
+])
 
 // 港口库存表
 export const portInventory = pgTable("port_inventory", {
@@ -89,7 +91,9 @@ export const portInventory = pgTable("port_inventory", {
   price: decimal("price", { precision: 10, scale: 2 }), // 镇江港颗粒硫磺价格（元/吨）
   source: varchar("source", { length: 100 }),
   createdAt: timestamp("created_at").defaultNow(),
-})
+}, (t) => [
+  uniqueIndex("port_inventory_date_commodity_uidx").on(t.date, t.commodityCode),
+])
 
 // 知识库条目（资料 / 图 / 文献 预处理后的元数据）
 export const yihuaKnowledgeItems = pgTable(

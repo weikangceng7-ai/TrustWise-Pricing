@@ -50,6 +50,13 @@
       "when": 1783675824674,
       "tag": "0006_secret_thor",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1786128000000,
+      "tag": "0007_busy_the_stranger",
+      "breakpoints": true
     }
   ]
 }

@@ -135,7 +135,7 @@ async function ingestCommodityPrice(
         changePercent: record.change_percent != null ? String(record.change_percent) : null,
         unit: record.unit || "元/吨",
         source: response.source || "AKShare",
-      }).onConflictDoNothing()
+      }).onConflictDoNothing({ target: [sulfurPrices.date, sulfurPrices.commodityCode] })
 
       inserted++
     } catch (e) {
@@ -162,7 +162,7 @@ async function ingestBDIData(response: CommodityDataResponse): Promise<{ inserte
         inventory: String(record.price),
         price: null,
         source: response.source || "AKShare",
-      }).onConflictDoNothing()
+      }).onConflictDoNothing({ target: [portInventory.date, portInventory.commodityCode] })
 
       inserted++
     } catch {

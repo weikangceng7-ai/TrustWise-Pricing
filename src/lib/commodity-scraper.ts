@@ -51,6 +51,23 @@ function seededRandom(seed: number): number {
 
 // ---- HTTP 请求（替代 curl_cffi） ----
 
+const BROWSER_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  Accept:
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+  "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+  "Cache-Control": "no-cache",
+  Pragma: "no-cache",
+  Referer: "https://www.100ppi.com/",
+}
+
+/**
+ * 带 JS 安全挑战绕过的 HTTP 请求
+ *
+ * 生意社 (100ppi.com) 会返回 JS 挑战页面（设置 HW_CHECK cookie 后重定向）。
+ * Node.js fetch 无法执行 JS，需要手动提取 cookie 值后重试。
+ */
 async function fetchWithBrowserHeaders(
   url: string,
   extraHeaders?: Record<string, string>
@@ -59,20 +76,32 @@ async function fetchWithBrowserHeaders(
   const timer = setTimeout(() => controller.abort(), 15000)
 
   try {
-    return await fetch(url, {
+    const headers = { ...BROWSER_HEADERS, ...extraHeaders }
+
+    let response = await fetch(url, {
       signal: controller.signal,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-        "Cache-Control": "no-cache",
-        Pragma: "no-cache",
-        Referer: "https://www.100ppi.com/",
-        ...extraHeaders,
-      },
+      headers,
     })
+
+    // 检测 JS 安全挑战：生意社返回 ~660 字节的 challenge 页面
+    const contentLength = response.headers.get("content-length")
+    if (response.status === 200 && (!contentLength || parseInt(contentLength) < 2000)) {
+      const clone = response.clone()
+      const text = await clone.text()
+      if (text.includes("安全检查") && text.includes("HW_CHECK")) {
+        const match = text.match(/"([a-f0-9]{32})"/)
+        if (match) {
+          console.log(`生意社 JS challenge 绕过: ${url.slice(0, 60)}...`)
+          // 带 cookie 重试
+          response = await fetch(url, {
+            signal: controller.signal,
+            headers: { ...headers, Cookie: `HW_CHECK=${match[1]}` },
+          })
+        }
+      }
+    }
+
+    return response
   } finally {
     clearTimeout(timer)
   }
