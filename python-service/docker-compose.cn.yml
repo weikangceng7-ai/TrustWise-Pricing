@@ -9,6 +9,8 @@ services:
     ports:
       - "5001:5001"
     restart: unless-stopped
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-}
     volumes:
       - ./data:/app/data
       - ./models:/app/models

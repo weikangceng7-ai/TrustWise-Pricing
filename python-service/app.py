@@ -17,6 +17,30 @@ from statsmodels.tsa.stattools import adfuller
 import joblib
 from typing import Optional, Dict, Any, List, Tuple
 
+# 外部经济因子数据（FRED + Frankfurter）
+from external_data import fetch_external_factors, merge_factors_to_price, print_factor_summary, FACTOR_COLUMNS
+
+# Transformer 深度学习依赖（可选）
+try:
+    import torch
+    _HAS_TORCH = True
+except ImportError:
+    _HAS_TORCH = False
+
+try:
+    from transformers import PatchTSTConfig, PatchTSTForPrediction
+    _HAS_TRANSFORMERS = True
+except ImportError:
+    _HAS_TRANSFORMERS = False
+
+# PostgreSQL 数据源（可选，优先于本地 Excel）
+try:
+    import psycopg2
+    import psycopg2.extras
+    _HAS_PSYCOPG2 = True
+except ImportError:
+    _HAS_PSYCOPG2 = False
+
 app = Flask(__name__)
 CORS(app)
 
@@ -35,6 +59,10 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 # 数据文件路径
 DATA_FILE = os.path.join(os.path.dirname(__file__), 'data', 'price_history.xlsx')
 
+# PostgreSQL 数据源（优先级高于本地 Excel）
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
+_USE_DB = bool(DATABASE_URL) and _HAS_PSYCOPG2
+
 
 class SulfurPricePredictor:
     """硫磺价格预测器 - Hybrid ARIMA + XGBoost"""
@@ -49,6 +77,8 @@ class SulfurPricePredictor:
         self.lags = 3
         self.arima_order = (0, 1, 1)
         self._initialized = False
+        self.factor_cols: List[str] = []
+        self.last_factors: Dict[str, float] = {}
 
     def ensure_initialized(self):
         """懒加载：首次调用时加载数据并训练模型"""
@@ -62,12 +92,21 @@ class SulfurPricePredictor:
         self._initialized = True
 
     def load_data(self, file_path: str = None) -> pd.DataFrame:
-        """加载价格历史数据"""
+        """加载价格历史数据
+
+        优先级: PostgreSQL > 本地 Excel > 模拟数据
+        """
+        # 优先尝试 PostgreSQL
+        if _USE_DB:
+            data = self._load_from_db()
+            if data is not None:
+                return data
+            print('PostgreSQL 数据不可用，回退到本地文件')
+
         if file_path is None:
             file_path = DATA_FILE
 
         if not os.path.exists(file_path):
-            # 如果没有数据文件，创建模拟数据
             return self._create_mock_data()
 
         try:
@@ -80,8 +119,45 @@ class SulfurPricePredictor:
             self.price_data = data
             return data
         except Exception as e:
-            print(f"加载数据失败: {e}")
+            print(f'加载 Excel 数据失败: {e}')
             return self._create_mock_data()
+
+    def _load_from_db(self, commodity_code: str = 'sulfur') -> Optional[pd.DataFrame]:
+        """从 PostgreSQL 加载价格历史数据"""
+        if not _USE_DB:
+            return None
+
+        try:
+            conn = psycopg2.connect(DATABASE_URL)
+            cur = conn.cursor()
+            cur.execute(
+                'SELECT date, main_price FROM sulfur_prices '
+                'WHERE commodity_code = %s AND main_price IS NOT NULL '
+                'ORDER BY date',
+                (commodity_code,)
+            )
+            rows = cur.fetchall()
+            cur.close()
+            conn.close()
+
+            if not rows:
+                print(f'PostgreSQL 中无 {commodity_code} 数据')
+                return None
+
+            data = pd.DataFrame(rows, columns=['date', 'price'])
+            data['date'] = pd.to_datetime(data['date'])
+            data.set_index('date', inplace=True)
+            data = data.sort_index()
+            # 去重（同一天取最新价格）
+            data = data[~data.index.duplicated(keep='last')]
+
+            self.price_data = data
+            print(f'从 PostgreSQL 加载 {len(data)} 条 {commodity_code} 价格数据 '
+                  f'({data.index[0].strftime("%Y-%m-%d")} ~ {data.index[-1].strftime("%Y-%m-%d")})')
+            return data
+        except Exception as e:
+            print(f'PostgreSQL 加载失败: {e}')
+            return None
 
     def _create_mock_data(self) -> pd.DataFrame:
         """创建模拟数据用于测试"""
@@ -156,6 +232,26 @@ class SulfurPricePredictor:
 
         train_features, train_labels = build_lag_features(resid, self.lags)
 
+        # 尝试加入外部经济因子（FRED + 汇率）
+        self.factor_cols = []
+        self.last_factors = {}
+        try:
+            factors = fetch_external_factors(days=len(price) + 30, force_refresh=False)
+            if factors:
+                merged = merge_factors_to_price(data, factors)
+                for col in FACTOR_COLUMNS.values():
+                    if col in merged.columns:
+                        aligned = merged[col].reindex(train_features.index, method='ffill')
+                        if aligned.notna().sum() > len(aligned) * 0.3:
+                            train_features[col] = aligned.fillna(method='ffill').fillna(0)
+                            self.factor_cols.append(col)
+                            last_vals = merged[col].dropna()
+                            self.last_factors[col] = float(last_vals.iloc[-1]) if len(last_vals) > 0 else 0.0
+                if self.factor_cols:
+                    print(f'外部因子已加入特征 ({len(self.factor_cols)} 个): {self.factor_cols}')
+        except Exception as e:
+            print(f'外部因子加载失败，仅使用滞后特征: {e}')
+
         # 训练 XGBoost 模型
         print("训练 XGBoost 模型...")
         self.xgb_model = xgb.XGBRegressor(
@@ -208,7 +304,9 @@ class SulfurPricePredictor:
             'last_price': float(self.last_price),
             'model_type': 'Hybrid ARIMA + XGBoost',
             'arima_order': self.arima_order,
-            'xgb_lags': self.lags
+            'xgb_lags': self.lags,
+            'external_factors': self.factor_cols,
+            'feature_dim': self.lags + len(self.factor_cols),
         }
 
     def predict(self, days: int = 7) -> Dict[str, Any]:
@@ -244,7 +342,10 @@ class SulfurPricePredictor:
         xgb_preds = []
 
         for _ in range(days):
-            input_feat = np.array(last_known).reshape(1, -1)
+            features = list(last_known)
+            for col in self.factor_cols:
+                features.append(self.last_factors.get(col, 0))
+            input_feat = np.array(features).reshape(1, -1)
             pred = self.xgb_model.predict(input_feat)[0]
             xgb_preds.append(pred)
             last_known = np.append(last_known[1:], pred)
@@ -383,7 +484,9 @@ class SulfurPricePredictor:
             'lags': self.lags,
             'resid_mean': float(self.resid_mean),
             'resid_std': float(self.resid_std),
-            'last_price': float(self.last_price) if self.last_price else None
+            'last_price': float(self.last_price) if self.last_price else None,
+            'factor_cols': self.factor_cols,
+            'last_factors': self.last_factors,
         }
         with open(os.path.join(MODEL_DIR, 'model_params.json'), 'w') as f:
             json.dump(params, f)
@@ -405,6 +508,8 @@ class SulfurPricePredictor:
                 self.resid_mean = params['resid_mean']
                 self.resid_std = params['resid_std']
                 self.last_price = params.get('last_price')
+                self.factor_cols = params.get('factor_cols', [])
+                self.last_factors = params.get('last_factors', {})
 
                 return True
         except Exception as e:
@@ -835,15 +940,287 @@ class CommodityDataFetcher:
         }
 
 
+class PatchTSTPredictor:
+    """PatchTST 时间序列预测器 - 基于 HuggingFace Transformers"""
+
+    MODEL_NAME = 'patchtst'
+    DEFAULT_CONTEXT = 96
+    DEFAULT_PRED_LEN = 90
+
+    def __init__(self):
+        self.model = None
+        self.device = None
+        self.context_length = self.DEFAULT_CONTEXT
+        self.prediction_length = self.DEFAULT_PRED_LEN
+        self.scaler = None
+        self._ready = False
+        self._last_train_metrics = {}
+        self._resid_std = None
+        self._price_series = None
+
+    @property
+    def gpu_available(self) -> bool:
+        return self.device is not None and self.device.type == 'cuda'
+
+    def _detect_device(self):
+        if self.device is not None:
+            return self.device
+        if _HAS_TORCH:
+            if torch.cuda.is_available():
+                self.device = torch.device('cuda')
+            elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+                self.device = torch.device('mps')
+            else:
+                self.device = torch.device('cpu')
+        print(f'PatchTST 使用设备: {self.device}')
+        return self.device
+
+    @staticmethod
+    def _build_windows(series: np.ndarray, context_len: int, pred_len: int):
+        total = context_len + pred_len
+        windows = np.lib.stride_tricks.sliding_window_view(series, total)
+        X = windows[:, :context_len].astype(np.float32)
+        y = windows[:, context_len:].astype(np.float32)
+        return X, y
+
+    def ensure_initialized(self, price_series: pd.Series = None):
+        """加载已有模型或训练新模型（与 SulfurPricePredictor 一致的懒加载协议）"""
+        if self._ready:
+            if price_series is not None:
+                self._price_series = price_series
+            return
+        if price_series is not None:
+            self._price_series = price_series
+        if not self._load_model():
+            if self._price_series is None:
+                raise RuntimeError('无可用价格数据，无法训练 Transformer 模型')
+            print('首次使用 Transformer，自动训练模型...')
+            self.train(self._price_series)
+
+    def train(self, price_series: pd.Series, ctx_length: int = None) -> Dict[str, Any]:
+        from sklearn.preprocessing import StandardScaler
+        from sklearn.metrics import mean_absolute_error, mean_squared_error
+
+        self._price_series = price_series
+        self._detect_device()
+
+        ctx_length = ctx_length or self.DEFAULT_CONTEXT
+        self.context_length = min(ctx_length, len(price_series) // 3)
+
+        self.scaler = StandardScaler()
+        values = price_series.values.reshape(-1, 1).astype(np.float32)
+        scaled = self.scaler.fit_transform(values).flatten()
+
+        X, y = self._build_windows(scaled, self.context_length, self.prediction_length)
+
+        if len(X) < 5:
+            self.context_length = max(7, len(scaled) // 6)
+            X, y = self._build_windows(scaled, self.context_length, self.prediction_length)
+
+        # 留出 20% 验证集，避免残差估计过拟合
+        n_val = max(1, int(len(X) * 0.2))
+        X_train, y_train = X[:-n_val], y[:-n_val]
+        X_val, y_val = X[-n_val:], y[-n_val:]
+
+        print(f'PatchTST 训练数据: {len(X_train)} 窗口, 验证: {len(X_val)} 窗口, '
+              f'context={self.context_length}, pred={self.prediction_length}')
+
+        config = PatchTSTConfig(
+            context_length=self.context_length,
+            prediction_length=self.prediction_length,
+            num_input_channels=1,
+            patch_length=min(8, self.context_length // 4),
+            stride=min(4, self.context_length // 8),
+            d_model=64,
+            num_attention_heads=4,
+            num_hidden_layers=3,
+            ffn_dim=256,
+            dropout=0.1,
+            activation_function='gelu',
+            do_mask_input=False,
+        )
+
+        self.model = PatchTSTForPrediction(config)
+        self.model.to(self.device)
+
+        X_train_t = torch.tensor(X_train, dtype=torch.float32).unsqueeze(-1).to(self.device)
+        y_train_t = torch.tensor(y_train, dtype=torch.float32).to(self.device)
+
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
+        criterion = torch.nn.MSELoss()
+        batch_size = min(16, len(X_train))
+        n_epochs = 20
+
+        self.model.train()
+        for epoch in range(n_epochs):
+            perm = torch.randperm(len(X_train))
+            epoch_loss = 0.0
+            for i in range(0, len(X_train), batch_size):
+                idx = perm[i:i + batch_size]
+                batch_X = X_train_t[idx]
+                batch_y = y_train_t[idx]
+
+                optimizer.zero_grad()
+                outputs = self.model(past_values=batch_X)
+                loss = criterion(outputs.prediction_outputs, batch_y)
+                loss.backward()
+                optimizer.step()
+                epoch_loss += loss.item()
+
+            if (epoch + 1) % 5 == 0:
+                avg_loss = epoch_loss / max(1, len(X_train) // batch_size)
+                print(f'  PatchTST Epoch {epoch + 1}/{n_epochs}, Loss: {avg_loss:.6f}')
+
+        # 在验证集上计算残差（无偏估计）
+        self.model.eval()
+        X_val_t = torch.tensor(X_val, dtype=torch.float32).unsqueeze(-1).to(self.device)
+        with torch.no_grad():
+            outputs = self.model(past_values=X_val_t)
+            val_preds = outputs.prediction_outputs.cpu().numpy()
+
+        residuals = y_val - val_preds
+        self._resid_std = float(np.std(residuals))
+
+        mape = float(np.mean(np.abs(residuals / (np.abs(y_val) + 1e-8))) * 100)
+        mae = float(mean_absolute_error(y_val, val_preds))
+        rmse = float(np.sqrt(mean_squared_error(y_val, val_preds)))
+
+        self._last_train_metrics = {'mape': round(mape, 2), 'mae': round(mae, 2), 'rmse': round(rmse, 2)}
+        self._ready = True
+
+        self._save_model()
+        print(f'PatchTST 训练完成: MAPE={mape:.2f}%, MAE={mae:.2f}, RMSE={rmse:.2f}')
+
+        return self._last_train_metrics
+
+    def predict(self, days: int = 7) -> Dict[str, Any]:
+        if not self._ready:
+            raise RuntimeError('模型未训练，请先调用 train()')
+        if self._price_series is None:
+            raise RuntimeError('未设置价格数据')
+
+        self.model.eval()
+
+        recent = self._price_series.values[-self.context_length:].astype(np.float32)
+        recent_scaled = self.scaler.transform(recent.reshape(-1, 1)).flatten()
+
+        input_tensor = torch.tensor(recent_scaled, dtype=torch.float32) \
+            .unsqueeze(0).unsqueeze(-1).to(self.device)
+
+        with torch.no_grad():
+            outputs = self.model(past_values=input_tensor)
+            pred_scaled = outputs.prediction_outputs[0].cpu().numpy()
+
+        pred_values = self.scaler.inverse_transform(pred_scaled.reshape(-1, 1)).flatten()
+        days = min(days, len(pred_values))
+        pred_values = pred_values[:days]
+
+        scale = self.scaler.scale_[0] if hasattr(self.scaler, 'scale_') else 1.0
+        sigma = max(self._resid_std * scale if self._resid_std else np.std(pred_values) * 0.3,
+                     abs(float(pred_values[0])) * 0.01)
+
+        future_dates = pd.date_range(
+            start=self._price_series.index[-1] + pd.Timedelta(days=1),
+            periods=days,
+            freq='D',
+        )
+
+        predictions = []
+        for d, price in zip(future_dates, pred_values):
+            ci = 1.96 * sigma
+            conf = max(0.6, min(1.0, 1.0 - (sigma / (abs(float(price)) + 1e-8))))
+            predictions.append({
+                'date': d.strftime('%Y-%m-%d'),
+                'predicted_price': round(float(price), 2),
+                'lower_bound': round(float(price) - ci, 2),
+                'upper_bound': round(float(price) + ci, 2),
+                'confidence': round(float(conf), 4),
+            })
+
+        return {
+            'total_days': days,
+            'predictions': predictions,
+            'metrics': self._last_train_metrics,
+        }
+
+    def health(self) -> Dict[str, Any]:
+        if not _HAS_TORCH or not _HAS_TRANSFORMERS:
+            return {
+                'success': True,
+                'status': 'unhealthy',
+                'model_loaded': None,
+                'model_ready': False,
+                'gpu_available': False,
+                'error': '依赖未安装 (torch, transformers)',
+            }
+        return {
+            'success': True,
+            'status': 'healthy' if self._ready else 'unhealthy',
+            'model_loaded': self.MODEL_NAME if self._ready else None,
+            'model_ready': self._ready,
+            'gpu_available': self.gpu_available,
+        }
+
+    def _save_model(self):
+        model_path = os.path.join(MODEL_DIR, 'patchtst_model')
+        os.makedirs(model_path, exist_ok=True)
+        if self.model is not None:
+            self.model.save_pretrained(model_path)
+        if self.scaler is not None:
+            joblib.dump(self.scaler, os.path.join(model_path, 'scaler.joblib'))
+        metadata = {
+            'context_length': self.context_length,
+            'prediction_length': self.prediction_length,
+            'resid_std': self._resid_std,
+            'metrics': self._last_train_metrics,
+        }
+        with open(os.path.join(model_path, 'metadata.json'), 'w') as f:
+            json.dump(metadata, f)
+
+    def _load_model(self) -> bool:
+        if not _HAS_TORCH or not _HAS_TRANSFORMERS:
+            return False
+
+        model_path = os.path.join(MODEL_DIR, 'patchtst_model')
+        try:
+            self._detect_device()
+            self.model = PatchTSTForPrediction.from_pretrained(model_path)
+            self.model.to(self.device)
+            self.scaler = joblib.load(os.path.join(model_path, 'scaler.joblib'))
+
+            with open(os.path.join(model_path, 'metadata.json'), 'r') as f:
+                meta = json.load(f)
+            self.context_length = meta['context_length']
+            self.prediction_length = meta['prediction_length']
+            self._resid_std = meta.get('resid_std')
+            self._last_train_metrics = meta.get('metrics', {})
+            self._ready = True
+            print(f'PatchTST 模型已加载 (context={self.context_length}, device={self.device})')
+            return True
+        except Exception as e:
+            print(f'加载 PatchTST 模型失败: {e}')
+            return False
+
+
 # 全局实例
 predictor = SulfurPricePredictor()
 fetcher = CommodityDataFetcher()
+transformer = PatchTSTPredictor()
 
 
 @app.route('/health', methods=['GET'])
 def health_check():
     """健康检查"""
-    return jsonify({'status': 'healthy', 'service': 'sulfur-price-predictor'})
+    data_source = 'postgresql' if _USE_DB else 'excel' if os.path.exists(DATA_FILE) else 'mock'
+    return jsonify({
+        'status': 'healthy',
+        'service': 'sulfur-price-predictor',
+        'data_source': data_source,
+        'db_available': _USE_DB,
+        'price_count': len(predictor.price_data) if predictor.price_data is not None else 0,
+        'external_factors': len(predictor.factor_cols),
+        'factor_cols': predictor.factor_cols,
+    })
 
 
 @app.route('/train', methods=['POST'])
@@ -857,10 +1234,13 @@ def train_model():
         predictor.load_data()
         result = predictor.train(test_ratio=test_ratio)
 
+        data_source = 'postgresql' if _USE_DB else 'excel' if os.path.exists(DATA_FILE) else 'mock'
         return jsonify({
             'success': True,
             'message': '模型训练完成',
-            'metrics': result
+            'data_source': data_source,
+            'price_count': len(predictor.price_data) if predictor.price_data is not None else 0,
+            'metrics': result,
         })
     except Exception as e:
         return jsonify({
@@ -1052,6 +1432,70 @@ def akshare_refresh():
         "message": "数据刷新完成",
         "data": result,
         "refreshed_at": datetime.now().isoformat(),
+    })
+
+
+# ---- Transformer 预测端点 ----
+
+@app.route('/transformer-predict', methods=['POST'])
+def transformer_predict():
+    try:
+        data = request.get_json() or {}
+        days = min(max(1, data.get('days', 7)), 90)
+
+        predictor.ensure_initialized()
+        transformer.ensure_initialized(
+            predictor.price_data['price'] if predictor.price_data is not None else None
+        )
+
+        result = transformer.predict(days=days)
+        return jsonify({
+            'success': True,
+            'model': transformer.MODEL_NAME,
+            **result,
+        })
+    except Exception as e:
+        print(f'Transformer 预测失败: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/transformer-health', methods=['GET'])
+def transformer_health():
+    return jsonify(transformer.health())
+
+
+# ---- 外部经济因子端点 ----
+
+@app.route('/external-data', methods=['GET'])
+def external_data():
+    """获取外部经济因子（FRED + Frankfurter）"""
+    force = request.args.get('force_refresh', 'false').lower() == 'true'
+    days = request.args.get('days', 365, type=int)
+    days = min(max(1, days), 730)
+
+    factors = fetch_external_factors(days=days, force_refresh=force)
+    print_factor_summary(factors)
+
+    result = {}
+    for key, series in factors.items():
+        if series is not None and not series.empty:
+            result[key] = {
+                'name': FACTOR_COLUMNS.get(key, key),
+                'count': len(series),
+                'start': series.index[0].strftime('%Y-%m-%d'),
+                'end': series.index[-1].strftime('%Y-%m-%d'),
+                'latest': round(float(series.iloc[-1]), 4),
+                'min': round(float(series.min()), 4),
+                'max': round(float(series.max()), 4),
+            }
+
+    return jsonify({
+        'success': True,
+        'source': 'FRED + Frankfurter',
+        'factors': result,
+        'refreshed_at': datetime.now().isoformat(),
     })
 
 

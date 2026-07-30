@@ -13,6 +13,8 @@
     "db:seed:yihua-code": "tsx --tsconfig tsconfig.json scripts/seed-yihua-code.ts",
     "db:seed:multi-prices": "tsx --tsconfig tsconfig.json scripts/seed-multi-dimensional-prices.ts",
     "db:seed:multi-commodity": "tsx --tsconfig tsconfig.json scripts/seed-multi-commodity.ts",
+    "db:export-training-data": "tsx --tsconfig tsconfig.json scripts/export-training-data.ts",
+    "db:export-and-retrain": "tsx --tsconfig tsconfig.json scripts/export-training-data.ts --retrain",
     "prepare": "husky",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
