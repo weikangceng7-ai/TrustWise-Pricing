@@ -105,14 +105,11 @@ class SulfurPricePredictor:
                 return data
             print('PostgreSQL 数据不可用，回退到本地文件')
 
-        if file_path is None:
-            file_path = DATA_FILE
-
-        if not os.path.exists(file_path):
+        if not os.path.exists(DATA_FILE):
             return self._create_mock_data()
 
         try:
-            data = pd.read_excel(file_path)
+            data = pd.read_excel(DATA_FILE)
             if '长江港硫磺现货价' in data.columns:
                 data.rename(columns={'长江港硫磺现货价': 'price', '日期': 'date'}, inplace=True)
             data['date'] = pd.to_datetime(data['date'])
