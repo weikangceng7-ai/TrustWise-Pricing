@@ -487,15 +487,7 @@ export async function fetchBDIIndex(): Promise<CommodityDataResponse> {
     console.warn("BDI 新浪财经 API 失败:", e)
   }
 
-  // 降级到模拟数据
-  return {
-    success: true,
-    source: "模拟数据（BDI 数据源不可用）",
-    commodity_code: "bdi",
-    data: [],
-    count: 0,
-    note: "BDI 数据源不可用，使用模拟数据",
-  }
+  return generateMockBDI()
 }
 
 /** 模拟 BDI 历史数据 */

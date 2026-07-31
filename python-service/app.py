@@ -145,6 +145,7 @@ class SulfurPricePredictor:
                 return None
 
             data = pd.DataFrame(rows, columns=['date', 'price'])
+            data['price'] = data['price'].astype(float)
             data['date'] = pd.to_datetime(data['date'])
             data.set_index('date', inplace=True)
             data = data.sort_index()
@@ -455,14 +456,20 @@ class SulfurPricePredictor:
     def _generate_trend_analysis(self, trend_7d: str, trend_30d: str,
                                   change_7d: float, volatility: float) -> str:
         """生成趋势分析文本"""
+        direction = '上涨' if change_7d >= 0 else '下跌'
         analysis = f"近期价格呈现{trend_7d}趋势，"
 
         if abs(change_7d) > 5:
-            analysis += f"涨幅较大({change_7d}%)，"
+            analysis += f"{direction}幅度较大({abs(change_7d)}%)，"
         elif abs(change_7d) > 2:
-            analysis += f"涨幅适中({change_7d}%)，"
+            analysis += f"{direction}幅度适中({abs(change_7d)}%)，"
         else:
             analysis += "价格相对稳定，"
+
+        if trend_7d == trend_30d:
+            analysis += f"短期与中期趋势一致（均{trend_7d}），"
+        else:
+            analysis += f"短期{trend_7d}但中期{trend_30d}，"
 
         if volatility > 20:
             analysis += "市场波动较大，建议谨慎采购。"
@@ -877,7 +884,7 @@ class CommodityDataFetcher:
         import numpy as np
 
         base_prices = {
-            "sulfur": 9000, "phosphate": 1130,
+            "sulfur": 900, "phosphate": 1130,
             "potash": 3570, "urea": 1810,
             "urea_futures": 1800,
         }

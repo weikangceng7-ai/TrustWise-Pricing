@@ -9,6 +9,15 @@ import { TRANSFORMER_PREDICTION_MODELS, type TransformerPredictionModel } from "
 
 const BASE_URL = process.env.PREDICTION_SERVICE_URL || "http://localhost:5001"
 
+/** Python 预测服务返回中文置信度字符串，统一转为 0-1 数字 */
+function toNumericConfidence(c: unknown): number {
+  if (typeof c === "number") return c
+  if (c === "高") return 0.9
+  if (c === "中") return 0.75
+  if (c === "低") return 0.6
+  return 0.7
+}
+
 export interface TransformerPredictionResult {
   date: string
   predicted_price: number
@@ -146,13 +155,18 @@ export async function getCombinedPrediction(
       const arimaPrice = arima?.predicted_price ?? arimaResults[0]?.predicted_price ?? 0
       const transformerPrice = transformer?.predicted_price ?? transformerResults[0]?.predicted_price ?? 0
 
+      const maxConf = Math.max(
+        toNumericConfidence(arima?.confidence),
+        toNumericConfidence(transformer?.confidence),
+        0.85
+      )
       predictions.push({
         date: arima?.date || transformer?.date || "",
         arima_xgb_price: arimaPrice,
         transformer_price: transformerPrice,
         combined_price:
           Math.round((arimaPrice * (1 - transformerWeight) + transformerPrice * transformerWeight) * 100) / 100,
-        confidence: Math.round(Math.max(arima?.confidence || 0, transformer?.confidence || 0, 85) * 100) / 100,
+        confidence: Math.round(maxConf * 100) / 100,
         lower_bound: Math.min(arima?.lower_bound ?? arimaPrice - 30, transformer?.lower_bound ?? transformerPrice - 30),
         upper_bound: Math.max(arima?.upper_bound ?? arimaPrice + 30, transformer?.upper_bound ?? transformerPrice + 30),
       })

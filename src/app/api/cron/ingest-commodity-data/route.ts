@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { db } from "@/db"
-import { sulfurPrices, portInventory, notifications } from "@/db/schema"
+import { sulfurPrices, portInventory } from "@/db/schema"
 import { fetchAllCommodities, fetchCommoditySpot, fetchBDI, type CommodityDataResponse } from "@/lib/akshare-client"
 import { fetchAllCommoditiesDirect } from "@/lib/commodity-scraper"
 import { eq, and, desc } from "drizzle-orm"
@@ -193,17 +193,10 @@ async function checkPriceAlerts(allData: Record<string, CommodityDataResponse>) 
       const direction = latest.change_percent > 0 ? "上涨" : "下跌"
       const name = nameMap[code] || code
 
-      try {
-        await db.insert(notifications).values({
-          id: crypto.randomUUID() as never,
-          type: "price_alert",
-          title: `${name}价格大幅${direction}`,
-          content: `${name}当日价格 ${latest.price} 元/吨，${direction} ${Math.abs(latest.change_percent).toFixed(1)}%，请关注市场变化。`,
-          createdAt: new Date(),
-        } as never)
-      } catch (e) {
-        console.warn(`创建价格告警通知失败 (${code}):`, e)
-      }
+      // 系统级别价格告警，无对应 userId，输出日志即可
+      console.log(
+        `[PRICE_ALERT] ${name}价格大幅${direction}: ${latest.price} 元/吨, ${direction} ${Math.abs(latest.change_percent).toFixed(1)}%`
+      )
     }
   }
 }
