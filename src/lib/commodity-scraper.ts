@@ -128,7 +128,7 @@ async function fetchSpotTable(
     const $ = cheerio.load(html)
 
     // 找最大的表格（>50 行），同 Python 端逻辑
-    let dataTable: ReturnType<typeof $> | null = null
+    let dataTable: cheerio.Cheerio<any> | null = null
     $("table").each((_i, el) => {
       const rows = $(el).find("tr")
       if (rows.length > 50) {
@@ -147,7 +147,8 @@ async function fetchSpotTable(
     ])
 
     const result: Record<string, number> = {}
-    dataTable.find("tr").each((_i, row) => {
+    const table = dataTable as cheerio.Cheerio<any>
+    table.find("tr").each((_i, row) => {
       const cells = $(row).find("td")
       if (cells.length < 7) return
 
