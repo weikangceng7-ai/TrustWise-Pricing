@@ -1259,8 +1259,8 @@ def train_model():
 @app.route('/predict', methods=['POST'])
 def predict():
     """预测价格"""
-    predictor.ensure_initialized()
     try:
+        predictor.ensure_initialized()
         data = request.get_json() or {}
         days = data.get('days', 7)
 
@@ -1283,8 +1283,8 @@ def predict():
 @app.route('/trend', methods=['GET'])
 def analyze_trend():
     """分析趋势"""
-    predictor.ensure_initialized()
     try:
+        predictor.ensure_initialized()
         days = request.args.get('days', 30, type=int)
         result = predictor.analyze_trend(days=days)
 
@@ -1305,8 +1305,8 @@ def purchase_decision():
 
     基于预测结果和库存情况，给出采购建议
     """
-    predictor.ensure_initialized()
     try:
+        predictor.ensure_initialized()
         data = request.get_json() or {}
         days = data.get('days', 7)
         current_inventory = data.get('current_inventory')  # 当前库存量
