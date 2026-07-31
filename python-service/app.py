@@ -38,8 +38,9 @@ try:
     import psycopg2
     import psycopg2.extras
     _HAS_PSYCOPG2 = True
-except ImportError:
+except ImportError as e:
     _HAS_PSYCOPG2 = False
+    print(f'[WARN] psycopg2 未安装，PostgreSQL 不可用: {e}')
 
 app = Flask(__name__)
 CORS(app)
@@ -62,6 +63,10 @@ DATA_FILE = os.path.join(os.path.dirname(__file__), 'data', 'price_history.xlsx'
 # PostgreSQL 数据源（优先级高于本地 Excel）
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
 _USE_DB = bool(DATABASE_URL) and _HAS_PSYCOPG2
+
+print(f'[INFO] PostgreSQL 连接: {"可用" if _USE_DB else "不可用"} '
+      f'(psycopg2={"已安装" if _HAS_PSYCOPG2 else "未安装"}, '
+      f'DATABASE_URL={"已设置" if DATABASE_URL else "未设置"})')
 
 
 class SulfurPricePredictor:
