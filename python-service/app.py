@@ -518,6 +518,15 @@ class SulfurPricePredictor:
                 self.factor_cols = params.get('factor_cols', [])
                 self.last_factors = params.get('last_factors', {})
 
+                # 校验特征数一致性：XGBoost 期望特征数 = lags + factor_cols
+                expected_feats = self.lags + len(self.factor_cols)
+                actual_feats = self.xgb_model.n_features_in_
+                if expected_feats != actual_feats:
+                    print(f'模型特征数不匹配: 期望 {expected_feats} (lags={self.lags} + factors={len(self.factor_cols)}), '
+                          f'模型实际 {actual_feats}，将重新训练')
+                    self.xgb_model = None
+                    return False
+
                 return True
         except Exception as e:
             print(f"加载模型失败: {e}")
