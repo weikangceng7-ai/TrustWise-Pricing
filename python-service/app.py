@@ -77,28 +77,30 @@ class SulfurPricePredictor:
         self.lags = 3
         self.arima_order = (0, 1, 1)
         self._initialized = False
+        self._commodity_code: str = ''  # 当前加载的品种
         self.factor_cols: List[str] = []
         self.last_factors: Dict[str, float] = {}
 
-    def ensure_initialized(self):
+    def ensure_initialized(self, commodity_code: str = 'sulfur'):
         """懒加载：首次调用时加载数据并训练模型"""
-        if self._initialized:
+        if self._initialized and self._commodity_code == commodity_code:
             return
-        self.load_data()
-        if not self._load_models():
-            print("未找到已训练模型，开始训练...")
+        self._commodity_code = commodity_code
+        self.load_data(commodity_code)
+        if not self._load_models(commodity_code):
+            print(f"未找到 {commodity_code} 已训练模型，开始训练...")
             self.train()
-            print("模型训练完成")
+            print(f"{commodity_code} 模型训练完成")
         self._initialized = True
 
-    def load_data(self, file_path: str = None) -> pd.DataFrame:
+    def load_data(self, commodity_code: str = 'sulfur') -> pd.DataFrame:
         """加载价格历史数据
 
         优先级: PostgreSQL > 本地 Excel > 模拟数据
         """
         # 优先尝试 PostgreSQL
         if _USE_DB:
-            data = self._load_from_db()
+            data = self._load_from_db(commodity_code)
             if data is not None:
                 return data
             print('PostgreSQL 数据不可用，回退到本地文件')
@@ -161,15 +163,23 @@ class SulfurPricePredictor:
             return None
 
     def _create_mock_data(self) -> pd.DataFrame:
-        """创建模拟数据用于测试"""
+        """创建模拟数据用于测试（按品种生成不同价格区间）"""
+        code = self._commodity_code or 'sulfur'
+        profiles = {
+            'sulfur':    (900, 60, 20),     # 硫磺: 900 基准, ±60 波动
+            'phosphate': (1130, 50, 15),    # 磷矿石: 1130 基准, ±50 波动
+            'potash':    (3570, 120, 25),    # 钾肥: 3570 基准, ±120 波动
+            'urea':      (1810, 80, 22),     # 尿素: 1810 基准, ±80 波动
+        }
+        base, amplitude, noise_std = profiles.get(code, (1000, 60, 20))
+
         dates = pd.date_range(start='2023-01-01', end=datetime.now(), freq='D')
         rng = np.random.default_rng(42)
 
-        # 模拟价格数据：基础价格 + 趋势 + 季节性 + 随机波动
         n = len(dates)
-        trend = np.linspace(800, 1000, n)
-        seasonal = 50 * np.sin(np.linspace(0, 4*np.pi, n))
-        noise = rng.normal(0, 30, n)
+        trend = np.linspace(base * 0.85, base * 1.05, n)
+        seasonal = amplitude * np.sin(np.linspace(0, 4*np.pi, n))
+        noise = rng.normal(0, noise_std, n)
         prices = trend + seasonal + noise
 
         data = pd.DataFrame({
@@ -487,11 +497,13 @@ class SulfurPricePredictor:
         return analysis
 
     def _save_models(self):
-        """保存模型到文件"""
+        """保存模型到文件（按品种隔离）"""
+        code = self._commodity_code or 'sulfur'
+        xgb_file = os.path.join(MODEL_DIR, f'xgb_{code}.joblib')
+        params_file = os.path.join(MODEL_DIR, f'params_{code}.json')
         if self.xgb_model is not None:
-            joblib.dump(self.xgb_model, os.path.join(MODEL_DIR, 'xgb_model.joblib'))
+            joblib.dump(self.xgb_model, xgb_file)
 
-        # 保存模型参数
         params = {
             'arima_order': self.arima_order,
             'lags': self.lags,
@@ -501,19 +513,19 @@ class SulfurPricePredictor:
             'factor_cols': self.factor_cols,
             'last_factors': self.last_factors,
         }
-        with open(os.path.join(MODEL_DIR, 'model_params.json'), 'w') as f:
+        with open(params_file, 'w') as f:
             json.dump(params, f)
 
-    def _load_models(self) -> bool:
-        """从文件加载模型"""
+    def _load_models(self, commodity_code: str = 'sulfur') -> bool:
+        """从文件加载模型（按品种隔离）"""
         try:
-            xgb_path = os.path.join(MODEL_DIR, 'xgb_model.joblib')
-            params_path = os.path.join(MODEL_DIR, 'model_params.json')
+            xgb_file = os.path.join(MODEL_DIR, f'xgb_{commodity_code}.joblib')
+            params_file = os.path.join(MODEL_DIR, f'params_{commodity_code}.json')
 
-            if os.path.exists(xgb_path) and os.path.exists(params_path):
-                self.xgb_model = joblib.load(xgb_path)
+            if os.path.exists(xgb_file) and os.path.exists(params_file):
+                self.xgb_model = joblib.load(xgb_file)
 
-                with open(params_path, 'r') as f:
+                with open(params_file, 'r') as f:
                     params = json.load(f)
 
                 self.arima_order = tuple(params['arima_order'])
@@ -1251,9 +1263,11 @@ def train_model():
     try:
         data = request.get_json() or {}
         test_ratio = data.get('test_ratio', 0.1)
+        commodity_code = data.get('commodity_code', 'sulfur')
 
         # 加载数据并训练
-        predictor.load_data()
+        predictor._commodity_code = commodity_code
+        predictor.load_data(commodity_code)
         result = predictor.train(test_ratio=test_ratio)
 
         data_source = 'postgresql' if _USE_DB else 'excel' if os.path.exists(DATA_FILE) else 'mock'
@@ -1275,13 +1289,14 @@ def train_model():
 def predict():
     """预测价格"""
     try:
-        predictor.ensure_initialized()
         data = request.get_json() or {}
         days = data.get('days', 7)
+        commodity_code = data.get('commodity_code', 'sulfur')
 
         # 限制预测天数
         days = min(max(1, days), 90)
 
+        predictor.ensure_initialized(commodity_code)
         result = predictor.predict(days=days)
 
         return jsonify({
@@ -1299,8 +1314,9 @@ def predict():
 def analyze_trend():
     """分析趋势"""
     try:
-        predictor.ensure_initialized()
         days = request.args.get('days', 30, type=int)
+        commodity_code = request.args.get('commodity_code', 'sulfur')
+        predictor.ensure_initialized(commodity_code)
         result = predictor.analyze_trend(days=days)
 
         return jsonify({
@@ -1321,9 +1337,10 @@ def purchase_decision():
     基于预测结果和库存情况，给出采购建议
     """
     try:
-        predictor.ensure_initialized()
         data = request.get_json() or {}
         days = data.get('days', 7)
+        commodity_code = data.get('commodity_code', 'sulfur')
+        predictor.ensure_initialized(commodity_code)
         current_inventory = data.get('current_inventory')  # 当前库存量
         daily_consumption = data.get('daily_consumption', 100)  # 日消耗量
         safety_days = data.get('safety_days', 7)  # 安全库存天数
