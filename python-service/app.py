@@ -271,8 +271,14 @@ class SulfurPricePredictor:
         last_known = resid[-self.lags:].values
         xgb_preds = []
 
+        def _make_xgb_input(lag_vals):
+            feats = list(lag_vals)
+            for col in self.factor_cols:
+                feats.append(self.last_factors.get(col, 0))
+            return np.array(feats).reshape(1, -1)
+
         for _ in range(len(test_price)):
-            input_feat = np.array(last_known).reshape(1, -1)
+            input_feat = _make_xgb_input(last_known)
             pred = self.xgb_model.predict(input_feat)[0]
             xgb_preds.append(pred)
             last_known = np.append(last_known[1:], pred)
