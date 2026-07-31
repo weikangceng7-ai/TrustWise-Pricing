@@ -184,7 +184,8 @@
       "Bash(grep -oP '\\(\\\\d{1,2}月\\\\d{1,2}日生意社硫磺.*?基准价为[\\\\d,]+\\\\.?\\\\d*元/吨\\)'.)",
       "Bash(iconv -f gbk -t utf-8)",
       "WebFetch(domain:chem.100ppi.com)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash('div'.)"
     ]
   }
 }
