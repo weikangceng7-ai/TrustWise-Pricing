@@ -13,6 +13,7 @@ import {
   fetchBDIIndex,
   fetchAllCommoditiesDirect,
 } from "@/lib/commodity-scraper"
+import { EXTERNAL_FETCH_TIMEOUT_MS } from "@/lib/constants"
 
 /**
  * AkShare 数据 API
@@ -85,6 +86,13 @@ export async function GET(request: Request) {
   }
 }
 
+// 带超时的 fetch 封装
+function fetchWithTimeout(url: string, timeoutMs: number = EXTERNAL_FETCH_TIMEOUT_MS, options?: RequestInit): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timeoutId))
+}
+
 /**
  * 获取实时汇率 - 使用 Frankfurter API (欧洲央行数据)
  */
@@ -99,13 +107,11 @@ async function fetchRealtimeExchangeRate() {
     const yesterdayStr = yesterday.toISOString().split('T')[0]
     const startDate = thirtyDaysAgo.toISOString().split('T')[0]
 
-    // 并行获取：最新汇率、昨日汇率、历史数据
+    // 并行获取：最新汇率、昨日汇率、历史数据（3 秒超时）
     const [latestResponse, yesterdayResponse, historyResponse] = await Promise.all([
-      fetch("https://api.frankfurter.app/latest?from=USD&to=CNY", {
-        next: { revalidate: 3600 } // 缓存1小时
-      }),
-      fetch(`https://api.frankfurter.app/${yesterdayStr}?from=USD&to=CNY`),
-      fetch(`https://api.frankfurter.app/${startDate}..?from=USD&to=CNY`)
+      fetchWithTimeout("https://api.frankfurter.dev/v1/latest?from=USD&to=CNY", EXTERNAL_FETCH_TIMEOUT_MS),
+      fetchWithTimeout(`https://api.frankfurter.dev/v1/${yesterdayStr}?from=USD&to=CNY`, EXTERNAL_FETCH_TIMEOUT_MS),
+      fetchWithTimeout(`https://api.frankfurter.dev/v1/${startDate}..?from=USD&to=CNY`, EXTERNAL_FETCH_TIMEOUT_MS),
     ])
 
     if (!latestResponse.ok) {
@@ -201,9 +207,9 @@ async function fetchRealtimeOilPrice() {
   try {
     // 如果有 FRED API Key，使用真实数据
     if (apiKey) {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `https://api.stlouisfed.org/fred/series/observations?series_id=DCOILWTICO&api_key=${apiKey}&file_type=json&observation_start=2025-01-01`,
-        { next: { revalidate: 3600 } } // 缓存1小时
+        EXTERNAL_FETCH_TIMEOUT_MS
       )
 
       if (response.ok) {
@@ -293,9 +299,9 @@ async function fetchRealtimeBrentPrice() {
   try {
     // 如果有 FRED API Key，使用真实数据
     if (apiKey) {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `https://api.stlouisfed.org/fred/series/observations?series_id=DCOILBRENTEU&api_key=${apiKey}&file_type=json&observation_start=2025-01-01`,
-        { next: { revalidate: 3600 } } // 缓存1小时
+        EXTERNAL_FETCH_TIMEOUT_MS
       )
 
       if (response.ok) {

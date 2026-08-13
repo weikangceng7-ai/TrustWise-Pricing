@@ -16,9 +16,11 @@ import {
   ChevronRight,
   GripVertical,
 } from "lucide-react"
-import { useChatContext } from "@/contexts/chat-context"
-import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import { useChatContext } from "@/contexts/chat-context"
+import dynamic from "next/dynamic"
+
+const ReactMarkdown = dynamic(() => import("react-markdown"), { ssr: false })
 
 // 自定义 Markdown 组件 - 增强表格和可视化效果
 const markdownComponents = {
@@ -83,9 +85,11 @@ export function FloatingChat() {
   const chatRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    setMounted(true)
-    setPosition({ x: window.innerWidth - 400, y: window.innerHeight - 560 })
-    setButtonPosition({ x: window.innerWidth - 80, y: window.innerHeight - 80 })
+    requestAnimationFrame(() => {
+      setMounted(true)
+      setPosition({ x: window.innerWidth - 400, y: window.innerHeight - 560 })
+      setButtonPosition({ x: window.innerWidth - 80, y: window.innerHeight - 80 })
+    })
   }, [])
 
   // 浮动按钮拖动处理

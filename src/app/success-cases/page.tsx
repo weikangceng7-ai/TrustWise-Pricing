@@ -38,13 +38,16 @@ function useInView(options = {}) {
 }
 
 function AnimatedNumber({ value, suffix = "", duration = 2000 }: { value: string; suffix?: string; duration?: number }) {
-  const [displayValue, setDisplayValue] = useState("0")
+  const [displayValue, setDisplayValue] = useState(() => {
+    const numMatch = value.match(/^(\d+\.?\d*)/)
+    return numMatch ? "0" : value
+  })
   const { ref, isInView } = useInView()
 
   useEffect(() => {
     if (!isInView) return
     const numMatch = value.match(/^(\d+\.?\d*)/)
-    if (!numMatch) { setDisplayValue(value); return }
+    if (!numMatch) return
     const targetNum = parseFloat(numMatch[1])
     const startTime = Date.now()
     const animate = () => {
@@ -155,6 +158,85 @@ const CASE_STUDIES: CaseStudy[] = [
   },
 ]
 
+function CaseStudyCard({ study, idx }: { study: CaseStudy; idx: number }) {
+  const c = COLORS[study.color]
+  const isEven = idx % 2 === 0
+  const { ref, isInView } = useInView()
+
+  return (
+    <div
+      ref={ref}
+      className={`mb-12 last:mb-0 transition-all duration-700 ${isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}
+    >
+      <div className={`rounded-2xl ${c.bg} ${c.border} border overflow-hidden`}>
+        <div className="grid md:grid-cols-5">
+          {/* 左侧企业信息 */}
+          <div className={`p-8 md:p-10 flex flex-col justify-center ${isEven ? "md:order-1" : "md:order-2"}`}>
+            <div className={`w-16 h-16 rounded-2xl ${c.icon} flex items-center justify-center mb-4`}>
+              <span className={`text-2xl font-bold ${c.text}`}>{study.logo}</span>
+            </div>
+            <span className={`px-3 py-1 rounded-lg text-xs font-medium ${c.badge} inline-block w-fit mb-3`}>
+              {study.industry}
+            </span>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">{study.name}</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{study.subtitle}</p>
+            <div className={`inline-flex items-center gap-1.5 text-lg font-semibold ${c.text}`}>
+              {study.highlight}
+            </div>
+          </div>
+
+          {/* 右侧详情 */}
+          <div className={`p-8 md:p-10 bg-white/60 dark:bg-slate-800/40 md:col-span-3 flex flex-col justify-center ${isEven ? "md:order-2" : "md:order-1"}`}>
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-rose-500" />
+                  挑战
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{study.challenge}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  解决方案
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{study.solution}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 gap-3 pt-4 border-t border-slate-200 dark:border-white/10">
+              {study.results.map((r, i) => (
+                <div key={i} className="text-center">
+                  <div className={`text-lg font-bold ${c.text}`}>{r.value}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">{r.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StatCard({ stat }: { stat: { value: string; label: string; icon: React.ReactNode } }) {
+  const { ref, isInView } = useInView()
+  return (
+    <div
+      ref={ref}
+      className={`text-center transition-all duration-600 ${isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+    >
+      <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-500 to-cyan-600 mb-4 shadow-xl shadow-cyan-500/30">
+        <div className="text-white">{stat.icon}</div>
+      </div>
+      <div className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
+        {isInView ? <AnimatedNumber value={stat.value} duration={2000} /> : stat.value}
+      </div>
+      <div className="text-sm text-slate-500 dark:text-slate-400">{stat.label}</div>
+    </div>
+  )
+}
+
 export default function SuccessCasesPage() {
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-900 overflow-x-hidden">
@@ -220,67 +302,9 @@ export default function SuccessCasesPage() {
       {/* Case Studies */}
       <section className="relative py-20 px-6 bg-gradient-to-b from-slate-100 to-white dark:from-slate-900 dark:to-slate-800">
         <div className="max-w-5xl mx-auto">
-          {CASE_STUDIES.map((study, idx) => {
-            const c = COLORS[study.color]
-            const isEven = idx % 2 === 0
-            const { ref, isInView } = useInView()
-
-            return (
-              <div
-                key={idx}
-                ref={ref}
-                className={`mb-12 last:mb-0 transition-all duration-700 ${isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}
-              >
-                <div className={`rounded-2xl ${c.bg} ${c.border} border overflow-hidden`}>
-                  <div className="grid md:grid-cols-5">
-                    {/* 左侧企业信息 */}
-                    <div className={`p-8 md:p-10 flex flex-col justify-center ${isEven ? "md:order-1" : "md:order-2"}`}>
-                      <div className={`w-16 h-16 rounded-2xl ${c.icon} flex items-center justify-center mb-4`}>
-                        <span className={`text-2xl font-bold ${c.text}`}>{study.logo}</span>
-                      </div>
-                      <span className={`px-3 py-1 rounded-lg text-xs font-medium ${c.badge} inline-block w-fit mb-3`}>
-                        {study.industry}
-                      </span>
-                      <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">{study.name}</h2>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{study.subtitle}</p>
-                      <div className={`inline-flex items-center gap-1.5 text-lg font-semibold ${c.text}`}>
-                        {study.highlight}
-                      </div>
-                    </div>
-
-                    {/* 右侧详情 */}
-                    <div className={`p-8 md:p-10 bg-white/60 dark:bg-slate-800/40 md:col-span-3 flex flex-col justify-center ${isEven ? "md:order-2" : "md:order-1"}`}>
-                      <div className="grid md:grid-cols-2 gap-6 mb-6">
-                        <div>
-                          <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-                            <Zap className="h-4 w-4 text-rose-500" />
-                            挑战
-                          </h3>
-                          <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{study.challenge}</p>
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                            解决方案
-                          </h3>
-                          <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{study.solution}</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-4 gap-3 pt-4 border-t border-slate-200 dark:border-white/10">
-                        {study.results.map((r, i) => (
-                          <div key={i} className="text-center">
-                            <div className={`text-lg font-bold ${c.text}`}>{r.value}</div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400">{r.label}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
+          {CASE_STUDIES.map((study, idx) => (
+            <CaseStudyCard key={idx} study={study} idx={idx} />
+          ))}
         </div>
       </section>
 
@@ -293,24 +317,9 @@ export default function SuccessCasesPage() {
               { value: "95%+", label: "客户续约率", icon: <Shield className="h-6 w-6" /> },
               { value: "96.2%", label: "平均预测准确率", icon: <Target className="h-6 w-6" /> },
               { value: "50+", label: "日均智能决策建议", icon: <Zap className="h-6 w-6" /> },
-            ].map((stat, idx) => {
-              const { ref, isInView } = useInView()
-              return (
-                <div
-                  key={idx}
-                  ref={ref}
-                  className={`text-center transition-all duration-600 ${isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-                >
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-500 to-cyan-600 mb-4 shadow-xl shadow-cyan-500/30">
-                    <div className="text-white">{stat.icon}</div>
-                  </div>
-                  <div className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
-                    {isInView ? <AnimatedNumber value={stat.value} duration={2000} /> : stat.value}
-                  </div>
-                  <div className="text-sm text-slate-500 dark:text-slate-400">{stat.label}</div>
-                </div>
-              )
-            })}
+            ].map((stat, idx) => (
+              <StatCard key={idx} stat={stat} />
+            ))}
           </div>
         </div>
       </section>

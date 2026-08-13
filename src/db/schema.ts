@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, date, decimal, timestamp, text, boolean, jsonb, uniqueIndex, integer } from "drizzle-orm/pg-core"
+import { pgTable, serial, varchar, date, decimal, timestamp, text, boolean, jsonb, uniqueIndex, index, integer } from "drizzle-orm/pg-core"
 
 // Better Auth 用户表 - 必须导出为 user
 export const user = pgTable("user", {
@@ -142,7 +142,9 @@ export const purchaseReports = pgTable("purchase_reports", {
   priceTrend: varchar("price_trend", { length: 20 }),
   riskLevel: varchar("risk_level", { length: 20 }),
   createdAt: timestamp("created_at").defaultNow(),
-})
+}, (t) => [
+  index("purchase_reports_report_date_idx").on(t.reportDate),
+])
 
 // 聊天会话表
 export const chatConversations = pgTable("chat_conversations", {
@@ -153,7 +155,10 @@ export const chatConversations = pgTable("chat_conversations", {
     .references(() => user.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-})
+}, (t) => [
+  index("chat_conversations_user_id_idx").on(t.userId),
+  index("chat_conversations_updated_at_idx").on(t.updatedAt),
+])
 
 // 聊天消息表
 export const chatMessages = pgTable("chat_messages", {
@@ -164,7 +169,9 @@ export const chatMessages = pgTable("chat_messages", {
   role: varchar("role", { length: 20 }).notNull(), // 'user' | 'assistant'
   content: text("content").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-})
+}, (t) => [
+  index("chat_messages_conversation_id_idx").on(t.conversationId),
+])
 
 // 通知表
 export const notifications = pgTable("notifications", {
@@ -181,7 +188,10 @@ export const notifications = pgTable("notifications", {
   metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}), // 额外数据
   createdAt: timestamp("created_at").notNull().defaultNow(),
   readAt: timestamp("read_at"),
-})
+}, (t) => [
+  index("notifications_user_id_idx").on(t.userId),
+  index("notifications_is_read_idx").on(t.isRead),
+])
 
 // 企业硫磺价格预测表
 export const enterprisePricePredictions = pgTable("enterprise_price_predictions", {
@@ -198,7 +208,9 @@ export const enterprisePricePredictions = pgTable("enterprise_price_predictions"
   modelType: varchar("model_type", { length: 50 }), // 模型类型 (LSTM/ARIMA/EEMD-LSTM/Transformer)
   unit: varchar("unit", { length: 20 }).default("元/吨"),
   createdAt: timestamp("created_at").defaultNow(),
-})
+}, (t) => [
+  index("ep_pred_lookup_idx").on(t.commodityCode, t.enterpriseCode, t.date.desc()),
+])
 
 // 多维度价格数据表（用于价格走势图分类展示）
 export const multiDimensionalPrices = pgTable(
@@ -288,3 +300,6 @@ export * from "./schema-tracker"
 
 // 品种相关表 - 从 schema-commodity 导入
 export * from "./schema-commodity"
+
+// 支付相关表 - 从 schema-payment 导入
+export * from "./schema-payment"

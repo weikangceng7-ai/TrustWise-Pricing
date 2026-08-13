@@ -252,7 +252,7 @@ export function NotificationPanel() {
           </Button>
         }
       />
-      <SheetContent className="w-[400px] sm:max-w-[400px] p-0 flex flex-col">
+      <SheetContent className="w-[calc(100vw-16px)] max-w-[400px] p-0 flex flex-col">
         <SheetHeader className="p-4 border-b">
           <div className="flex items-center justify-between">
             <SheetTitle className="flex items-center gap-2">

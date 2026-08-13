@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
+import { toast } from "sonner"
 import {
   Card,
   CardContent,
@@ -46,8 +47,8 @@ import {
   ImportResult,
 } from "@/services/enterprise-storage"
 
-// 企业接口（使用存储服务的类型）
-interface Enterprise extends StorageEnterprise {}
+// 企业类型（使用存储服务的类型）
+type Enterprise = StorageEnterprise
 
 const COLOR_OPTIONS = [
   { value: 'cyan', label: '青色', class: 'bg-cyan-500' },
@@ -240,7 +241,7 @@ export default function EnterpriseManagePage() {
 
     // 检查是否为静态企业
     if (isStaticEnterprise(enterprise.code)) {
-      alert('静态企业（HX集团、HY集团、TC集团）不允许删除')
+      toast.error('静态企业（HX集团、HY集团、TC集团）不允许删除')
       return
     }
 
@@ -337,6 +338,16 @@ export default function EnterpriseManagePage() {
           </Button>
         </div>
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30 p-3 text-sm text-red-600 dark:text-red-400">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {error}
+          <Button variant="ghost" size="sm" className="ml-auto h-6 px-2" onClick={() => setError(null)}>
+            关闭
+          </Button>
+        </div>
+      )}
 
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">

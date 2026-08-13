@@ -17,9 +17,10 @@ const CODE_LENGTH = 6
  * 生成随机验证码
  */
 export function generateEmailVerificationCode(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(CODE_LENGTH))
   let code = ""
   for (let i = 0; i < CODE_LENGTH; i++) {
-    code += Math.floor(Math.random() * 10)
+    code += bytes[i] % 10
   }
   return code
 }
@@ -116,23 +117,20 @@ export async function sendEmailVerificationCode(email: string): Promise<{ succes
       return { success: true }
     } catch (error) {
       console.error("[EMAIL] 发送失败:", error)
-      // 发送失败也输出到控制台，方便测试
-      console.log(`[EMAIL] 验证码 (发送失败，备用): ${email} -> ${code}`)
-      // 开发环境返回验证码
+      // 开发环境仍然返回验证码方便测试
       if (process.env.NODE_ENV === "development") {
-        return { success: true, devCode: code }
+        return { success: true, devCode: code, error: String(error) }
       }
-      return { success: true }
+      return { success: false, error: "邮件发送失败，请稍后重试" }
     }
   }
 
-  // 没有 API Key，输出到控制台
-  console.log(`[EMAIL] 验证码已生成: ${email} -> ${code}`)
-  // 开发环境返回验证码
+  // 没有 API Key（仅开发环境输出到控制台）
   if (process.env.NODE_ENV === "development") {
+    console.log(`[EMAIL] 验证码已生成: ${email} -> ${code}`)
     return { success: true, devCode: code }
   }
-  return { success: true }
+  return { success: false, error: "邮件服务未配置" }
 }
 
 /**
@@ -178,15 +176,16 @@ export async function sendPasswordResetEmail(
       return { success: true }
     } catch (error) {
       console.error("[EMAIL] 发送失败:", error)
-      // 发送失败也输出链接，方便测试
-      console.log(`[EMAIL] 重置链接 (发送失败，备用): ${email} -> ${resetUrl}`)
-      return { success: true }
+      return { success: false, error: "邮件发送失败，请稍后重试" }
     }
   }
 
-  // 没有 API Key，输出到控制台
-  console.log(`[EMAIL] 密码重置链接: ${email} -> ${resetUrl}`)
-  return { success: true }
+  // 没有 API Key，输出到控制台（仅开发环境）
+  if (process.env.NODE_ENV === "development") {
+    console.log(`[EMAIL] 密码重置链接: ${email} -> ${resetUrl}`)
+    return { success: true }
+  }
+  return { success: false, error: "邮件服务未配置" }
 }
 
 /**

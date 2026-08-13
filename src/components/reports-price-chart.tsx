@@ -13,25 +13,17 @@ import { useQuery } from "@tanstack/react-query"
 import { useTheme } from "@/components/theme-provider"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { X, TrendingUp, Factory, Globe, BarChart3, Package, Loader2 } from "lucide-react"
+import { X, TrendingUp, Factory, Package, Loader2 } from "lucide-react"
 
-// 价格分类配置（改为采购报告数据分类）
+// 价格分类配置（基于采购报告真实数据）
 const PRICE_CATEGORIES = [
   {
     id: "sulfur-price",
     name: "国内现货均价",
     icon: TrendingUp,
-    description: "市场价格走势",
+    description: "硫磺市场价格走势",
     color: "rose",
     unit: "元/吨",
-  },
-  {
-    id: "oil-price",
-    name: "WTI原油现货",
-    icon: Globe,
-    description: "原油成本价格",
-    color: "amber",
-    unit: "美元/桶",
   },
   {
     id: "port-inventory",
@@ -161,27 +153,6 @@ export function ReportsPriceChart() {
     staleTime: 60 * 1000,
   })
 
-  // 预加载原油价格数据（不按需加载）
-  const { data: oilData } = useQuery({
-    queryKey: ["oil-price-chart"],
-    queryFn: async () => {
-      try {
-        const res = await fetch(`/api/external-data/akshare?type=oil`)
-        if (!res.ok) return { history: [], isMock: false, source: null, note: null }
-        const json = await res.json()
-        return {
-          history: json.data?.history || [],
-          isMock: json.isMock === true,
-          source: (json.source as string) || null,
-          note: (json.note as string) || null,
-        }
-      } catch {
-        return { history: [], isMock: false, source: null, note: null }
-      }
-    },
-    staleTime: 60 * 1000,
-  })
-
   // 预加载库存数据（不按需加载）
   const { data: inventoryData } = useQuery({
     queryKey: ["inventory-chart"],
@@ -219,17 +190,6 @@ export function ReportsPriceChart() {
       }).reverse()
     }
 
-    if (selectedCategory === "oil-price" && oilData) {
-      // 原油历史数据
-      return oilData.history.map((item: any) => ({
-        date: item.date,
-        price: item.value,
-        changePercent: item.changePercent,
-        source: oilData.source || "FRED API",
-        note: oilData.note || "WTI原油现货",
-      }))
-    }
-
     if (selectedCategory === "port-inventory" && inventoryData) {
       // 库存历史数据
       return inventoryData.map((item: any) => ({
@@ -257,7 +217,7 @@ export function ReportsPriceChart() {
     }
 
     return []
-  }, [reportsData, oilData, inventoryData, selectedCategory])
+  }, [reportsData, inventoryData, selectedCategory])
 
   const isLoading = reportsLoading
 
@@ -367,11 +327,6 @@ export function ReportsPriceChart() {
           <CardTitle className="flex items-center gap-2 text-base">
             <TrendingUp className="h-4 w-4" style={{ color: currentCategoryColor }} />
             {currentCategory.name}
-            {selectedCategory === "oil-price" && oilData?.isMock && (
-              <Badge variant="secondary" className="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                模拟数据
-              </Badge>
-            )}
           </CardTitle>
           <CardDescription className="text-xs">
             {isLoading ? "数据加载中..." : chartData.length > 0 ? `近${chartData.length}天数据走势 | 点击数据点查看详情` : "暂无数据"}

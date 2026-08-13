@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { auth } from "@/lib/auth"
 import {
   getNotifications,
   getUnreadCount,
@@ -8,14 +9,10 @@ import {
 
 async function getUserId(request: NextRequest): Promise<string | null> {
   try {
-    const response = await fetch(
-      `${request.nextUrl.origin}/api/auth/get-session`,
-      {
-        headers: request.headers,
-      }
-    )
-    const data = await response.json()
-    return data?.user?.id || null
+    const session = await auth.api.getSession({
+      headers: new Headers(request.headers),
+    })
+    return session?.user?.id || null
   } catch {
     return null
   }

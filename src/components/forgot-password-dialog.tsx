@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
@@ -73,7 +73,14 @@ export function ForgotPasswordDialog({
   const [success, setSuccess] = useState(false)
   const [codeSent, setCodeSent] = useState(false)
   const [countdown, setCountdown] = useState(0)
+  const countdownTimerRef = useRef<NodeJS.Timeout | null>(null)
   const [devCode, setDevCode] = useState<string | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (countdownTimerRef.current) clearInterval(countdownTimerRef.current)
+    }
+  }, [])
 
   const passwordStrength = getPasswordStrength(password)
 
@@ -111,10 +118,11 @@ export function ForgotPasswordDialog({
       }
 
       // 倒计时
-      const timer = setInterval(() => {
+      if (countdownTimerRef.current) clearInterval(countdownTimerRef.current)
+      countdownTimerRef.current = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
-            clearInterval(timer)
+            if (countdownTimerRef.current) clearInterval(countdownTimerRef.current)
             return 0
           }
           return prev - 1

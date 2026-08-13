@@ -38,7 +38,6 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useReports } from "@/hooks/use-reports"
-import { generateReportDocument, generateReportExcel } from "@/lib/report-export"
 import { ReportsPriceChart } from "@/components/reports-price-chart"
 import type { Report } from "@/hooks/use-reports"
 
@@ -171,6 +170,7 @@ export default function ReportsPage() {
 
   const handleExport = async (report: Report, format: "word" | "excel") => {
     try {
+      const { generateReportDocument, generateReportExcel } = await import("@/lib/report-export")
       if (format === "word") {
         await generateReportDocument(report)
       } else {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -38,11 +38,7 @@ export default function ApiKeysPage() {
   const [showFullKey, setShowFullKey] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchApiKeys()
-  }, [])
-
-  async function fetchApiKeys() {
+  const fetchApiKeys = useCallback(async () => {
     try {
       const res = await fetch("/api/api-keys")
       const data = await res.json()
@@ -60,7 +56,11 @@ export default function ApiKeysPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    fetchApiKeys()
+  }, [fetchApiKeys])
 
   async function createKey() {
     if (!newKeyName.trim()) return

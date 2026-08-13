@@ -52,6 +52,9 @@ next-env.d.ts
 # gstack (local dev tool)
 .gstack/
 
+# claude local settings (machine-specific, may contain secrets)
+.claude/settings.local.json
+
 # yihua local data (client privacy)
 /public/yihua/
 

@@ -98,7 +98,7 @@ export async function searchWithFilter(
     // 查询所有 chunk
     const whereConditions: SQL[] = []
 
-    let query_builder = db.select().from(knowledgeChunks).$dynamic()
+    let query_builder = db.select().from(knowledgeChunks).limit(500).$dynamic()
 
     if (filters.sourceType) {
       query_builder = query_builder.where(

@@ -18,6 +18,10 @@ export type RiskLevel = typeof RISK_LEVELS[number]
 export const RECOMMENDATIONS = ['建议备库', '紧急采购', '适当备库', '观望', '按需采购'] as const
 export type Recommendation = typeof RECOMMENDATIONS[number]
 
+// 外部数据源请求超时（毫秒）
+export const EXTERNAL_FETCH_TIMEOUT_MS = 3000
+export const REPORT_FETCH_TIMEOUT_MS = 1500
+
 // 颜色样式映射
 export const COLOR_STYLES: Record<Color, {
   bg: string

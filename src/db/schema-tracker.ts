@@ -19,6 +19,7 @@ import {
   jsonb,
   date,
   varchar,
+  index,
 } from "drizzle-orm/pg-core"
 import { user } from "./schema"
 
@@ -157,7 +158,9 @@ export const trackerSubscriptions = pgTable("tracker_subscriptions", {
   // 时间戳
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-})
+}, (t) => [
+  index("tracker_subscriptions_user_id_idx").on(t.userId),
+])
 
 // ==================== 追踪记录表 ====================
 
@@ -191,7 +194,9 @@ export const trackerRecords = pgTable("tracker_records", {
 
   // 时间戳
   createdAt: timestamp("created_at").notNull().defaultNow(),
-})
+}, (t) => [
+  index("tracker_records_subscription_id_idx").on(t.subscriptionId),
+])
 
 // ==================== 异动事件表 ====================
 
@@ -236,7 +241,9 @@ export const trackerAlerts = pgTable("tracker_alerts", {
 
   // 时间戳
   createdAt: timestamp("created_at").notNull().defaultNow(),
-})
+}, (t) => [
+  index("tracker_alerts_subscription_id_idx").on(t.subscriptionId),
+])
 
 // ==================== 追踪报告表 ====================
 

@@ -12,7 +12,12 @@ const useRealDb = Boolean(connectionString)
 let db: ReturnType<typeof drizzle> | null = null
 
 if (useRealDb) {
-  const client = postgres(connectionString)
+  const client = postgres(connectionString, {
+    max: 20,
+    idle_timeout: 30,
+    connect_timeout: 5,
+    max_lifetime: 60 * 30,
+  })
   db = drizzle(client, { schema })
 }
 

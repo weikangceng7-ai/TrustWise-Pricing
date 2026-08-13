@@ -113,6 +113,14 @@ function generateAccuracyData(): AccuracyData {
 }
 
 export async function GET() {
-  const data = generateAccuracyData()
-  return NextResponse.json({ success: true, data })
+  try {
+    const data = generateAccuracyData()
+    return NextResponse.json({ success: true, data })
+  } catch (error) {
+    console.error("[Accuracy API] 获取精度数据失败:", error)
+    return NextResponse.json(
+      { success: false, error: "获取精度数据失败" },
+      { status: 500 }
+    )
+  }
 }

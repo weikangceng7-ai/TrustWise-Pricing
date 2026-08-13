@@ -1,0 +1,2 @@
+# Prevent large dev/test files from being included in Vercel deployments
+public/yihua/

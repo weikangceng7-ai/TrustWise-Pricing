@@ -34,6 +34,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "@/components/theme-provider"
+import { useLanguage } from "@/contexts/language-context"
 
 // 自定义 hook: 检测元素是否在视口内
 function useInView(options = {}) {
@@ -255,17 +256,17 @@ function AnimatedChart() {
 
 // 数字计数动画组件
 function AnimatedNumber({ value, suffix = "", duration = 2000 }: { value: string; suffix?: string; duration?: number }) {
-  const [displayValue, setDisplayValue] = useState("0")
+  const [displayValue, setDisplayValue] = useState(() => {
+    const numMatch = value.match(/^(\d+\.?\d*)/)
+    return numMatch ? "0" : value
+  })
   const { ref, isInView } = useInView()
 
   useEffect(() => {
     if (!isInView) return
 
     const numMatch = value.match(/^(\d+\.?\d*)/)
-    if (!numMatch) {
-      setDisplayValue(value)
-      return
-    }
+    if (!numMatch) return
 
     const targetNum = parseFloat(numMatch[1])
     const startTime = Date.now()
@@ -295,6 +296,7 @@ function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { setTheme, resolvedTheme, mounted } = useTheme()
+  const { t, lang, setLang } = useLanguage()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -331,23 +333,44 @@ function Navbar() {
           </Link>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-6">
             <Link href="#features" className="relative text-slate-400 hover:text-white transition-colors text-sm font-medium group">
-              <span>功能</span>
+              <span>{t("nav.features")}</span>
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300 group-hover:w-full" />
             </Link>
             <Link href="/success-cases" className="relative text-slate-400 hover:text-white transition-colors text-sm font-medium group">
-              <span>客户案例</span>
+              <span>{t("nav.cases")}</span>
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300 group-hover:w-full" />
+            </Link>
+            <Link href="/pricing" className="relative text-slate-400 hover:text-white transition-colors text-sm font-medium group">
+              <span>{t("nav.pricing")}</span>
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300 group-hover:w-full" />
             </Link>
             <Link href="#about" className="relative text-slate-400 hover:text-white transition-colors text-sm font-medium group">
-              <span>关于</span>
+              <span>{t("nav.about")}</span>
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300 group-hover:w-full" />
+            </Link>
+            <Link href="/privacy" className="relative text-slate-500 hover:text-white transition-colors text-xs font-medium group">
+              <span>{t("nav.privacy")}</span>
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-slate-500 to-slate-400 transition-all duration-300 group-hover:w-full" />
+            </Link>
+            <Link href="/terms" className="relative text-slate-500 hover:text-white transition-colors text-xs font-medium group">
+              <span>{t("nav.terms")}</span>
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-slate-500 to-slate-400 transition-all duration-300 group-hover:w-full" />
             </Link>
           </div>
 
           {/* Right Actions */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-3">
+            {/* 中英文切换 */}
+            <button
+              onClick={() => setLang(lang === "zh" ? "en" : "zh")}
+              className="p-2 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors flex items-center gap-1 text-xs font-medium"
+              title={lang === "zh" ? "Switch to English" : "切换到中文"}
+            >
+              <Globe className="h-4 w-4" />
+              <span>{lang === "zh" ? "EN" : "中"}</span>
+            </button>
             {/* 主题切换按钮 */}
             <button
               onClick={toggleTheme}
@@ -361,19 +384,19 @@ function Navbar() {
               className="text-slate-400 hover:text-white transition-colors text-sm font-medium px-4 py-2 hover:bg-white/5 rounded-lg flex items-center gap-1.5"
             >
               <BarChart3 className="h-4 w-4" />
-              进入仪表盘
+              {t("nav.dashboard")}
             </Link>
             <Link
               href="/login"
               className="text-slate-400 hover:text-white transition-colors text-sm font-medium px-4 py-2 hover:bg-white/5 rounded-lg"
             >
-              登录
+              {t("nav.login")}
             </Link>
             <Link
               href="/register"
               className="relative px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold overflow-hidden group hover:shadow-xl hover:shadow-cyan-500/30 transition-all duration-300"
             >
-              <span className="relative z-10">免费注册</span>
+              <span className="relative z-10">{t("nav.register")}</span>
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500" />
             </Link>
@@ -389,30 +412,48 @@ function Navbar() {
         </div>
 
         {/* Mobile Menu */}
-        <div className={`md:hidden overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className={`md:hidden overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
           <div className="py-4 border-t border-slate-700/50">
             <div className="flex flex-col gap-2">
               <Link href="#features" className="text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm py-2.5 px-3 rounded-lg">
-                功能
+                {t("nav.features")}
+              </Link>
+              <Link href="/pricing" className="text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm py-2.5 px-3 rounded-lg">
+                {t("nav.pricing")}
               </Link>
               <Link href="#about" className="text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm py-2.5 px-3 rounded-lg">
-                关于
+                {t("nav.about")}
               </Link>
-              <button
-                onClick={toggleTheme}
-                className="text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm py-2.5 px-3 rounded-lg flex items-center gap-2"
-              >
-                <ThemeIcon className="h-4 w-4" />
-                {mounted ? (resolvedTheme === "dark" ? "浅色模式" : "深色模式") : "切换主题"}
-              </button>
+              <Link href="/privacy" className="text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm py-2.5 px-3 rounded-lg">
+                {t("nav.privacy")}
+              </Link>
+              <Link href="/terms" className="text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm py-2.5 px-3 rounded-lg">
+                {t("nav.terms")}
+              </Link>
+              <div className="flex items-center gap-2 px-3">
+                <button
+                  onClick={toggleTheme}
+                  className="text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm py-2.5 rounded-lg flex items-center gap-2"
+                >
+                  <ThemeIcon className="h-4 w-4" />
+                  {mounted ? (resolvedTheme === "dark" ? "浅色模式" : "深色模式") : "切换主题"}
+                </button>
+                <button
+                  onClick={() => setLang(lang === "zh" ? "en" : "zh")}
+                  className="text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm py-2.5 rounded-lg flex items-center gap-2"
+                >
+                  <Globe className="h-4 w-4" />
+                  {lang === "zh" ? "English" : "中文"}
+                </button>
+              </div>
               <Link href="/login" className="text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm py-2.5 px-3 rounded-lg">
-                登录
+                {t("nav.login")}
               </Link>
               <Link
                 href="/register"
                 className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold text-center mt-2"
               >
-                免费试用
+                {t("nav.register")}
               </Link>
             </div>
           </div>
@@ -1059,47 +1100,6 @@ function AboutSection() {
   )
 }
 
-// 页脚
-function Footer() {
-  const { ref: sectionRef, isInView } = useInView()
-
-  return (
-    <footer ref={sectionRef} className="py-12 px-6 bg-slate-950 dark:bg-slate-950 border-t border-slate-800 dark:border-slate-800 transition-colors duration-500">
-      <div className="max-w-5xl mx-auto">
-        <div className={`flex flex-col md:flex-row items-center justify-between gap-6 transition-all duration-600 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-transform shadow-lg shadow-cyan-500/30">
-              <BarChart3 className="h-4 w-4 text-white" />
-            </div>
-            <span className="text-white dark:text-white font-semibold text-lg group-hover:text-cyan-400 transition-colors">SulfurAI</span>
-          </Link>
-
-          <div className="flex items-center gap-8">
-            <Link href="/login" className="text-slate-400 dark:text-slate-400 hover:text-white dark:hover:text-white hover:scale-105 transition-all text-sm font-medium">
-              登录
-            </Link>
-            <Link href="/register" className="text-slate-400 dark:text-slate-400 hover:text-white dark:hover:text-white hover:scale-105 transition-all text-sm font-medium">
-              注册
-            </Link>
-            <Link href="/success-cases" className="text-slate-400 dark:text-slate-400 hover:text-white dark:hover:text-white hover:scale-105 transition-all text-sm font-medium">
-              成功案例
-            </Link>
-            <Link
-              href="/dashboard"
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500/20 to-blue-500/20 dark:from-cyan-500/20 dark:to-blue-500/20 text-cyan-400 dark:text-cyan-400 hover:from-cyan-500/30 hover:to-blue-500/30 dark:hover:from-cyan-500/30 dark:hover:to-blue-500/30 hover:scale-105 transition-all text-sm font-semibold border border-cyan-500/30 dark:border-cyan-500/30 hover:border-cyan-500/50 dark:hover:border-cyan-500/50"
-            >
-              进入系统
-            </Link>
-          </div>
-
-          <div className="text-slate-500 dark:text-slate-500 text-sm">
-            © 2024 SulfurAI. All rights reserved.
-          </div>
-        </div>
-      </div>
-    </footer>
-  )
-}
 
 // 右下角快速页面导航 - 静态配置
 const QUICK_NAV_PAGES = [
@@ -1315,7 +1315,6 @@ export default function Home() {
       <StatsSection />
       <TrustedBySection />
       <PartnersSection />
-      <Footer />
       {/* 右下角快速页面导航 */}
       <QuickPageNavigator />
     </main>

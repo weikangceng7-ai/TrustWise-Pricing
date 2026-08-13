@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
@@ -77,11 +78,11 @@ export default function ApiConsolePage() {
         setNewKeyName("")
         fetchApiKeys()
       } else {
-        alert(data.error || "创建失败")
+        toast.error(data.error || "创建失败")
       }
     } catch (error) {
       console.error("创建 API Key 失败:", error)
-      alert("创建失败")
+      toast.error("创建失败")
     } finally {
       setCreating(false)
     }
@@ -97,11 +98,11 @@ export default function ApiConsolePage() {
       if (data.success) {
         fetchApiKeys()
       } else {
-        alert(data.error || "删除失败")
+        toast.error(data.error || "删除失败")
       }
     } catch (error) {
       console.error("删除 API Key 失败:", error)
-      alert("删除失败")
+      toast.error("删除失败")
     } finally {
       setDeletingId(null)
     }
@@ -118,11 +119,11 @@ export default function ApiConsolePage() {
         setResetDialogOpen(true)
         fetchApiKeys()
       } else {
-        alert(data.error || "重置失败")
+        toast.error(data.error || "重置失败")
       }
     } catch (error) {
       console.error("重置 API Key 失败:", error)
-      alert("重置失败")
+      toast.error("重置失败")
     } finally {
       setResettingId(null)
     }

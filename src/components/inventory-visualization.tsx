@@ -62,25 +62,31 @@ function getInventoryStatus(current: number, max: number, safetyDays: number, av
   return { status, statusText, statusColor, remainingDays, fillPercent }
 }
 
-// 策略配置
+// 策略配置（使用完整 Tailwind 类名，避免 JIT 动态类名失效）
 const STRATEGY_CONFIG = {
   aggressive: {
     label: "激进型",
     desc: "低库存高周转，资金效率优先",
     color: "rose",
     icon: TrendingUp,
+    iconClass: "text-rose-500",
+    badgeClass: "border-rose-500 text-rose-500",
   },
   moderate: {
     label: "稳健型",
     desc: "平衡库存与周转，风险可控",
     color: "amber",
     icon: Activity,
+    iconClass: "text-amber-500",
+    badgeClass: "border-amber-500 text-amber-500",
   },
   conservative: {
     label: "保守型",
     desc: "高库存保供应，安全优先",
     color: "emerald",
     icon: CheckCircle,
+    iconClass: "text-emerald-500",
+    badgeClass: "border-emerald-500 text-emerald-500",
   },
 }
 
@@ -137,8 +143,8 @@ export function InventoryVisualization({
               <CardTitle className="text-lg">库存状态监控</CardTitle>
             </div>
             <div className="flex items-center gap-2">
-              <StrategyIcon className={`h-4 w-4 text-${strategyConfig.color}-500`} />
-              <Badge variant="outline" className={`text-xs border-${strategyConfig.color}-500 text-${strategyConfig.color}-500`}>
+              <StrategyIcon className={`h-4 w-4 ${strategyConfig.iconClass}`} />
+              <Badge variant="outline" className={`text-xs ${strategyConfig.badgeClass}`}>
                 {strategyConfig.label}
               </Badge>
             </div>

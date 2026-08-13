@@ -5,6 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/components/query-provider";
 import { AppProviders } from "@/components/app-providers";
+import { LanguageProvider } from "@/contexts/language-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -54,16 +55,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider
-          defaultTheme="system"
-          storageKey="sulfur-ui-theme"
-        >
-          <QueryProvider>
-            <AppProviders>
-              {children}
-            </AppProviders>
-          </QueryProvider>
-        </ThemeProvider>
+        <LanguageProvider>
+          <ThemeProvider
+            defaultTheme="system"
+            storageKey="sulfur-ui-theme"
+          >
+            <QueryProvider>
+              <AppProviders>
+                {children}
+              </AppProviders>
+            </QueryProvider>
+          </ThemeProvider>
+        </LanguageProvider>
         <Script id="register-sw" strategy="afterInteractive">
           {`
             if ('serviceWorker' in navigator) {

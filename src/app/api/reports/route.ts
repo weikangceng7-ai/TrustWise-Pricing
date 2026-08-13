@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getPrices, getPriceSummary, getInventory, getInventorySummary, getPriceByDate, getInventoryByDate } from "@/services/prices"
+import { getPrices, getPriceSummary, getInventory, getInventorySummary } from "@/services/prices"
 import { db } from "@/db"
 import { purchaseReports } from "@/db/schema"
 import { desc, count, sql } from "drizzle-orm"
+import { REPORT_FETCH_TIMEOUT_MS } from "@/lib/constants"
 
 export const maxDuration = 30
 
 // 带超时的 fetch 请求
-async function fetchWithTimeout(url: string, timeoutMs: number = 3000): Promise<Response | null> {
+async function fetchWithTimeout(url: string, timeoutMs: number = REPORT_FETCH_TIMEOUT_MS): Promise<Response | null> {
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
@@ -20,7 +21,7 @@ async function fetchWithTimeout(url: string, timeoutMs: number = 3000): Promise<
 }
 
 // 报告生成服务 - 使用真实数据
-async function generateReportContent(
+function generateReportContent(
   date: Date,
   externalData: {
     oilPrice: number | null
@@ -105,35 +106,57 @@ async function generateReportContent(
   }
 }
 
-// 获取外部数据（带超时，快速返回）
+// 获取外部数据 — 直接调用外部 API，不经过自身 HTTP 路由
 async function fetchExternalData() {
+  const result = {
+    oilPrice: null as number | null,
+    oilChange: null as number | null,
+    exchangeRate: null as number | null,
+    exchangeChange: null as number | null,
+  }
+
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    // 并行获取多个数据源，每个请求超时 2 秒
-    const [oilRes, brentRes, usdcnyRes] = await Promise.all([
-      fetchWithTimeout(`${baseUrl}/api/external-data/akshare?type=oil`, 2000),
-      fetchWithTimeout(`${baseUrl}/api/external-data/akshare?type=brent`, 2000),
-      fetchWithTimeout(`${baseUrl}/api/external-data/akshare?type=usdcny`, 2000),
+    const apiKey = process.env.FRED_API_KEY
+
+    // 并行获取，总超时 1.5 秒
+    const [oilData, fxData] = await Promise.allSettled([
+      apiKey
+        ? fetchWithTimeout(
+            `https://api.stlouisfed.org/fred/series/observations?series_id=DCOILWTICO&api_key=${apiKey}&file_type=json&observation_start=2025-01-01&sort_order=desc&limit=2`,
+            REPORT_FETCH_TIMEOUT_MS
+          )
+        : Promise.resolve(null),
+      fetchWithTimeout("https://api.frankfurter.app/latest?from=USD&to=CNY", REPORT_FETCH_TIMEOUT_MS),
     ])
 
-    const oilData = oilRes?.ok ? await oilRes.json() : null
-    const usdcnyData = usdcnyRes?.ok ? await usdcnyRes.json() : null
+    // 解析原油数据
+    if (oilData.status === "fulfilled" && oilData.value?.ok) {
+      try {
+        const json = await oilData.value.json()
+        const obs = json?.observations || []
+        if (obs.length >= 2) {
+          const latest = parseFloat(obs[0].value)
+          const prev = parseFloat(obs[1].value)
+          if (!isNaN(latest) && !isNaN(prev)) {
+            result.oilPrice = latest
+            result.oilChange = ((latest - prev) / prev) * 100
+          }
+        }
+      } catch { /* ignore */ }
+    }
 
-    return {
-      oilPrice: oilData?.data?.latest?.value || null,
-      oilChange: oilData?.data?.latest?.changePercent || null,
-      exchangeRate: usdcnyData?.data?.latest?.value || null,
-      exchangeChange: usdcnyData?.data?.latest?.changePercent || null,
+    // 解析汇率数据
+    if (fxData.status === "fulfilled" && fxData.value?.ok) {
+      try {
+        const json = await fxData.value.json()
+        result.exchangeRate = json?.rates?.CNY || null
+      } catch { /* ignore */ }
     }
-  } catch (error) {
-    console.error("获取外部数据失败:", error)
-    return {
-      oilPrice: null,
-      oilChange: null,
-      exchangeRate: null,
-      exchangeChange: null,
-    }
+  } catch {
+    // 外部数据失败不影响主流程
   }
+
+  return result
 }
 
 // 获取硫磺价格数据
@@ -146,32 +169,12 @@ async function fetchSulfurData() {
   }
 }
 
-// 获取指定日期的硫磺价格数据
-async function fetchSulfurDataByDate(dateStr: string) {
-  try {
-    return await getPriceByDate(dateStr)
-  } catch (error) {
-    console.error("获取指定日期硫磺价格失败:", error)
-    return null
-  }
-}
-
 // 获取库存数据
 async function fetchInventoryData() {
   try {
     return await getInventorySummary()
   } catch (error) {
     console.error("获取库存数据失败:", error)
-    return null
-  }
-}
-
-// 获取指定日期的库存数据
-async function fetchInventoryDataByDate(dateStr: string) {
-  try {
-    return await getInventoryByDate(dateStr)
-  } catch (error) {
-    console.error("获取指定日期库存数据失败:", error)
     return null
   }
 }
@@ -268,11 +271,13 @@ export async function GET(request: NextRequest) {
 
     // 如果请求生成新报告
     if (generateNew) {
-      const externalData = await fetchExternalData()
-      const sulfurData = await fetchSulfurData()
-      const inventoryData = await fetchInventoryData()
+      const [externalData, sulfurData, inventoryData] = await Promise.all([
+        fetchExternalData(),
+        fetchSulfurData(),
+        fetchInventoryData(),
+      ])
 
-      const newReport = await generateReportContent(
+      const newReport = generateReportContent(
         new Date(),
         externalData,
         sulfurData,
@@ -292,12 +297,13 @@ export async function GET(request: NextRequest) {
 
     // 如果数据库没有报告，生成实时报告（使用历史真实数据）
     if (reports.length === 0) {
-      const externalData = await fetchExternalData()
+      // 并行获取外部数据和价格数据
+      const [externalData, prices] = await Promise.all([
+        fetchExternalData(),
+        getPrices(7),
+      ])
 
-      // 获取数据库中最近7天的价格数据日期
-      const prices = await getPrices(7)
       if (prices.length === 0) {
-        // 如果没有价格数据，使用默认逻辑
         return NextResponse.json({
           success: true,
           data: [],
@@ -308,32 +314,55 @@ export async function GET(request: NextRequest) {
         })
       }
 
-      // 根据实际价格数据日期并行生成报告
+      // 预取60天的价格和库存数据（并行查询替代 N×2 次查询）
+      const [allPrices, allInventory] = await Promise.all([
+        getPrices(60),
+        getInventory(60),
+      ])
+
+      // 内存中按日期查找，避免逐条 DB 查询
+      const findClosest = <T extends { date: string | Date }>(records: T[], targetDate: string): T | null => {
+        if (records.length === 0) return null
+        const target = new Date(targetDate).getTime()
+        let closest = records[0]
+        let minDiff = Infinity
+        for (const r of records) {
+          const diff = Math.abs(new Date(r.date).getTime() - target)
+          if (diff < minDiff) { minDiff = diff; closest = r }
+        }
+        return closest
+      }
+
       const maxReports = Math.min(prices.length, 7)
-      const reportPromises = prices.slice(0, maxReports).map(async (priceRecord, i) => {
+      reports = prices.slice(0, maxReports).map((priceRecord, i) => {
         const dateStr = priceRecord.date
         const date = new Date(dateStr)
 
-        // 并行获取硫磺和库存数据
-        const [sulfurData, inventoryData] = await Promise.all([
-          fetchSulfurDataByDate(dateStr),
-          fetchInventoryDataByDate(dateStr),
-        ])
+        const closestPrice = findClosest(allPrices, dateStr)
+        const closestInv = findClosest(allInventory, dateStr)
 
-        const report = await generateReportContent(
-          date,
-          externalData,
-          sulfurData,
-          inventoryData
-        )
-        return {
-          id: i + 1,
-          ...report,
-          createdAt: date,
-        }
+        const sulfurData = closestPrice ? {
+          currentPrice: (closestPrice as any).mainPrice,
+          minPrice: (closestPrice as any).minPrice,
+          maxPrice: (closestPrice as any).maxPrice,
+          avgPrice: null,
+          changeValue: (closestPrice as any).changeValue,
+          changePercent: (closestPrice as any).changePercent,
+          date: (closestPrice as any).date,
+          market: (closestPrice as any).market,
+          specification: (closestPrice as any).specification,
+        } : null
+
+        const inventoryData = closestInv ? {
+          currentInventory: (closestInv as any).inventory,
+          avgInventory: null,
+          currentPrice: (closestInv as any).price,
+          date: (closestInv as any).date,
+        } : null
+
+        const report = generateReportContent(date, externalData, sulfurData, inventoryData)
+        return { id: i + 1, ...report, createdAt: date }
       })
-
-      reports = await Promise.all(reportPromises)
     }
 
     // 应用筛选
@@ -395,11 +424,13 @@ export async function GET(request: NextRequest) {
 // POST - 生成并保存新报告
 export async function POST(request: NextRequest) {
   try {
-    const externalData = await fetchExternalData()
-    const sulfurData = await fetchSulfurData()
-    const inventoryData = await fetchInventoryData()
+    const [externalData, sulfurData, inventoryData] = await Promise.all([
+      fetchExternalData(),
+      fetchSulfurData(),
+      fetchInventoryData(),
+    ])
 
-    const reportContent = await generateReportContent(
+    const reportContent = generateReportContent(
       new Date(),
       externalData,
       sulfurData,

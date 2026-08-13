@@ -1,5 +1,5 @@
 // src/db/schema-api.ts
-import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/pg-core"
+import { pgTable, text, serial, integer, timestamp, boolean, index } from "drizzle-orm/pg-core"
 import { user } from "./schema"
 
 // API Key 表
@@ -14,7 +14,9 @@ export const apiKeys = pgTable("api_keys", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   lastUsedAt: timestamp("last_used_at"),
   expiresAt: timestamp("expires_at"),
-})
+}, (t) => [
+  index("api_keys_user_id_idx").on(t.userId),
+])
 
 // API 配额表
 export const apiQuotas = pgTable("api_quotas", {
@@ -44,7 +46,9 @@ export const apiUsageLogs = pgTable("api_usage_logs", {
   responseTime: integer("response_time").notNull(),
   timestamp: timestamp("timestamp").notNull().defaultNow(),
   errorMessage: text("error_message"),
-})
+}, (t) => [
+  index("api_usage_logs_api_key_id_idx").on(t.apiKeyId),
+])
 
 // 类型导出
 export type ApiKey = typeof apiKeys.$inferSelect

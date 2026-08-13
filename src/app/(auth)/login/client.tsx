@@ -93,6 +93,7 @@ export function LoginClient() {
               {isLoading && <Loader2 className="mr-2 size-4 animate-spin" />}
               登录
             </Button>
+
             <p className="text-center text-sm text-muted-foreground">
               还没有账户？{" "}
               <Link

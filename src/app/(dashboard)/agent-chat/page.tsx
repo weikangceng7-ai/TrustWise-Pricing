@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useMemo, memo } from "react"
+import { toast } from "sonner"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -27,7 +28,6 @@ import {
 } from "lucide-react"
 import { ThreePhaseArchitectureCarousel } from "@/components/three-phase-architecture-carousel"
 import { useChatContext, type ChatMessage, type Conversation } from "@/contexts/chat-context"
-import { generateChatReport } from "@/lib/report-generator"
 import { AuthDialog } from "@/components/auth-dialog"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -637,16 +637,17 @@ function AgentChatPage() {
       }))
 
     if (reportMessages.length === 0) {
-      alert("暂无对话内容可生成报告")
+      toast.warning("暂无对话内容可生成报告")
       return
     }
 
     try {
+      const { generateChatReport } = await import("@/lib/report-generator")
       const fileName = await generateChatReport(reportMessages)
-      alert(`报告已生成：${fileName}\n\n文件已保存到下载目录`)
+      toast.success(`报告已生成：${fileName}`)
     } catch (err) {
       console.error("生成报告失败:", err)
-      alert("生成报告失败，请稍后重试")
+      toast.error("生成报告失败，请稍后重试")
     }
   }
 

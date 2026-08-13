@@ -18,9 +18,10 @@ const isDev = process.env.NODE_ENV === "development"
  * 生成随机验证码
  */
 export function generateVerificationCode(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(CODE_LENGTH))
   let code = ""
   for (let i = 0; i < CODE_LENGTH; i++) {
-    code += Math.floor(Math.random() * 10)
+    code += bytes[i] % 10
   }
   return code
 }

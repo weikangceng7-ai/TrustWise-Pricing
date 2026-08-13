@@ -195,7 +195,7 @@ export async function withApiAuth(
   const { apiKey, quota } = validation
 
   // Rate Limiting 检查
-  const rateLimitResult = checkRateLimit(apiKey!.id)
+  const rateLimitResult = await checkRateLimit(apiKey!.id)
   if (!rateLimitResult.allowed) {
     return NextResponse.json<ApiErrorResponse>(
       {

@@ -1,8 +1,10 @@
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType } from "docx"
-import { saveAs } from "file-saver"
 import type { Report } from "@/hooks/use-reports"
 
 export async function generateReportDocument(report: Report): Promise<string> {
+  const [{ Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType }, { saveAs }] = await Promise.all([
+    import("docx"),
+    import("file-saver"),
+  ])
   const now = new Date()
   const dateStr = now.toLocaleString("zh-CN")
 

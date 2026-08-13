@@ -1,5 +1,6 @@
 import { Context, Next } from "hono"
 import type { Hono } from "hono"
+import { auth } from "@/lib/auth"
 
 /**
  * 认证上下文类型
@@ -17,62 +18,76 @@ export type AuthMiddleware = Hono<{
 }>
 
 /**
- * 认证中间件
- * 检查请求是否包含有效的认证信息
- *
- * 注意：这是一个示例实现，实际使用时需要：
- * 1. 集成真实的认证系统（如 JWT、Session 等）
- * 2. 从请求中提取用户信息
- * 3. 验证用户权限
+ * 从请求头中提取 session token
  */
-// Hono v4 中 Context 泛型是 <Env, Schema>，Variables 通过 c.set() 设置
-export const requireAuth = async (c: Context, next: Next) => {
-  // 从请求中获取认证信息
-  // 示例：从 Authorization header 获取 token
-  const authHeader = c.req.header("Authorization")
+function getSessionToken(c: Context): string | null {
+  // 从 Cookie 中获取 Better Auth session token
+  const cookieHeader = c.req.header("Cookie") || ""
+  const match = cookieHeader.match(/better-auth\.session_token=([^;]+)/)
+  if (match) return match[1]
 
-  if (!authHeader) {
+  // 备选：从 Authorization header 获取（用于 API client）
+  const authHeader = c.req.header("Authorization")
+  if (authHeader?.startsWith("Bearer ")) {
+    return authHeader.slice(7)
+  }
+
+  return null
+}
+
+/**
+ * 认证中间件
+ * 验证 Better Auth session token 是否有效
+ */
+export const requireAuth = async (c: Context, next: Next) => {
+  const token = getSessionToken(c)
+
+  if (!token) {
     return c.json({ error: "Unauthorized - Missing authentication" }, 401)
   }
 
-  // 验证 token（这里使用简化逻辑，实际应该验证 JWT 或 Session）
-  const token = authHeader.replace("Bearer ", "")
+  try {
+    const session = await auth.api.getSession({
+      headers: new Headers({ Cookie: `better-auth.session_token=${token}` }),
+    })
 
-  // TODO: 实际项目中应该：
-  // 1. 验证 JWT token 签名
-  // 2. 从 token 中提取用户信息
-  // 3. 检查用户是否有效
+    if (!session?.user) {
+      return c.json({ error: "Unauthorized - Invalid session" }, 401)
+    }
 
-  // 临时：允许任何非空 token 通过（仅用于开发）
-  if (!token) {
-    return c.json({ error: "Unauthorized - Invalid token" }, 401)
+    c.set("userId", session.user.id)
+    c.set("isAuthenticated", true)
+
+    return next()
+  } catch (error) {
+    console.error("[Auth Middleware] Session verification failed:", error)
+    return c.json({ error: "Unauthorized - Session verification failed" }, 401)
   }
-
-  // 设置用户上下文
-  c.set("userId", "temp-user-id") // 临时用户 ID，实际应从 token 解析
-  c.set("isAuthenticated", true)
-
-  return next()
 }
 
 /**
  * 可选认证中间件
  * 不强制要求认证，但如果提供了有效 token 则设置用户信息
  */
-// Hono v4 中 Context 泛型是 <Env, Schema>，Variables 通过 c.set() 设置
 export const optionalAuth = async (c: Context, next: Next) => {
-  const authHeader = c.req.header("Authorization")
+  const token = getSessionToken(c)
 
-  if (authHeader) {
-    const token = authHeader.replace("Bearer ", "")
+  if (token) {
+    try {
+      const session = await auth.api.getSession({
+        headers: new Headers({ Cookie: `better-auth.session_token=${token}` }),
+      })
 
-    if (token) {
-      c.set("userId", "temp-user-id")
-      c.set("isAuthenticated", true)
+      if (session?.user) {
+        c.set("userId", session.user.id)
+        c.set("isAuthenticated", true)
+        return next()
+      }
+    } catch {
+      // 认证失败，继续作为未登录用户
     }
-  } else {
-    c.set("isAuthenticated", false)
   }
 
+  c.set("isAuthenticated", false)
   return next()
 }

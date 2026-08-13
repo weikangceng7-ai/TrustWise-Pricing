@@ -7,6 +7,7 @@ const isDbAvailable = Boolean(db && process.env.DATABASE_URL)
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  secret: process.env.BETTER_AUTH_SECRET,
   database: isDbAvailable
     ? drizzleAdapter(db as NonNullable<typeof db>, {
         provider: "pg",
@@ -15,7 +16,7 @@ export const auth = betterAuth({
     : undefined,
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false,
+    requireEmailVerification: false, // 上线后改回 true
   },
   session: {
     expiresIn: 60 * 60 * 24 * 7,

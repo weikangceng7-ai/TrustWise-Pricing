@@ -5,6 +5,11 @@ import type { NextRequest } from "next/server"
 const PUBLIC_PATHS = [
   "/",
   "/api/auth",
+  "/api/stripe/webhook",
+  "/pricing",
+  "/privacy",
+  "/terms",
+  "/api/health",
   "/reset-password",
 ]
 
@@ -23,6 +28,26 @@ const PROTECTED_PATHS = [
   "/api/conversations",
   "/api/reports",
   "/api/notifications",
+  "/api/prices",
+  "/api/inventory",
+  "/api/prediction",
+  "/api/enterprises",
+  "/api/neo4j",
+  "/api/supply-demand",
+  "/api/multi-dimensional-prices",
+  "/api/data-collection",
+  "/api/external-data",
+  "/api/enterprise-predictions",
+  "/api/api-keys",
+  "/api/stripe/checkout",
+  "/enterprise-manage",
+  "/enterprises",
+  "/commodities",
+  "/reports",
+  "/document",
+  "/tracker",
+  "/success-cases",
+  "/yihua-code-graph",
 ]
 
 // 检查路径是否匹配
@@ -32,53 +57,9 @@ function isPathMatch(pathname: string, paths: string[]): boolean {
 
 // 从 cookie 获取 session token
 function getSessionToken(request: NextRequest): string | null {
-  // better-auth 默认使用 "better-auth.session_token" cookie
-  const sessionToken = request.cookies.get("better-auth.session_token")?.value ||
-    request.cookies.get("session_token")?.value
-  return sessionToken || null
-}
-
-// 验证 session 并获取用户信息
-async function verifySession(sessionToken: string): Promise<{
-  valid: boolean
-  user?: {
-    id: string
-    email: string
-    role: string
-  }
-}> {
-  try {
-    // 调用内部 API 验证 session
-    const baseUrl = process.env.BETTER_AUTH_URL || "http://localhost:3000"
-    const response = await fetch(`${baseUrl}/api/auth/get-session`, {
-      method: "GET",
-      headers: {
-        Cookie: `better-auth.session_token=${sessionToken}`,
-      },
-    })
-
-    if (!response.ok) {
-      return { valid: false }
-    }
-
-    const data = await response.json()
-
-    if (data.user) {
-      return {
-        valid: true,
-        user: {
-          id: data.user.id,
-          email: data.user.email,
-          role: data.user.role || "user",
-        },
-      }
-    }
-
-    return { valid: false }
-  } catch (error) {
-    console.error("[Middleware] Session verification failed:", error)
-    return { valid: false }
-  }
+  return request.cookies.get("better-auth.session_token")?.value
+    || request.cookies.get("session_token")?.value
+    || null
 }
 
 export async function middleware(request: NextRequest) {
@@ -89,7 +70,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
     pathname.startsWith("/public") ||
-    pathname.includes(".") // 文件扩展名
+    pathname.includes(".")
   ) {
     return NextResponse.next()
   }
@@ -105,14 +86,12 @@ export async function middleware(request: NextRequest) {
   // 未登录用户访问受保护路径
   if (isPathMatch(pathname, PROTECTED_PATHS)) {
     if (!sessionToken) {
-      // API 请求返回 401
       if (pathname.startsWith("/api/")) {
         return NextResponse.json(
           { error: "Unauthorized", message: "请先登录" },
           { status: 401 }
         )
       }
-      // 页面请求重定向到首页并显示登录框
       const url = request.nextUrl.clone()
       url.pathname = "/"
       url.searchParams.set("auth", "login")
@@ -120,27 +99,8 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    // 验证 session
-    const session = await verifySession(sessionToken)
-    if (!session.valid) {
-      if (pathname.startsWith("/api/")) {
-        return NextResponse.json(
-          { error: "Unauthorized", message: "会话已过期，请重新登录" },
-          { status: 401 }
-        )
-      }
-      const url = request.nextUrl.clone()
-      url.pathname = "/"
-      url.searchParams.set("auth", "login")
-      return NextResponse.redirect(url)
-    }
-
-    // 将用户信息添加到请求头
-    const response = NextResponse.next()
-    response.headers.set("x-user-id", session.user!.id)
-    response.headers.set("x-user-email", session.user!.email)
-    response.headers.set("x-user-role", session.user!.role)
-    return response
+    // Cookie 存在则放行，实际鉴权由各 API 路由通过 auth.api.getSession() 自行完成
+    return NextResponse.next()
   }
 
   // 管理员路径检查
@@ -157,26 +117,8 @@ export async function middleware(request: NextRequest) {
       url.searchParams.set("error", "forbidden")
       return NextResponse.redirect(url)
     }
-
-    const session = await verifySession(sessionToken)
-    if (!session.valid || session.user?.role !== "admin") {
-      if (pathname.startsWith("/api/")) {
-        return NextResponse.json(
-          { error: "Forbidden", message: "需要管理员权限" },
-          { status: 403 }
-        )
-      }
-      const url = request.nextUrl.clone()
-      url.pathname = "/"
-      url.searchParams.set("error", "forbidden")
-      return NextResponse.redirect(url)
-    }
-
-    const response = NextResponse.next()
-    response.headers.set("x-user-id", session.user.id)
-    response.headers.set("x-user-email", session.user.email)
-    response.headers.set("x-user-role", session.user.role)
-    return response
+    // Cookie 存在则放行，管理员权限由各 API 路由自行验证
+    return NextResponse.next()
   }
 
   return NextResponse.next()

@@ -1,87 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { Database, Filter, Brain, BarChart3, Building, Scale, ChevronRight, RefreshCw, ArrowRight, ArrowDown, Settings, FileText, Users, Zap, Target, PieChart as PieChartIcon, TrendingUp } from "lucide-react"
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart as RechartsPie,
-  Pie,
-  Cell,
-  Legend,
-} from "recharts"
+import { Database, Filter, Brain, BarChart3, Building, Scale, ChevronRight, RefreshCw, ArrowRight, Settings, FileText, Users, Zap, Target, PieChart as PieChartIcon, TrendingUp } from "lucide-react"
 import { useDataProcessingStats } from "@/hooks/use-data-processing"
-
-// ============================================================
-// 颜色定义说明
-// ============================================================
-// #06b6d4 - cyan-400   青色   - 用于：价格行情、采购案例、已清洗数据、数据利用率
-// #8b5cf6 - violet-400 紫罗兰 - 用于：供需动态、供应商管理、已标注数据、标注完成率
-// #f59e0b - amber-400  琥珀色 - 用于：政策法规、风险案例、制度规则库
-// #10b981 - emerald-400 翡翠绿 - 用于：国际市场、最佳实践、模型训练数据、模型准确率
-// #f43f5e - rose-400   玫瑰红 - 用于：行业资讯
-// #3b82f6 - blue-400   蓝色   - 用于：处理后数据条形图
-// #64748b - slate-400  灰色   - 用于：原始数据、处理前数据条形图
-// ============================================================
-
-// ============================================================
-// 第一阶段：数据基础 - 市场资讯库统计
-// 颜色说明：青色(价格行情)、紫罗兰(供需动态)、琥珀色(政策法规)、翡翠绿(国际市场)、玫瑰红(行业资讯)
-// ============================================================
-const marketNewsData = [
-  { name: "价格行情", count: 1250, fill: "#06b6d4" },  // cyan-400 青色
-  { name: "供需动态", count: 890, fill: "#8b5cf6" },   // violet-400 紫罗兰
-  { name: "政策法规", count: 456, fill: "#f59e0b" },   // amber-400 琥珀色
-  { name: "国际市场", count: 678, fill: "#10b981" },   // emerald-400 翡翠绿
-  { name: "行业资讯", count: 934, fill: "#f43f5e" },   // rose-400 玫瑰红
-]
-
-// ============================================================
-// 第一阶段：数据基础 - 企业经验库数据
-// 颜色说明：青色(采购案例)、紫罗兰(供应商管理)、琥珀色(风险案例)、翡翠绿(最佳实践)
-// ============================================================
-const enterpriseData = [
-  { name: "采购案例", value: 35, fill: "#06b6d4" },    // cyan-400 青色
-  { name: "供应商管理", value: 25, fill: "#8b5cf6" },  // violet-400 紫罗兰
-  { name: "风险案例", value: 20, fill: "#f59e0b" },    // amber-400 琥珀色
-  { name: "最佳实践", value: 20, fill: "#10b981" },    // emerald-400 翡翠绿
-]
-
-// ============================================================
-// 第一阶段：数据基础 - 制度规则库数据
-// 颜色说明：使用 COLORS 数组循环配色
-// ============================================================
-const rulesData = [
-  { name: "采购制度", count: 45 },   // cyan-400 青色
-  { name: "质量标准", count: 38 },   // violet-400 紫罗兰
-  { name: "合规要求", count: 28 },   // amber-400 琥珀色
-  { name: "操作规程", count: 52 },   // emerald-400 翡翠绿
-  { name: "风险管理", count: 35 },   // rose-400 玫瑰红
-]
-
-// 默认数据处理统计（API 加载前显示）
-const defaultProcessingStats = [
-  { name: "原始数据", value: 0, fill: "#64748b" },
-  { name: "已清洗", value: 0, fill: "#06b6d4" },
-  { name: "已标注", value: 0, fill: "#8b5cf6" },
-  { name: "模型训练", value: 0, fill: "#10b981" },
-]
-
-// 默认处理效率数据
-const defaultEfficiency = [
-  { stage: "去重", before: 0, after: 0 },
-  { stage: "格式化", before: 0, after: 0 },
-  { stage: "标注", before: 0, after: 0 },
-  { stage: "训练集", before: 0, after: 0 },
-]
-
-// 通用颜色数组，用于制度规则库等需要循环配色的图表
-const COLORS = ["#06b6d4", "#8b5cf6", "#f59e0b", "#10b981", "#f43f5e"]
 
 interface ThreePhaseArchitectureProps {
   className?: string
@@ -89,13 +10,8 @@ interface ThreePhaseArchitectureProps {
 
 export function ThreePhaseArchitecture({ className }: ThreePhaseArchitectureProps) {
   // 获取数据处理统计数据
-  const { data: statsResponse, isLoading, refetch, isFetching } = useDataProcessingStats()
-
-  // 从 API 响应中提取数据，使用默认值作为后备
-  const dataProcessingStats = statsResponse?.data?.processingStats || defaultProcessingStats
-  const processingEfficiency = statsResponse?.data?.efficiency || defaultEfficiency
+  const { data: statsResponse, refetch, isFetching } = useDataProcessingStats()
   const metrics = statsResponse?.data?.metrics
-  const sources = statsResponse?.data?.sources
 
   return (
     <div className={`bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl p-8 border border-slate-200 dark:border-slate-700 ${className}`}>

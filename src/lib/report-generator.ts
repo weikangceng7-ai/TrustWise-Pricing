@@ -1,5 +1,3 @@
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from "docx"
-import { saveAs } from "file-saver"
 import { generateKnowledgeGraphContext, formatGraphContextAsText } from "@/services/knowledge-graph-reasoning"
 
 export interface ReportMessage {
@@ -17,6 +15,8 @@ export async function generateChatReport(
   messages: ReportMessage[],
   options: ReportOptions = {}
 ): Promise<string> {
+  const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = await import("docx")
+  const { saveAs } = await import("file-saver")
   const { title = "硫磺采购决策报告", includeKnowledgeGraph = true } = options
   const now = new Date()
   const dateStr = now.toLocaleString("zh-CN")
@@ -37,7 +37,7 @@ export async function generateChatReport(
   }
 
   // 创建文档内容
-  const children: Paragraph[] = [
+  const children: InstanceType<typeof Paragraph>[] = [
     // 标题
     new Paragraph({
       text: title,

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import {
   Dialog,
@@ -32,6 +32,13 @@ export function PhoneLoginDialog({
   const [isSendingCode, setIsSendingCode] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [countdown, setCountdown] = useState(0)
+  const countdownTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (countdownTimerRef.current) clearInterval(countdownTimerRef.current)
+    }
+  }, [])
 
   // 发送验证码
   const handleSendCode = async () => {
@@ -67,10 +74,11 @@ export function PhoneLoginDialog({
       setCountdown(60)
 
       // 倒计时
-      const timer = setInterval(() => {
+      if (countdownTimerRef.current) clearInterval(countdownTimerRef.current)
+      countdownTimerRef.current = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
-            clearInterval(timer)
+            if (countdownTimerRef.current) clearInterval(countdownTimerRef.current)
             return 0
           }
           return prev - 1
