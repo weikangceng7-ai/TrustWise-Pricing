@@ -22,6 +22,20 @@ export type Recommendation = typeof RECOMMENDATIONS[number]
 export const EXTERNAL_FETCH_TIMEOUT_MS = 3000
 export const REPORT_FETCH_TIMEOUT_MS = 1500
 
+// 外部数据源分源配置（超时毫秒 + 缓存新鲜期秒）
+// 缓存新鲜期与前端 React Query 的 staleTime 对齐（use-external-data.ts）
+export const DATA_SOURCE_CONFIG = {
+  usdcny: { timeoutMs: 8000, cacheTtlSeconds: 30 * 60 }, // 汇率 30 分钟
+  oil: { timeoutMs: 8000, cacheTtlSeconds: 2 * 60 * 60 }, // 原油 2 小时
+  brent: { timeoutMs: 8000, cacheTtlSeconds: 2 * 60 * 60 }, // 布伦特 2 小时
+  fred: { timeoutMs: 8000, cacheTtlSeconds: 2 * 60 * 60 }, // 宏观指标 2 小时
+  bdi: { timeoutMs: 15000, cacheTtlSeconds: 2 * 60 * 60 }, // BDI 2 小时
+  spot: { timeoutMs: 15000, cacheTtlSeconds: 6 * 60 * 60 }, // 现货 6 小时
+  gdelt: { timeoutMs: 8000, cacheTtlSeconds: 2 * 60 * 60 }, // 新闻 2 小时
+} as const
+
+export type DataSourceKey = keyof typeof DATA_SOURCE_CONFIG
+
 // 颜色样式映射
 export const COLOR_STYLES: Record<Color, {
   bg: string

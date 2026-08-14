@@ -87,7 +87,7 @@ def _frankfurter_fetch(base: str = 'USD', target: str = 'CNY', days: int = 365) 
     start_date = (datetime.now() - timedelta(days=days + 10)).strftime('%Y-%m-%d')
 
     url = (
-        f'https://api.frankfurter.app/{start_date}..{end_date}'
+        f'https://api.frankfurter.dev/v1/{start_date}..{end_date}'
         f'?from={base}&to={target}'
     )
 

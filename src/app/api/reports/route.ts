@@ -126,7 +126,7 @@ async function fetchExternalData() {
             REPORT_FETCH_TIMEOUT_MS
           )
         : Promise.resolve(null),
-      fetchWithTimeout("https://api.frankfurter.app/latest?from=USD&to=CNY", REPORT_FETCH_TIMEOUT_MS),
+      fetchWithTimeout("https://api.frankfurter.dev/v1/latest?from=USD&to=CNY", REPORT_FETCH_TIMEOUT_MS),
     ])
 
     // 解析原油数据

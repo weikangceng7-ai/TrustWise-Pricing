@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/components/query-provider";
 import { AppProviders } from "@/components/app-providers";
 import { LanguageProvider } from "@/contexts/language-context";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -67,6 +68,7 @@ export default function RootLayout({
             </QueryProvider>
           </ThemeProvider>
         </LanguageProvider>
+        <Toaster richColors position="top-center" />
         <Script id="register-sw" strategy="afterInteractive">
           {`
             if ('serviceWorker' in navigator) {

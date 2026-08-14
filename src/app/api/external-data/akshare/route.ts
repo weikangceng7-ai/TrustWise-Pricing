@@ -13,7 +13,9 @@ import {
   fetchBDIIndex,
   fetchAllCommoditiesDirect,
 } from "@/lib/commodity-scraper"
-import { EXTERNAL_FETCH_TIMEOUT_MS } from "@/lib/constants"
+import { DATA_SOURCE_CONFIG } from "@/lib/constants"
+import { fetchWithRetry } from "@/lib/external-fetch"
+import { getExternalDataCache, setExternalDataCache, isCacheFresh } from "@/lib/external-data-cache"
 
 /**
  * AkShare 数据 API
@@ -41,12 +43,12 @@ export async function GET(request: Request) {
 
     // WTI 原油使用 FRED API
     if (type === "oil") {
-      return await fetchRealtimeOilPrice()
+      return await fetchRealtimeFredPrice("oil", "DCOILWTICO", "WTI原油现货", "oil")
     }
 
     // 布伦特原油使用 FRED API
     if (type === "brent") {
-      return await fetchRealtimeBrentPrice()
+      return await fetchRealtimeFredPrice("brent", "DCOILBRENTEU", "布伦特原油现货", "brent")
     }
 
     // BDI 指数（从 Python AKShare 服务获取，不可用时 fallback）
@@ -71,6 +73,8 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       isMock: true,
+      isStale: false,
+      tier: "mock",
       source: "AkShare",
       type: type,
       data: mockData,
@@ -86,300 +90,277 @@ export async function GET(request: Request) {
   }
 }
 
-// 带超时的 fetch 封装
-function fetchWithTimeout(url: string, timeoutMs: number = EXTERNAL_FETCH_TIMEOUT_MS, options?: RequestInit): Promise<Response> {
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
-  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timeoutId))
+// 行情时序数据统一结构（汇率/原油/布伦特共用）
+interface PriceSeriesData {
+  name: string
+  unit: string
+  latest: { date: string; value: number; change: number; changePercent: number }
+  history: Array<{ date: string; value: number; change: number; changePercent: number }>
+}
+
+type DataTier = "realtime" | "backup" | "fresh-cache" | "stale-cache" | "mock"
+
+function priceSeriesResponse(
+  data: PriceSeriesData,
+  type: string,
+  tier: DataTier,
+  source: string,
+  note: string,
+  cachedAt?: string
+) {
+  return {
+    success: true,
+    isMock: tier === "mock",
+    isStale: tier === "stale-cache",
+    tier,
+    source,
+    type,
+    data,
+    timestamp: new Date().toISOString(),
+    note,
+    ...(cachedAt ? { cachedAt } : {}),
+  }
 }
 
 /**
- * 获取实时汇率 - 使用 Frankfurter API (欧洲央行数据)
+ * 从 Frankfurter API 获取汇率（欧洲央行数据），转成统一结构
+ */
+async function fetchFrankfurterRate(timeoutMs: number): Promise<PriceSeriesData | null> {
+  const start = new Date()
+  start.setDate(start.getDate() - 31)
+  const startStr = start.toISOString().split('T')[0]
+  const url = `https://api.frankfurter.dev/v1/${startStr}..?from=USD&to=CNY`
+
+  const res = await fetchWithRetry(url, { timeoutMs })
+  if (!res) return null
+
+  try {
+    const data = await res.json()
+    const rates = data.rates as Record<string, { CNY: number }>
+    const dates = Object.keys(rates).sort().slice(-30)
+    if (dates.length === 0) return null
+
+    const history = dates.map((date, i) => {
+      const value = rates[date].CNY
+      const prevValue = i > 0 ? rates[dates[i - 1]].CNY : value
+      return {
+        date,
+        value: Number(value.toFixed(4)),
+        change: Number((value - prevValue).toFixed(4)),
+        changePercent: Number((((value - prevValue) / prevValue) * 100).toFixed(2)),
+      }
+    })
+
+    return {
+      name: "美元人民币汇率",
+      unit: "人民币/美元",
+      latest: history[history.length - 1],
+      history,
+    }
+  } catch (error) {
+    console.warn("解析 Frankfurter 汇率数据失败:", error)
+    return null
+  }
+}
+
+/**
+ * 从 FRED 获取 DEXCHUS 汇率（备用源，需 FRED_API_KEY）
+ */
+async function fetchFredExchangeRate(timeoutMs: number): Promise<PriceSeriesData | null> {
+  const apiKey = process.env.FRED_API_KEY
+  if (!apiKey) return null
+
+  const start = new Date()
+  start.setDate(start.getDate() - 40)
+  const url =
+    `https://api.stlouisfed.org/fred/series/observations?series_id=DEXCHUS&api_key=${apiKey}` +
+    `&file_type=json&observation_start=${start.toISOString().split('T')[0]}&sort_order=desc&limit=40`
+
+  const res = await fetchWithRetry(url, { timeoutMs })
+  if (!res) return null
+
+  try {
+    const json = await res.json()
+    const obs = (json.observations || [])
+      .filter((o: { value: string }) => o.value !== ".")
+      .map((o: { date: string; value: string }) => ({ date: o.date, value: parseFloat(o.value) }))
+      .sort((a: { date: string }, b: { date: string }) => a.date.localeCompare(b.date))
+
+    if (obs.length < 2) return null
+
+    const history = obs.slice(-30).map((o: { date: string; value: number }, i: number, arr: { value: number }[]) => {
+      const prevValue = i > 0 ? arr[i - 1].value : o.value
+      return {
+        date: o.date,
+        value: Number(o.value.toFixed(4)),
+        change: Number((o.value - prevValue).toFixed(4)),
+        changePercent: Number((((o.value - prevValue) / prevValue) * 100).toFixed(2)),
+      }
+    })
+
+    return {
+      name: "美元人民币汇率",
+      unit: "人民币/美元",
+      latest: history[history.length - 1],
+      history,
+    }
+  } catch (error) {
+    console.warn("解析 FRED 汇率数据失败:", error)
+    return null
+  }
+}
+
+/**
+ * 获取实时汇率 - 降级链：Frankfurter → FRED DEXCHUS → Redis 缓存 → 模拟
  */
 async function fetchRealtimeExchangeRate() {
-  try {
-    // 计算需要的日期
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  const cacheKey = "usdcny"
+  const { timeoutMs, cacheTtlSeconds } = DATA_SOURCE_CONFIG.usdcny
 
-    const yesterdayStr = yesterday.toISOString().split('T')[0]
-    const startDate = thirtyDaysAgo.toISOString().split('T')[0]
-
-    // 并行获取：最新汇率、昨日汇率、历史数据（3 秒超时）
-    const [latestResponse, yesterdayResponse, historyResponse] = await Promise.all([
-      fetchWithTimeout("https://api.frankfurter.dev/v1/latest?from=USD&to=CNY", EXTERNAL_FETCH_TIMEOUT_MS),
-      fetchWithTimeout(`https://api.frankfurter.dev/v1/${yesterdayStr}?from=USD&to=CNY`, EXTERNAL_FETCH_TIMEOUT_MS),
-      fetchWithTimeout(`https://api.frankfurter.dev/v1/${startDate}..?from=USD&to=CNY`, EXTERNAL_FETCH_TIMEOUT_MS),
-    ])
-
-    if (!latestResponse.ok) {
-      throw new Error("Frankfurter API 请求失败")
-    }
-
-    const data = await latestResponse.json()
-    const currentRate = data.rates.CNY
-
-    let change = 0
-    let changePercent = 0
-    let previousRate = currentRate
-
-    if (yesterdayResponse.ok) {
-      const yesterdayData = await yesterdayResponse.json()
-      previousRate = yesterdayData.rates.CNY
-      change = currentRate - previousRate
-      changePercent = (change / previousRate) * 100
-    }
-
-    // 生成历史数据（最近30天）
-    const history: Array<{
-      date: string
-      value: number
-      change: number
-      changePercent: number
-    }> = []
-
-    if (historyResponse.ok) {
-      const historyData = await historyResponse.json()
-      const rates = historyData.rates
-
-      // 只取最近30天
-      const dates = Object.keys(rates).sort().slice(-30)
-      dates.forEach((date, i) => {
-        const value = rates[date].CNY
-        const prevValue = i > 0 ? rates[dates[i-1]].CNY : value
-        history.push({
-          date,
-          value: Number(value.toFixed(4)),
-          change: Number((value - prevValue).toFixed(4)),
-          changePercent: Number((((value - prevValue) / prevValue) * 100).toFixed(2))
-        })
-      })
-    }
-
-    return NextResponse.json({
-      success: true,
-      isMock: false,
-      source: "Frankfurter API (欧洲央行)",
-      type: "usdcny",
-      data: {
-        name: "美元人民币汇率",
-        unit: "人民币/美元",
-        latest: {
-          date: data.date,
-          value: Number(currentRate.toFixed(4)),
-          change: Number(change.toFixed(4)),
-          changePercent: Number(changePercent.toFixed(2))
-        },
-        history: history.length > 0 ? history : [{
-          date: data.date,
-          value: Number(currentRate.toFixed(4)),
-          change: 0,
-          changePercent: 0
-        }]
-      },
-      timestamp: new Date().toISOString(),
-      note: "实时数据 - 欧洲央行官方汇率"
-    })
-  } catch (error) {
-    console.error("获取实时汇率失败:", error)
-    // 降级到模拟数据
-    const mockData = getMockData("usdcny")
-    return NextResponse.json({
-      success: true,
-      isMock: true,
-      source: "AkShare (模拟)",
-      type: "usdcny",
-      data: mockData,
-      timestamp: new Date().toISOString(),
-      note: "实时API不可用，使用模拟数据"
-    })
+  // 新鲜缓存命中：直接返回，跳过外部 API 调用
+  const cached = await getExternalDataCache<ReturnType<typeof priceSeriesResponse>>(cacheKey)
+  if (cached && isCacheFresh(cached)) {
+    return NextResponse.json(
+      priceSeriesResponse(
+        cached.data.data,
+        "usdcny",
+        "fresh-cache",
+        cached.data.source,
+        "缓存数据（新鲜期内）",
+        new Date(cached.cachedAt).toISOString()
+      )
+    )
   }
+
+  // L0 主源：Frankfurter
+  const frankfurter = await fetchFrankfurterRate(timeoutMs)
+  if (frankfurter) {
+    const payload = priceSeriesResponse(frankfurter, "usdcny", "realtime", "Frankfurter API (欧洲央行)", "实时数据 - 欧洲央行官方汇率")
+    await setExternalDataCache(cacheKey, payload, cacheTtlSeconds)
+    return NextResponse.json(payload)
+  }
+
+  // L1 备用源：FRED DEXCHUS
+  const fred = await fetchFredExchangeRate(timeoutMs)
+  if (fred) {
+    const payload = priceSeriesResponse(fred, "usdcny", "backup", "FRED DEXCHUS", "备用数据源 - 美联储经济数据")
+    await setExternalDataCache(cacheKey, payload, cacheTtlSeconds)
+    return NextResponse.json(payload)
+  }
+
+  // L3 过期缓存兜底（实时源全部失败，返回最后可用值）
+  if (cached) {
+    return NextResponse.json(
+      priceSeriesResponse(
+        cached.data.data,
+        "usdcny",
+        "stale-cache",
+        cached.data.source,
+        "实时数据源不可用，返回缓存数据",
+        new Date(cached.cachedAt).toISOString()
+      )
+    )
+  }
+
+  // L4 兜底：模拟数据
+  const mockData = getMockData("usdcny")
+  return NextResponse.json(
+    priceSeriesResponse(mockData, "usdcny", "mock", "AkShare (模拟)", "实时 API 不可用，使用模拟数据")
+  )
 }
 
 /**
- * 获取实时 WTI 原油价格 - 使用 FRED API
+ * 获取实时原油/布伦特价格 - 降级链：FRED → Redis 缓存 → 模拟
  */
-async function fetchRealtimeOilPrice() {
+async function fetchRealtimeFredPrice(
+  type: "oil" | "brent",
+  seriesId: string,
+  name: string,
+  cacheKey: string
+) {
+  const { timeoutMs, cacheTtlSeconds } = DATA_SOURCE_CONFIG[type]
   const apiKey = process.env.FRED_API_KEY
 
-  try {
-    // 如果有 FRED API Key，使用真实数据
-    if (apiKey) {
-      const response = await fetchWithTimeout(
-        `https://api.stlouisfed.org/fred/series/observations?series_id=DCOILWTICO&api_key=${apiKey}&file_type=json&observation_start=2025-01-01`,
-        EXTERNAL_FETCH_TIMEOUT_MS
+  // 新鲜缓存命中
+  const cached = await getExternalDataCache<ReturnType<typeof priceSeriesResponse>>(cacheKey)
+  if (cached && isCacheFresh(cached)) {
+    return NextResponse.json(
+      priceSeriesResponse(
+        cached.data.data,
+        type,
+        "fresh-cache",
+        cached.data.source,
+        "缓存数据（新鲜期内）",
+        new Date(cached.cachedAt).toISOString()
       )
+    )
+  }
 
-      if (response.ok) {
+  // L0 主源：FRED
+  if (apiKey) {
+    const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${seriesId}&api_key=${apiKey}&file_type=json&observation_start=2025-01-01`
+    const response = await fetchWithRetry(url, { timeoutMs })
+
+    if (response) {
+      try {
         const data = await response.json()
-        const observations = data.observations || []
+        const validData = (data.observations || [])
+          .filter((o: { value: string }) => o.value !== "." && o.value !== "NaN")
+          .slice(-30)
 
-        if (observations.length > 0) {
-          // 取最近30天数据，过滤掉无效值
-          const validData = observations.filter((o: { value: string }) => o.value !== "." && o.value !== "NaN")
-          const recentData = validData.slice(-30)
+        if (validData.length >= 2) {
+          const history = validData.map((o: { date: string; value: string }, i: number, arr: { value: string }[]) => {
+            const val = parseFloat(o.value)
+            const prevVal = i > 0 ? parseFloat(arr[i - 1].value) : val
+            return {
+              date: o.date,
+              value: val,
+              change: Number((val - prevVal).toFixed(2)),
+              changePercent: Number((((val - prevVal) / prevVal) * 100).toFixed(2)),
+            }
+          })
 
-          if (recentData.length >= 2) {
-            const latest = recentData[recentData.length - 1]
-            const previous = recentData[recentData.length - 2]
-            const currentValue = parseFloat(latest.value)
-            const previousValue = parseFloat(previous.value)
-            const change = currentValue - previousValue
-            const changePercent = (change / previousValue) * 100
-
-            const history = recentData.map((o: { date: string; value: string }, i: number, arr: { date: string; value: string }[]) => {
-              const val = parseFloat(o.value)
-              const prevVal = i > 0 ? parseFloat(arr[i - 1].value) : val
-              return {
-                date: o.date,
-                value: val,
-                change: Number((val - prevVal).toFixed(2)),
-                changePercent: Number((((val - prevVal) / prevVal) * 100).toFixed(2))
-              }
-            })
-
-            return NextResponse.json({
-              success: true,
-              isMock: false,
-              source: "FRED API",
-              type: "oil",
-              data: {
-                name: "WTI原油现货",
-                unit: "美元/桶",
-                latest: {
-                  date: latest.date,
-                  value: currentValue,
-                  change: Number(change.toFixed(2)),
-                  changePercent: Number(changePercent.toFixed(2))
-                },
-                history
-              },
-              timestamp: new Date().toISOString(),
-              note: "实时数据 - 美联储经济数据(FRED)官方数据"
-            })
-          }
+          const payload = priceSeriesResponse(
+            { name, unit: "美元/桶", latest: history[history.length - 1], history },
+            type,
+            "realtime",
+            "FRED API",
+            "实时数据 - 美联储经济数据(FRED)官方数据"
+          )
+          await setExternalDataCache(cacheKey, payload, cacheTtlSeconds)
+          return NextResponse.json(payload)
         }
+      } catch (error) {
+        console.warn(`解析 FRED ${seriesId} 数据失败:`, error)
       }
     }
-
-    // 降级到模拟数据
-    const mockData = getMockData("oil")
-    return NextResponse.json({
-      success: true,
-      isMock: true,
-      source: "FRED (模拟)",
-      type: "oil",
-      data: mockData,
-      timestamp: new Date().toISOString(),
-      note: apiKey ? "API调用失败，使用模拟数据" : "未配置FRED_API_KEY，使用模拟数据"
-    })
-  } catch (error) {
-    console.error("获取原油价格失败:", error)
-    const mockData = getMockData("oil")
-    return NextResponse.json({
-      success: true,
-      isMock: true,
-      source: "FRED (模拟)",
-      type: "oil",
-      data: mockData,
-      timestamp: new Date().toISOString(),
-      note: "实时API不可用，使用模拟数据"
-    })
   }
-}
 
-/**
- * 获取实时布伦特原油价格 - 使用 FRED API
- */
-async function fetchRealtimeBrentPrice() {
-  const apiKey = process.env.FRED_API_KEY
-
-  try {
-    // 如果有 FRED API Key，使用真实数据
-    if (apiKey) {
-      const response = await fetchWithTimeout(
-        `https://api.stlouisfed.org/fred/series/observations?series_id=DCOILBRENTEU&api_key=${apiKey}&file_type=json&observation_start=2025-01-01`,
-        EXTERNAL_FETCH_TIMEOUT_MS
+  // L3 过期缓存兜底
+  if (cached) {
+    return NextResponse.json(
+      priceSeriesResponse(
+        cached.data.data,
+        type,
+        "stale-cache",
+        cached.data.source,
+        apiKey ? "FRED API 调用失败，返回缓存数据" : "未配置 FRED_API_KEY，返回缓存数据",
+        new Date(cached.cachedAt).toISOString()
       )
-
-      if (response.ok) {
-        const data = await response.json()
-        const observations = data.observations || []
-
-        if (observations.length > 0) {
-          // 取最近30天数据，过滤掉无效值
-          const validData = observations.filter((o: { value: string }) => o.value !== "." && o.value !== "NaN")
-          const recentData = validData.slice(-30)
-
-          if (recentData.length >= 2) {
-            const latest = recentData[recentData.length - 1]
-            const previous = recentData[recentData.length - 2]
-            const currentValue = parseFloat(latest.value)
-            const previousValue = parseFloat(previous.value)
-            const change = currentValue - previousValue
-            const changePercent = (change / previousValue) * 100
-
-            const history = recentData.map((o: { date: string; value: string }, i: number, arr: { date: string; value: string }[]) => {
-              const val = parseFloat(o.value)
-              const prevVal = i > 0 ? parseFloat(arr[i - 1].value) : val
-              return {
-                date: o.date,
-                value: val,
-                change: Number((val - prevVal).toFixed(2)),
-                changePercent: Number((((val - prevVal) / prevVal) * 100).toFixed(2))
-              }
-            })
-
-            return NextResponse.json({
-              success: true,
-              isMock: false,
-              source: "FRED API",
-              type: "brent",
-              data: {
-                name: "布伦特原油现货",
-                unit: "美元/桶",
-                latest: {
-                  date: latest.date,
-                  value: currentValue,
-                  change: Number(change.toFixed(2)),
-                  changePercent: Number(changePercent.toFixed(2))
-                },
-                history
-              },
-              timestamp: new Date().toISOString(),
-              note: "实时数据 - 美联储经济数据(FRED)官方数据"
-            })
-          }
-        }
-      }
-    }
-
-    // 降级到模拟数据
-    const mockData = getMockData("brent")
-    return NextResponse.json({
-      success: true,
-      isMock: true,
-      source: "FRED (模拟)",
-      type: "brent",
-      data: mockData,
-      timestamp: new Date().toISOString(),
-      note: apiKey ? "API调用失败，使用模拟数据" : "未配置FRED_API_KEY，使用模拟数据"
-    })
-  } catch (error) {
-    console.error("获取布伦特原油价格失败:", error)
-    const mockData = getMockData("brent")
-    return NextResponse.json({
-      success: true,
-      isMock: true,
-      source: "FRED (模拟)",
-      type: "brent",
-      data: mockData,
-      timestamp: new Date().toISOString(),
-      note: "实时API不可用，使用模拟数据"
-    })
+    )
   }
+
+  // L4 兜底：模拟数据
+  const mockData = getMockData(type)
+  return NextResponse.json(
+    priceSeriesResponse(
+      mockData,
+      type,
+      "mock",
+      "FRED (模拟)",
+      apiKey ? "API 调用失败，使用模拟数据" : "未配置 FRED_API_KEY，使用模拟数据"
+    )
+  )
 }
 
 /**
@@ -423,6 +404,8 @@ async function fetchRealtimeBDI() {
     return NextResponse.json({
       success: true,
       isMock: true,
+      isStale: false,
+      tier: "mock",
       source: "BDI (模拟)",
       type: "bdi",
       data: {
@@ -445,6 +428,8 @@ async function fetchRealtimeBDI() {
     return NextResponse.json({
       success: true,
       isMock: true,
+      isStale: false,
+      tier: "mock",
       source: "AkShare (模拟)",
       type: "bdi",
       data: mockData,
@@ -454,31 +439,56 @@ async function fetchRealtimeBDI() {
   }
 }
 
+/** 把 BDI 记录转成统一行情结构（补齐 latest，与原油/汇率形状一致） */
+function buildBdiPriceSeries(records: Array<{ date: string; price: number }>): PriceSeriesData {
+  const history = records.map((d, i) => {
+    const prev = i > 0 ? records[i - 1].price : d.price
+    return {
+      date: d.date,
+      value: d.price,
+      change: Number((d.price - prev).toFixed(2)),
+      changePercent: Number((((d.price - prev) / prev) * 100).toFixed(2)),
+    }
+  })
+  const latest = history[history.length - 1] || { date: "", value: 0, change: 0, changePercent: 0 }
+  return { name: "波罗的海干散货指数", unit: "指数", latest, history }
+}
+
 /**
- * 获取实时 BDI 指数
- * 优先使用 TypeScript 直连新浪财经，不可用时 fallback 到 Python 服务
+ * 获取实时 BDI 指数 - 降级链：新浪直连 → Python AKShare → Redis 缓存 → 模拟
  */
 async function fetchRealtimeBDIFromService() {
-  // 先尝试 TypeScript 直连
+  const cacheKey = "bdi"
+  const { cacheTtlSeconds } = DATA_SOURCE_CONFIG.bdi
+
+  // 新鲜缓存命中
+  const cached = await getExternalDataCache<ReturnType<typeof priceSeriesResponse>>(cacheKey)
+  if (cached && isCacheFresh(cached)) {
+    return NextResponse.json(
+      priceSeriesResponse(
+        cached.data.data,
+        "bdi",
+        "fresh-cache",
+        cached.data.source,
+        "缓存数据（新鲜期内）",
+        new Date(cached.cachedAt).toISOString()
+      )
+    )
+  }
+
+  // 先尝试 TypeScript 直连新浪财经
   try {
     const direct = await fetchBDIIndex()
     if (direct && direct.data.length > 0 && !direct.source.includes("模拟")) {
-      return NextResponse.json({
-        success: true,
-        isMock: false,
-        source: direct.source,
-        type: "bdi",
-        data: {
-          name: "波罗的海干散货指数",
-          unit: "指数",
-          history: direct.data.map((d) => ({
-            date: d.date,
-            value: d.price,
-          })),
-        },
-        timestamp: new Date().toISOString(),
-        note: "实时数据 - Baltic Exchange",
-      })
+      const payload = priceSeriesResponse(
+        buildBdiPriceSeries(direct.data),
+        "bdi",
+        "realtime",
+        direct.source,
+        "实时数据 - Baltic Exchange"
+      )
+      await setExternalDataCache(cacheKey, payload, cacheTtlSeconds)
+      return NextResponse.json(payload)
     }
   } catch (e) {
     console.warn("Direct BDI scraper failed:", e)
@@ -488,26 +498,35 @@ async function fetchRealtimeBDIFromService() {
   try {
     const data = await fetchBDI()
     if (data && data.data.length > 0) {
-      return NextResponse.json({
-        success: true,
-        isMock: data.source.includes("模拟"),
-        source: data.source,
-        type: "bdi",
-        data: {
-          name: "波罗的海干散货指数",
-          unit: "指数",
-          history: data.data.map((d) => ({
-            date: d.date,
-            value: d.price,
-          })),
-        },
-        timestamp: new Date().toISOString(),
-        note: data.note || "实时数据 - AKShare (Baltic Exchange)",
-      })
+      const isMock = data.source.includes("模拟")
+      const payload = priceSeriesResponse(
+        buildBdiPriceSeries(data.data),
+        "bdi",
+        isMock ? "mock" : "backup",
+        data.source,
+        data.note || "实时数据 - AKShare (Baltic Exchange)"
+      )
+      if (!isMock) await setExternalDataCache(cacheKey, payload, cacheTtlSeconds)
+      return NextResponse.json(payload)
     }
   } catch (e) {
     console.warn("Python AKShare BDI 服务不可用, fallback 到模拟数据")
   }
+
+  // 过期缓存兜底
+  if (cached) {
+    return NextResponse.json(
+      priceSeriesResponse(
+        cached.data.data,
+        "bdi",
+        "stale-cache",
+        cached.data.source,
+        "实时数据源不可用，返回缓存数据",
+        new Date(cached.cachedAt).toISOString()
+      )
+    )
+  }
+
   return await fetchRealtimeBDI()
 }
 
@@ -516,8 +535,30 @@ async function fetchRealtimeBDIFromService() {
  * 优先使用 TypeScript 直连生意社，不可用时 fallback 到 Python 服务
  */
 async function fetchCommoditySpotFromService(code: string) {
+  const cacheKey = `spot:${code}`
+  const { cacheTtlSeconds } = DATA_SOURCE_CONFIG.spot
   const nameMap: Record<string, string> = {
     sulfur: "硫磺", phosphate: "磷矿石", potash: "钾肥", urea: "尿素",
+  }
+  const name = nameMap[code] || code
+
+  type SpotData = { name: string; unit: string; history: Array<{ date: string; value: number; changePercent: number | null }> }
+
+  // 新鲜缓存命中
+  const cached = await getExternalDataCache<{ source: string; data: SpotData }>(cacheKey)
+  if (cached && isCacheFresh(cached)) {
+    return NextResponse.json({
+      success: true,
+      isMock: false,
+      isStale: false,
+      tier: "fresh-cache",
+      source: cached.data.source,
+      type: code,
+      data: cached.data.data,
+      timestamp: new Date().toISOString(),
+      note: "缓存数据（新鲜期内）",
+      cachedAt: new Date(cached.cachedAt).toISOString(),
+    })
   }
 
   // 先尝试 TypeScript 直连
@@ -532,20 +573,24 @@ async function fetchCommoditySpotFromService(code: string) {
     if (directFn) {
       const direct = await directFn()
       if (direct && direct.data.length > 0 && !direct.source.includes("模拟")) {
+        const spotData: SpotData = {
+          name,
+          unit: "元/吨",
+          history: direct.data.map((d) => ({
+            date: d.date,
+            value: d.price,
+            changePercent: d.change_percent ?? null,
+          })),
+        }
+        await setExternalDataCache(cacheKey, { source: direct.source, data: spotData }, cacheTtlSeconds)
         return NextResponse.json({
           success: true,
           isMock: false,
+          isStale: false,
+          tier: "realtime",
           source: direct.source,
           type: code,
-          data: {
-            name: nameMap[code] || code,
-            unit: "元/吨",
-            history: direct.data.map((d) => ({
-              date: d.date,
-              value: d.price,
-              changePercent: d.change_percent ?? null,
-            })),
-          },
+          data: spotData,
           timestamp: new Date().toISOString(),
           note: `实时数据 - ${direct.source}`,
         })
@@ -559,23 +604,25 @@ async function fetchCommoditySpotFromService(code: string) {
   try {
     const data = await fetchCommoditySpot(code)
     if (data && data.data.length > 0) {
-      const nameMap: Record<string, string> = {
-        sulfur: "硫磺", phosphate: "磷矿石", potash: "钾肥", urea: "尿素",
+      const isMock = data.source.includes("模拟")
+      const spotData: SpotData = {
+        name,
+        unit: "元/吨",
+        history: data.data.map((d) => ({
+          date: d.date,
+          value: d.price,
+          changePercent: d.change_percent ?? null,
+        })),
       }
+      if (!isMock) await setExternalDataCache(cacheKey, { source: data.source, data: spotData }, cacheTtlSeconds)
       return NextResponse.json({
         success: true,
-        isMock: data.source.includes("模拟"),
+        isMock,
+        isStale: false,
+        tier: isMock ? "mock" : "backup",
         source: data.source,
         type: code,
-        data: {
-          name: nameMap[code] || code,
-          unit: "元/吨",
-          history: data.data.map((d) => ({
-            date: d.date,
-            value: d.price,
-            changePercent: d.change_percent ?? null,
-          })),
-        },
+        data: spotData,
         timestamp: new Date().toISOString(),
         note: data.note || `实时数据 - ${data.source}`,
       })
@@ -584,10 +631,28 @@ async function fetchCommoditySpotFromService(code: string) {
     console.warn(`Python AKShare 服务不可用 (${code}), fallback 到模拟数据`)
   }
 
+  // 过期缓存兜底
+  if (cached) {
+    return NextResponse.json({
+      success: true,
+      isMock: false,
+      isStale: true,
+      tier: "stale-cache",
+      source: cached.data.source,
+      type: code,
+      data: cached.data.data,
+      timestamp: new Date().toISOString(),
+      note: "实时数据源不可用，返回缓存数据",
+      cachedAt: new Date(cached.cachedAt).toISOString(),
+    })
+  }
+
   const mockData = getMockData(code)
   return NextResponse.json({
     success: true,
     isMock: true,
+    isStale: false,
+    tier: "mock",
     source: "AKShare (模拟)",
     type: code,
     data: mockData,

@@ -15,6 +15,8 @@ export interface AkShareDataPoint {
 export interface AkShareResponse {
   success: boolean
   isMock?: boolean
+  isStale?: boolean
+  tier?: "realtime" | "backup" | "fresh-cache" | "stale-cache" | "mock"
   source: string
   type: string
   data: {
@@ -25,6 +27,7 @@ export interface AkShareResponse {
   }
   timestamp: string
   note?: string
+  cachedAt?: string
 }
 
 // 可查询的 AkShare 指标类型
