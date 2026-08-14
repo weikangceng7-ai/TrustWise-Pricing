@@ -37,6 +37,7 @@ export default function ApiKeysPage() {
   const [newKeyName, setNewKeyName] = useState("")
   const [showFullKey, setShowFullKey] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchApiKeys = useCallback(async () => {
     try {
@@ -63,8 +64,12 @@ export default function ApiKeysPage() {
   }, [fetchApiKeys])
 
   async function createKey() {
-    if (!newKeyName.trim()) return
+    if (!newKeyName.trim()) {
+      setError("请先填写 Key 名称")
+      return
+    }
 
+    setError(null)
     setCreating(true)
     try {
       const res = await fetch("/api/api-keys", {
@@ -79,9 +84,12 @@ export default function ApiKeysPage() {
         setShowFullKey(data.data.key)
         setNewKeyName("")
         await fetchApiKeys()
+      } else {
+        setError(data.error || "创建失败")
       }
     } catch (error) {
       console.error("创建失败:", error)
+      setError("创建失败，请稍后重试")
     } finally {
       setCreating(false)
     }
@@ -105,6 +113,7 @@ export default function ApiKeysPage() {
   async function resetKey(id: string) {
     if (!confirm("重置后旧 Key 将失效，确定继续？")) return
 
+    setError(null)
     try {
       const res = await fetch(`/api/api-keys/${id}/reset`, { method: "POST" })
       const data = await res.json()
@@ -112,9 +121,12 @@ export default function ApiKeysPage() {
       if (data.success) {
         setShowFullKey(data.data.key)
         await fetchApiKeys()
+      } else {
+        setError(data.error || "重置失败")
       }
     } catch (error) {
       console.error("重置失败:", error)
+      setError("重置失败，请稍后重试")
     }
   }
 
@@ -196,6 +208,9 @@ export default function ApiKeysPage() {
               创建
             </Button>
           </div>
+          {error && (
+            <p className="text-sm text-red-500 mt-3">{error}</p>
+          )}
         </CardContent>
       </Card>
 
