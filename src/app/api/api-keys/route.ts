@@ -83,8 +83,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+    const message = error instanceof Error ? error.message : "创建 API Key 失败"
     return NextResponse.json(
-      { success: false, error: "创建 API Key 失败" },
+      { success: false, error: message },
       { status: 500 }
     )
   }
