@@ -76,7 +76,7 @@ export default function ApiKeysPage() {
       const data = await res.json()
 
       if (data.success) {
-        setShowFullKey(data.data.key.key)
+        setShowFullKey(data.data.key)
         setNewKeyName("")
         await fetchApiKeys()
       }
@@ -110,7 +110,7 @@ export default function ApiKeysPage() {
       const data = await res.json()
 
       if (data.success) {
-        setShowFullKey(data.data.key.key)
+        setShowFullKey(data.data.key)
         await fetchApiKeys()
       }
     } catch (error) {
