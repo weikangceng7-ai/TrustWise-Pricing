@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2, Eye, EyeOff, Check, X } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 interface ForgotPasswordDialogProps {
   open: boolean
@@ -27,29 +28,29 @@ function getPasswordStrength(password: string): {
   checks: { label: string; passed: boolean }[]
 } {
   const checks = [
-    { label: "至少 8 个字符", passed: password.length >= 8 },
-    { label: "包含大写字母", passed: /[A-Z]/.test(password) },
-    { label: "包含小写字母", passed: /[a-z]/.test(password) },
-    { label: "包含数字", passed: /[0-9]/.test(password) },
-    { label: "包含特殊字符", passed: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
+    { label: "auth.pw.checkLength", passed: password.length >= 8 },
+    { label: "auth.pw.checkUpper", passed: /[A-Z]/.test(password) },
+    { label: "auth.pw.checkLower", passed: /[a-z]/.test(password) },
+    { label: "auth.pw.checkNumber", passed: /[0-9]/.test(password) },
+    { label: "auth.pw.checkSpecial", passed: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
   ]
 
   const score = checks.filter((c) => c.passed).length
 
-  let label = "非常弱"
+  let label = "auth.pw.veryWeak"
   let color = "bg-red-500"
 
   if (score >= 5) {
-    label = "非常强"
+    label = "auth.pw.veryStrong"
     color = "bg-green-500"
   } else if (score >= 4) {
-    label = "强"
+    label = "auth.pw.strong"
     color = "bg-green-400"
   } else if (score >= 3) {
-    label = "中等"
+    label = "auth.pw.medium"
     color = "bg-yellow-500"
   } else if (score >= 2) {
-    label = "弱"
+    label = "auth.pw.weak"
     color = "bg-orange-500"
   }
 
@@ -61,6 +62,7 @@ export function ForgotPasswordDialog({
   onOpenChange,
   onSwitchToLogin,
 }: ForgotPasswordDialogProps) {
+  const { t } = useLanguage()
   const [email, setEmail] = useState("")
   const [code, setCode] = useState("")
   const [password, setPassword] = useState("")
@@ -87,7 +89,7 @@ export function ForgotPasswordDialog({
   // 发送验证码
   const handleSendCode = async () => {
     if (!email) {
-      setError("请输入邮箱地址")
+      setError(t("auth.error.invalidEmail"))
       return
     }
 
@@ -104,7 +106,7 @@ export function ForgotPasswordDialog({
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || "发送验证码失败")
+        setError(data.error || t("auth.error.sendCodeFailed"))
         setIsSendingCode(false)
         return
       }
@@ -129,7 +131,7 @@ export function ForgotPasswordDialog({
         })
       }, 1000)
     } catch {
-      setError("发送验证码失败，请稍后重试")
+      setError(t("auth.error.sendCodeRetry"))
     } finally {
       setIsSendingCode(false)
     }
@@ -141,22 +143,22 @@ export function ForgotPasswordDialog({
     setError(null)
 
     if (!code) {
-      setError("请输入验证码")
+      setError(t("auth.error.codeRequired"))
       return
     }
 
     if (password !== confirmPassword) {
-      setError("两次输入的密码不一致")
+      setError(t("auth.error.passwordMismatch"))
       return
     }
 
     if (password.length < 8) {
-      setError("密码长度至少为 8 位")
+      setError(t("auth.error.passwordTooShort"))
       return
     }
 
     if (passwordStrength.score < 2) {
-      setError("密码强度不足")
+      setError(t("auth.error.passwordStrength"))
       return
     }
 
@@ -172,14 +174,14 @@ export function ForgotPasswordDialog({
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || "重置密码失败")
+        setError(data.error || t("auth.error.resetFailed"))
         setIsLoading(false)
         return
       }
 
       setSuccess(true)
     } catch {
-      setError("重置密码失败，请稍后重试")
+      setError(t("auth.error.resetRetry"))
       setIsLoading(false)
     }
   }
@@ -189,12 +191,12 @@ export function ForgotPasswordDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>密码重置成功</DialogTitle>
+            <DialogTitle>{t("auth.passwordResetSuccess")}</DialogTitle>
             <DialogDescription>
-              您的密码已成功重置，请使用新密码登录。
+              {t("auth.passwordResetSuccessDesc")}
             </DialogDescription>
           </DialogHeader>
-          <Button onClick={() => onOpenChange(false)}>确定</Button>
+          <Button onClick={() => onOpenChange(false)}>{t("auth.ok")}</Button>
         </DialogContent>
       </Dialog>
     )
@@ -204,9 +206,9 @@ export function ForgotPasswordDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>忘记密码</DialogTitle>
+          <DialogTitle>{t("auth.forgotPasswordTitle")}</DialogTitle>
           <DialogDescription>
-            输入您的邮箱获取验证码，然后设置新密码
+            {t("auth.forgotPasswordDesc2")}
           </DialogDescription>
         </DialogHeader>
 
@@ -218,19 +220,19 @@ export function ForgotPasswordDialog({
 
         {devCode && (
           <div className="rounded-lg bg-cyan-500/10 border border-cyan-500/20 p-3 text-sm text-cyan-600 dark:text-cyan-400">
-            验证码已发送到控制台，开发环境测试验证码：<span className="font-mono font-bold">{devCode}</span>
+            {t("auth.devCodeSent")}<span className="font-mono font-bold">{devCode}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* 邮箱 */}
           <div className="space-y-2">
-            <Label htmlFor="email">邮箱</Label>
+            <Label htmlFor="email">{t("auth.email")}</Label>
             <div className="flex gap-2">
               <Input
                 id="email"
                 type="email"
-                placeholder="请输入注册邮箱"
+                placeholder={t("auth.enterEmailPlaceholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading || codeSent}
@@ -249,9 +251,9 @@ export function ForgotPasswordDialog({
                 ) : countdown > 0 ? (
                   `${countdown}s`
                 ) : codeSent ? (
-                  "重新发送"
+                  t("auth.sendCodeAgain")
                 ) : (
-                  "发送验证码"
+                  t("auth.sendCode")
                 )}
               </Button>
             </div>
@@ -260,11 +262,11 @@ export function ForgotPasswordDialog({
           {/* 验证码 */}
           {codeSent && (
             <div className="space-y-2">
-              <Label htmlFor="code">验证码</Label>
+              <Label htmlFor="code">{t("auth.verifyCode")}</Label>
               <Input
                 id="code"
                 type="text"
-                placeholder="请输入 6 位验证码"
+                placeholder={t("auth.verifyCodePlaceholder")}
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 disabled={isLoading}
@@ -277,12 +279,12 @@ export function ForgotPasswordDialog({
           {/* 新密码 */}
           {codeSent && (
             <div className="space-y-2">
-              <Label htmlFor="password">新密码</Label>
+              <Label htmlFor="password">{t("auth.newPassword")}</Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="请输入新密码"
+                  placeholder={t("auth.newPasswordPlaceholder")}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
@@ -307,7 +309,7 @@ export function ForgotPasswordDialog({
                       />
                     </div>
                     <span className="text-xs text-muted-foreground w-12">
-                      {passwordStrength.label}
+                      {t(passwordStrength.label)}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-1 text-xs">
@@ -319,7 +321,7 @@ export function ForgotPasswordDialog({
                           <X className="h-3 w-3 text-muted-foreground" />
                         )}
                         <span className={check.passed ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}>
-                          {check.label}
+                          {t(check.label)}
                         </span>
                       </div>
                     ))}
@@ -332,12 +334,12 @@ export function ForgotPasswordDialog({
           {/* 确认密码 */}
           {codeSent && (
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">确认密码</Label>
+              <Label htmlFor="confirmPassword">{t("auth.confirmPassword")}</Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
-                  placeholder="请再次输入新密码"
+                  placeholder={t("auth.confirmNewPasswordPlaceholder")}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   disabled={isLoading}
@@ -353,7 +355,7 @@ export function ForgotPasswordDialog({
                 </button>
               </div>
               {confirmPassword && password !== confirmPassword && (
-                <p className="text-xs text-destructive">两次输入的密码不一致</p>
+                <p className="text-xs text-destructive">{t("auth.error.passwordMismatch")}</p>
               )}
             </div>
           )}
@@ -364,17 +366,17 @@ export function ForgotPasswordDialog({
             disabled={isLoading || !codeSent || !code || !password || !confirmPassword}
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            重置密码
+            {t("auth.resetPassword")}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
-            想起密码了？{" "}
+            {t("auth.rememberPassword")}{" "}
             <button
               type="button"
               className="text-primary underline-offset-4 hover:underline"
               onClick={onSwitchToLogin}
             >
-              返回登录
+              {t("auth.backToLogin")}
             </button>
           </p>
         </form>

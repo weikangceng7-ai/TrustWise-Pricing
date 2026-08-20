@@ -465,6 +465,7 @@ function Navbar() {
 
 // Hero 区域组件
 function HeroSection() {
+  const { t } = useLanguage()
   const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(() => {
@@ -552,18 +553,18 @@ function HeroSection() {
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-cyan-100 to-blue-100 dark:from-cyan-500/10 dark:to-blue-500/10 border border-cyan-300 dark:border-cyan-500/20 mb-8 transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
             >
               <Sparkles className="h-4 w-4 text-cyan-500 dark:text-cyan-400 animate-pulse" />
-              <span className="text-sm text-cyan-700 dark:text-cyan-300 font-medium tracking-wide">AI 驱动的智能决策</span>
+              <span className="text-sm text-cyan-700 dark:text-cyan-300 font-medium tracking-wide">{t("landing.hero.title")}</span>
               <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400 animate-ping" />
             </div>
 
             {/* 主标题 */}
             <div className={`transition-all duration-700 delay-100 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight leading-[1.1]">
-                硫磺督价与采购
+                {t("landing.hero.subtitle")}
               </h1>
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-8 tracking-tight leading-[1.1]">
                 <span className="bg-gradient-to-r from-cyan-600 via-blue-600 to-violet-600 dark:from-cyan-400 dark:via-blue-400 dark:to-violet-400 bg-clip-text text-transparent animate-gradient">
-                  智能决策系统
+                  {t("landing.hero.desc")}
                 </span>
               </h1>
             </div>
@@ -592,7 +593,7 @@ function HeroSection() {
                 className="group relative px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-500 to-cyan-600 text-white text-lg font-semibold overflow-hidden shadow-2xl shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300"
               >
                 <span className="relative z-10 flex items-center gap-2">
-                  立即体验
+                  {t("landing.hero.cta")}
                   <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -603,7 +604,7 @@ function HeroSection() {
                 className="group px-8 py-4 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 text-slate-700 dark:text-white text-lg font-semibold hover:bg-slate-200 dark:hover:bg-white/10 hover:border-slate-400 dark:hover:border-white/20 transition-all duration-300 flex items-center gap-2"
               >
                 <Play className="h-5 w-5" />
-                了解更多
+                {t("landing.hero.learnMore")}
               </Link>
             </div>
 
@@ -628,7 +629,7 @@ function HeroSection() {
                   <CheckCircle2 className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
                 </div>
                 <div>
-                  <div className="text-sm text-slate-500 dark:text-slate-400">预测准确率</div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400">{t("landing.stats.accuracy")}</div>
                   <div className="text-lg font-bold text-slate-900 dark:text-white">95%+</div>
                 </div>
               </div>
@@ -637,7 +638,7 @@ function HeroSection() {
                   <Users className="h-5 w-5 text-violet-600 dark:text-violet-400" />
                 </div>
                 <div>
-                  <div className="text-sm text-slate-500 dark:text-slate-400">服务企业</div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400">{t("landing.stats.enterprises")}</div>
                   <div className="text-lg font-bold text-slate-900 dark:text-white">100+</div>
                 </div>
               </div>
@@ -646,7 +647,7 @@ function HeroSection() {
                   <Database className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
-                  <div className="text-sm text-slate-500 dark:text-slate-400">历史数据</div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400">{t("landing.stats.data")}</div>
                   <div className="text-lg font-bold text-slate-900 dark:text-white">10年+</div>
                 </div>
               </div>
@@ -710,6 +711,7 @@ function HeroSection() {
 
 // 功能特性区域
 function FeaturesSection() {
+  const { t } = useLanguage()
   const { ref: sectionRef, isInView } = useInView()
 
   const features = [
@@ -758,10 +760,10 @@ function FeaturesSection() {
         <div className={`text-center mb-20 transition-all duration-800 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-200/50 dark:bg-slate-700/50 mb-6">
             <Zap className="h-4 w-4 text-cyan-500" />
-            <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">核心能力</span>
+            <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">{t("landing.features.title")}</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-5 tracking-tight">
-            四大智能模块
+            {t("landing.features.subtitle")}
           </h2>
           <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
             从数据采集到决策输出，全链路 AI 驱动的价格预测与采购决策支持
@@ -816,7 +818,7 @@ function FeaturesSection() {
             href="/dashboard"
             className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-500 to-cyan-600 text-white text-lg font-semibold hover:from-cyan-400 hover:via-blue-400 hover:to-cyan-500 transition-all shadow-xl shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:scale-105"
           >
-            立即体验全部功能
+            {t("landing.hero.cta")}
             <ArrowRight className="h-5 w-5" />
           </Link>
         </div>
@@ -827,13 +829,14 @@ function FeaturesSection() {
 
 // 统计数据区域
 function StatsSection() {
+  const { t } = useLanguage()
   const { ref: sectionRef, isInView } = useInView()
 
   const stats = [
-    { value: "95.2%", label: "预测准确率", icon: <Target className="h-6 w-6" />, delay: 100, desc: "基于历史验证" },
-    { value: "100+", label: "服务企业", icon: <Users className="h-6 w-6" />, delay: 200, desc: "化工行业龙头" },
-    { value: "10年+", label: "历史数据", icon: <Database className="h-6 w-6" />, delay: 300, desc: "全球市场覆盖" },
-    { value: "24/7", label: "实时监控", icon: <Activity className="h-6 w-6" />, delay: 400, desc: "全天候预警" }
+    { value: "95.2%", label: t("landing.stats.accuracy"), icon: <Target className="h-6 w-6" />, delay: 100, desc: "基于历史验证" },
+    { value: "100+", label: t("landing.stats.enterprises"), icon: <Users className="h-6 w-6" />, delay: 200, desc: "化工行业龙头" },
+    { value: "10年+", label: t("landing.stats.data"), icon: <Database className="h-6 w-6" />, delay: 300, desc: "全球市场覆盖" },
+    { value: "24/7", label: t("landing.stats.monitoring"), icon: <Activity className="h-6 w-6" />, delay: 400, desc: "全天候预警" }
   ]
 
   return (

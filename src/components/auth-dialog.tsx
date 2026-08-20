@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2, Eye, EyeOff, Check, X, ArrowLeft, Shield } from "lucide-react"
 import { signIn, signUp } from "@/lib/auth-client"
+import { useLanguage } from "@/contexts/language-context"
 
 type AuthMode = "login" | "register" | "register-verify" | "forgot-password" | "forgot-verify"
 
@@ -45,32 +46,32 @@ function getPasswordStrength(password: string): {
   checks: { label: string; passed: boolean }[]
 } {
   const checks = [
-    { label: "至少 8 个字符", passed: password.length >= 8 },
-    { label: "包含大写字母", passed: /[A-Z]/.test(password) },
-    { label: "包含小写字母", passed: /[a-z]/.test(password) },
-    { label: "包含数字", passed: /[0-9]/.test(password) },
-    { label: "包含特殊字符", passed: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
+    { label: "auth.pw.checkLength", passed: password.length >= 8 },
+    { label: "auth.pw.checkUpper", passed: /[A-Z]/.test(password) },
+    { label: "auth.pw.checkLower", passed: /[a-z]/.test(password) },
+    { label: "auth.pw.checkNumber", passed: /[0-9]/.test(password) },
+    { label: "auth.pw.checkSpecial", passed: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
   ]
 
   const score = checks.filter((c) => c.passed).length
 
-  let label = "非常弱"
+  let label = "auth.pw.veryWeak"
   let color = "bg-destructive"
 
   if (score >= 5) {
-    label = "非常强"
+    label = "auth.pw.veryStrong"
     color = "bg-green-500"
   } else if (score >= 4) {
-    label = "强"
+    label = "auth.pw.strong"
     color = "bg-green-400"
   } else if (score >= 3) {
-    label = "中等"
+    label = "auth.pw.medium"
     color = "bg-yellow-500"
   } else if (score >= 2) {
-    label = "弱"
+    label = "auth.pw.weak"
     color = "bg-orange-500"
   } else if (score >= 1) {
-    label = "非常弱"
+    label = "auth.pw.veryWeak"
     color = "bg-red-500"
   }
 
@@ -103,6 +104,7 @@ export function AuthDialog({
   defaultMode = "login",
 }: AuthDialogProps) {
   const router = useRouter()
+  const { t } = useLanguage()
   const [mode, setMode] = useState<AuthMode>(defaultMode)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -138,7 +140,7 @@ export function AuthDialog({
   // 发送验证码
   const sendVerificationCode = useCallback(async (targetEmail: string, type: "register" | "forgot") => {
     if (!isValidEmail(targetEmail)) {
-      setError("请输入有效的邮箱地址")
+      setError(t("auth.error.invalidEmail"))
       return false
     }
 
@@ -156,7 +158,7 @@ export function AuthDialog({
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || "发送验证码失败")
+        setError(data.error || t("auth.error.sendCodeFailed"))
         setIsSendingCode(false)
         return false
       }
@@ -170,11 +172,11 @@ export function AuthDialog({
       setIsSendingCode(false)
       return true
     } catch {
-      setError("发送验证码失败，请稍后重试")
+      setError(t("auth.error.sendCodeRetry"))
       setIsSendingCode(false)
       return false
     }
-  }, [])
+  }, [t])
 
   // 验证验证码
   const verifyEmailCode = useCallback(async (targetEmail: string, code: string) => {
@@ -188,9 +190,9 @@ export function AuthDialog({
       const data = await res.json()
       return { success: res.ok, error: data.error }
     } catch {
-      return { success: false, error: "验证失败，请稍后重试" }
+      return { success: false, error: t("auth.error.verifyFailed") }
     }
-  }, [])
+  }, [t])
 
   const handleLogin = async (formData: FormData) => {
     setError(null)
@@ -200,7 +202,7 @@ export function AuthDialog({
     const passwordValue = formData.get("password") as string
 
     if (!isValidEmail(emailValue)) {
-      setError("请输入有效的邮箱地址")
+      setError(t("auth.error.invalidEmail"))
       setIsLoading(false)
       return
     }
@@ -209,7 +211,7 @@ export function AuthDialog({
       const result = await signIn.email({ email: emailValue, password: passwordValue })
 
       if (result.error) {
-        setError(result.error.message || "登录失败")
+        setError(result.error.message || t("auth.error.loginFailed"))
         setIsLoading(false)
         return
       }
@@ -217,7 +219,7 @@ export function AuthDialog({
       onOpenChange(false)
       router.refresh()
     } catch {
-      setError("登录失败，请稍后重试")
+      setError(t("auth.error.loginRetry"))
       setIsLoading(false)
     }
   }
@@ -235,22 +237,22 @@ export function AuthDialog({
     setEmail(emailValue)
 
     if (!isValidEmail(emailValue)) {
-      setError("请输入有效的邮箱地址")
+      setError(t("auth.error.invalidEmail"))
       return
     }
 
     if (passwordValue !== confirmPasswordValue) {
-      setError("两次输入的密码不一致")
+      setError(t("auth.error.passwordMismatch"))
       return
     }
 
     if (passwordValue.length < 8) {
-      setError("密码长度至少为 8 位")
+      setError(t("auth.error.passwordTooShort"))
       return
     }
 
     if (passwordStrength.score < 2) {
-      setError("密码强度不足，请至少满足 2 项要求")
+      setError(t("auth.error.passwordWeak"))
       return
     }
 
@@ -267,7 +269,7 @@ export function AuthDialog({
     setIsLoading(true)
 
     if (!verifyCode.trim()) {
-      setError("请输入验证码")
+      setError(t("auth.error.codeRequired"))
       setIsLoading(false)
       return
     }
@@ -275,7 +277,7 @@ export function AuthDialog({
     // 验证验证码
     const verifyResult = await verifyEmailCode(email, verifyCode)
     if (!verifyResult.success) {
-      setError(verifyResult.error || "验证码错误")
+      setError(verifyResult.error || t("auth.error.codeWrong"))
       setIsLoading(false)
       return
     }
@@ -285,7 +287,7 @@ export function AuthDialog({
       const result = await signUp.email({ email, password, name })
 
       if (result.error) {
-        setError(result.error.message || "注册失败")
+        setError(result.error.message || t("auth.error.registerFailed"))
         setIsLoading(false)
         return
       }
@@ -293,7 +295,7 @@ export function AuthDialog({
       onOpenChange(false)
       router.refresh()
     } catch {
-      setError("注册失败，请稍后重试")
+      setError(t("auth.error.registerRetry"))
       setIsLoading(false)
     }
   }
@@ -310,7 +312,7 @@ export function AuthDialog({
     setForgotEmail(emailValue)
 
     if (!isValidEmail(emailValue)) {
-      setError("请输入有效的邮箱地址")
+      setError(t("auth.error.invalidEmail"))
       return
     }
 
@@ -327,7 +329,7 @@ export function AuthDialog({
     setIsLoading(true)
 
     if (!verifyCode.trim()) {
-      setError("请输入验证码")
+      setError(t("auth.error.codeRequired"))
       setIsLoading(false)
       return
     }
@@ -335,7 +337,7 @@ export function AuthDialog({
     // 验证验证码
     const verifyResult = await verifyEmailCode(forgotEmail, verifyCode)
     if (!verifyResult.success) {
-      setError(verifyResult.error || "验证码错误")
+      setError(verifyResult.error || t("auth.error.codeWrong"))
       setIsLoading(false)
       return
     }
@@ -351,7 +353,7 @@ export function AuthDialog({
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || "发送重置邮件失败")
+        setError(data.error || t("auth.error.sendResetFailed"))
         setIsLoading(false)
         return
       }
@@ -359,7 +361,7 @@ export function AuthDialog({
       setForgotSuccess(true)
       setIsLoading(false)
     } catch {
-      setError("发送重置邮件失败，请稍后重试")
+      setError(t("auth.error.sendResetRetry"))
       setIsLoading(false)
     }
   }
@@ -389,15 +391,15 @@ export function AuthDialog({
   const getTitle = () => {
     switch (mode) {
       case "login":
-        return "登录账户"
+        return t("auth.loginTitle")
       case "register":
-        return "创建账户"
+        return t("auth.registerTitle")
       case "register-verify":
-        return "验证邮箱"
+        return t("auth.verifyEmailTitle")
       case "forgot-password":
-        return "重置密码"
+        return t("auth.resetPasswordTitle")
       case "forgot-verify":
-        return "验证邮箱"
+        return t("auth.verifyEmailTitle")
       default:
         return ""
     }
@@ -406,15 +408,15 @@ export function AuthDialog({
   const getDescription = () => {
     switch (mode) {
       case "login":
-        return "登录以保存您的数据和偏好设置"
+        return t("auth.loginDesc")
       case "register":
-        return "注册以使用完整功能"
+        return t("auth.registerDesc")
       case "register-verify":
-        return `验证码已发送至 ${email}`
+        return `${t("auth.verifyEmailDesc")} ${email}`
       case "forgot-password":
-        return "输入邮箱接收密码重置链接"
+        return t("auth.forgotPasswordDesc")
       case "forgot-verify":
-        return `验证码已发送至 ${forgotEmail}`
+        return `${t("auth.verifyEmailDesc")} ${forgotEmail}`
       default:
         return ""
     }
@@ -437,12 +439,12 @@ export function AuthDialog({
         {mode === "login" && (
           <form key="login-form" action={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="login-email">邮箱</Label>
+              <Label htmlFor="login-email">{t("auth.email")}</Label>
               <Input
                 id="login-email"
                 name="email"
                 type="email"
-                placeholder="支持 QQ、Gmail、163 等邮箱"
+                placeholder={t("auth.emailPlaceholder")}
                 required
                 disabled={isLoading}
                 value={loginEmail}
@@ -450,13 +452,13 @@ export function AuthDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="login-password">密码</Label>
+              <Label htmlFor="login-password">{t("auth.password")}</Label>
               <div className="relative">
                 <Input
                   id="login-password"
                   name="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="请输入密码"
+                  placeholder={t("auth.passwordPlaceholder")}
                   required
                   disabled={isLoading}
                   className="pr-10"
@@ -474,7 +476,7 @@ export function AuthDialog({
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              登录
+              {t("auth.login")}
             </Button>
             <div className="flex items-center justify-between text-sm">
               <button
@@ -482,16 +484,16 @@ export function AuthDialog({
                 className="text-primary underline-offset-4 hover:underline"
                 onClick={switchToForgotPassword}
               >
-                忘记密码？
+                {t("auth.forgotPassword")}
               </button>
               <span className="text-muted-foreground">
-                还没有账户？{" "}
+                {t("auth.noAccount")}{" "}
                 <button
                   type="button"
                   className="text-primary underline-offset-4 hover:underline"
                   onClick={switchToRegister}
                 >
-                  立即注册
+                  {t("auth.registerNow")}
                 </button>
               </span>
             </div>
@@ -501,12 +503,12 @@ export function AuthDialog({
         {mode === "register" && (
           <form key="register-form" action={handleRegister} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="register-name">姓名</Label>
+              <Label htmlFor="register-name">{t("auth.name")}</Label>
               <Input
                 id="register-name"
                 name="name"
                 type="text"
-                placeholder="请输入姓名"
+                placeholder={t("auth.namePlaceholder")}
                 required
                 disabled={isLoading}
                 value={name}
@@ -514,13 +516,13 @@ export function AuthDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="register-email">邮箱</Label>
+              <Label htmlFor="register-email">{t("auth.email")}</Label>
               <div className="relative">
                 <Input
                   id="register-email"
                   name="email"
                   type="email"
-                  placeholder="支持 QQ、Gmail、163 等邮箱"
+                  placeholder={t("auth.emailPlaceholder")}
                   required
                   disabled={isLoading}
                   value={email}
@@ -547,17 +549,17 @@ export function AuthDialog({
                 )}
               </div>
               {email && !isValidEmail(email) && (
-                <p className="text-xs text-destructive">请输入有效的邮箱地址</p>
+                <p className="text-xs text-destructive">{t("auth.error.invalidEmail")}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="register-password">密码</Label>
+              <Label htmlFor="register-password">{t("auth.password")}</Label>
               <div className="relative">
                 <Input
                   id="register-password"
                   name="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="请输入密码"
+                  placeholder={t("auth.passwordPlaceholder")}
                   required
                   disabled={isLoading}
                   className="pr-10"
@@ -584,7 +586,7 @@ export function AuthDialog({
                       />
                     </div>
                     <span className="text-xs text-muted-foreground w-12">
-                      {passwordStrength.label}
+                      {t(passwordStrength.label)}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-1 text-xs">
@@ -596,7 +598,7 @@ export function AuthDialog({
                           <X className="h-3 w-3 text-muted-foreground" />
                         )}
                         <span className={check.passed ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}>
-                          {check.label}
+                          {t(check.label)}
                         </span>
                       </div>
                     ))}
@@ -605,13 +607,13 @@ export function AuthDialog({
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="register-confirm">确认密码</Label>
+              <Label htmlFor="register-confirm">{t("auth.confirmPassword")}</Label>
               <div className="relative">
                 <Input
                   id="register-confirm"
                   name="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
-                  placeholder="请再次输入密码"
+                  placeholder={t("auth.confirmPasswordPlaceholder")}
                   required
                   disabled={isLoading}
                   className="pr-10"
@@ -629,16 +631,16 @@ export function AuthDialog({
             </div>
             <Button type="submit" className="w-full" disabled={isLoading || isSendingCode}>
               {isSendingCode && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              发送验证码
+              {t("auth.sendCode")}
             </Button>
             <p className="text-center text-sm text-muted-foreground">
-              已有账户？{" "}
+              {t("auth.hasAccount")}{" "}
               <button
                 type="button"
                 className="text-primary underline-offset-4 hover:underline"
                 onClick={switchToLogin}
               >
-                立即登录
+                {t("auth.loginNow")}
               </button>
             </p>
           </form>
@@ -648,17 +650,17 @@ export function AuthDialog({
           <div className="space-y-4">
             {devCode && (
               <div className="rounded-lg bg-cyan-500/10 border border-cyan-500/20 p-3 text-sm text-cyan-600 dark:text-cyan-400">
-                开发环境测试验证码：<span className="font-mono font-bold">{devCode}</span>
+                {t("auth.devCodePrefix")}<span className="font-mono font-bold">{devCode}</span>
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="verify-code">验证码</Label>
+              <Label htmlFor="verify-code">{t("auth.verifyCode")}</Label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Input
                     id="verify-code"
                     type="text"
-                    placeholder="请输入 6 位验证码"
+                    placeholder={t("auth.verifyCodePlaceholder")}
                     maxLength={6}
                     value={verifyCode}
                     onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, ""))}
@@ -678,7 +680,7 @@ export function AuthDialog({
                   ) : countdown > 0 ? (
                     `${countdown}s`
                   ) : (
-                    "重发"
+                    t("auth.resend")
                   )}
                 </Button>
               </div>
@@ -690,7 +692,7 @@ export function AuthDialog({
               onClick={handleRegisterVerify}
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              完成注册
+              {t("auth.completeRegistration")}
             </Button>
             <Button
               type="button"
@@ -702,7 +704,7 @@ export function AuthDialog({
               }}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              返回修改
+              {t("auth.goBack")}
             </Button>
           </div>
         )}
@@ -710,15 +712,15 @@ export function AuthDialog({
         {mode === "forgot-password" && (
           <form key="forgot-form" action={handleForgotPassword} className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              输入您的邮箱地址，我们将发送验证码。
+              {t("auth.enterEmailDesc")}
             </p>
             <div className="space-y-2">
-              <Label htmlFor="forgot-email">邮箱</Label>
+              <Label htmlFor="forgot-email">{t("auth.email")}</Label>
               <Input
                 id="forgot-email"
                 name="email"
                 type="email"
-                placeholder="请输入注册邮箱"
+                placeholder={t("auth.enterEmailPlaceholder")}
                 required
                 disabled={isLoading || isSendingCode}
                 value={forgotEmail}
@@ -727,7 +729,7 @@ export function AuthDialog({
             </div>
             <Button type="submit" className="w-full" disabled={isLoading || isSendingCode}>
               {isSendingCode && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              发送验证码
+              {t("auth.sendCode")}
             </Button>
             <Button
               type="button"
@@ -736,7 +738,7 @@ export function AuthDialog({
               onClick={switchToLogin}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              返回登录
+              {t("auth.backToLogin")}
             </Button>
           </form>
         )}
@@ -745,17 +747,17 @@ export function AuthDialog({
           <div className="space-y-4">
             {devCode && (
               <div className="rounded-lg bg-cyan-500/10 border border-cyan-500/20 p-3 text-sm text-cyan-600 dark:text-cyan-400">
-                开发环境测试验证码：<span className="font-mono font-bold">{devCode}</span>
+                {t("auth.devCodePrefix")}<span className="font-mono font-bold">{devCode}</span>
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="forgot-verify-code">验证码</Label>
+              <Label htmlFor="forgot-verify-code">{t("auth.verifyCode")}</Label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Input
                     id="forgot-verify-code"
                     type="text"
-                    placeholder="请输入 6 位验证码"
+                    placeholder={t("auth.verifyCodePlaceholder")}
                     maxLength={6}
                     value={verifyCode}
                     onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, ""))}
@@ -775,7 +777,7 @@ export function AuthDialog({
                   ) : countdown > 0 ? (
                     `${countdown}s`
                   ) : (
-                    "重发"
+                    t("auth.resend")
                   )}
                 </Button>
               </div>
@@ -787,7 +789,7 @@ export function AuthDialog({
               onClick={handleForgotVerify}
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              验证并发送重置链接
+              {t("auth.verifyAndSendReset")}
             </Button>
             <Button
               type="button"
@@ -799,7 +801,7 @@ export function AuthDialog({
               }}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              返回修改
+              {t("auth.goBack")}
             </Button>
           </div>
         )}
@@ -810,7 +812,7 @@ export function AuthDialog({
               <Check className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
             <p className="text-muted-foreground">
-              密码重置链接已发送至您的邮箱，请查收。
+              {t("auth.resetLinkSent")}
             </p>
             <Button
               type="button"
@@ -824,7 +826,7 @@ export function AuthDialog({
               }}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              返回登录
+              {t("auth.backToLogin")}
             </Button>
           </div>
         )}

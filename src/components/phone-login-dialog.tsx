@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2 } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 interface PhoneLoginDialogProps {
   open: boolean
@@ -26,6 +27,7 @@ export function PhoneLoginDialog({
   onSwitchToEmailLogin,
 }: PhoneLoginDialogProps) {
   const router = useRouter()
+  const { t } = useLanguage()
   const [phone, setPhone] = useState("")
   const [code, setCode] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -43,14 +45,14 @@ export function PhoneLoginDialog({
   // 发送验证码
   const handleSendCode = async () => {
     if (!phone) {
-      setError("请输入手机号")
+      setError(t("auth.phonePlaceholder"))
       return
     }
 
     // 验证手机号格式
     const chinaPhoneRegex = /^1[3-9]\d{9}$/
     if (!chinaPhoneRegex.test(phone)) {
-      setError("请输入正确的手机号")
+      setError(t("auth.error.invalidPhone"))
       return
     }
 
@@ -67,7 +69,7 @@ export function PhoneLoginDialog({
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || "发送验证码失败")
+        setError(data.error || t("auth.error.sendCodeFailed"))
         return
       }
 
@@ -85,7 +87,7 @@ export function PhoneLoginDialog({
         })
       }, 1000)
     } catch {
-      setError("发送验证码失败")
+      setError(t("auth.error.sendCodeFailed"))
     } finally {
       setIsSendingCode(false)
     }
@@ -107,7 +109,7 @@ export function PhoneLoginDialog({
       const result = await res.json()
 
       if (!res.ok) {
-        setError(result.error || "登录失败")
+        setError(result.error || t("auth.error.loginFailed"))
         setIsLoading(false)
         return
       }
@@ -115,7 +117,7 @@ export function PhoneLoginDialog({
       onOpenChange(false)
       router.refresh()
     } catch {
-      setError("登录失败，请稍后重试")
+      setError(t("auth.error.loginRetry"))
       setIsLoading(false)
     }
   }
@@ -124,9 +126,9 @@ export function PhoneLoginDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>手机号登录</DialogTitle>
+          <DialogTitle>{t("auth.phoneLogin")}</DialogTitle>
           <DialogDescription>
-            使用手机验证码快速登录
+            {t("auth.phoneLoginDesc")}
           </DialogDescription>
         </DialogHeader>
 
@@ -138,12 +140,12 @@ export function PhoneLoginDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="phone">手机号</Label>
+            <Label htmlFor="phone">{t("auth.phone")}</Label>
             <div className="flex gap-2">
               <Input
                 id="phone"
                 type="tel"
-                placeholder="请输入手机号"
+                placeholder={t("auth.phonePlaceholder")}
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 disabled={isLoading}
@@ -160,18 +162,18 @@ export function PhoneLoginDialog({
                 ) : countdown > 0 ? (
                   `${countdown}s`
                 ) : (
-                  "发送验证码"
+                  t("auth.sendCode")
                 )}
               </Button>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="code">验证码</Label>
+            <Label htmlFor="code">{t("auth.verifyCode")}</Label>
             <Input
               id="code"
               type="text"
-              placeholder="请输入验证码"
+              placeholder={t("auth.phoneCodePlaceholder")}
               value={code}
               onChange={(e) => setCode(e.target.value)}
               disabled={isLoading}
@@ -181,17 +183,17 @@ export function PhoneLoginDialog({
 
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            登录
+            {t("auth.login")}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
-            没有账号？{" "}
+            {t("auth.noAccountPhone")}{" "}
             <button
               type="button"
               className="text-primary underline-offset-4 hover:underline"
               onClick={onSwitchToEmailLogin}
             >
-              使用邮箱注册
+              {t("auth.useEmailRegister")}
             </button>
           </p>
         </form>

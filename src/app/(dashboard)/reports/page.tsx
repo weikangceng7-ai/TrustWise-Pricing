@@ -37,6 +37,7 @@ import {
   MessageSquare,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useLanguage } from "@/contexts/language-context"
 import { useReports } from "@/hooks/use-reports"
 import { ReportsPriceChart } from "@/components/reports-price-chart"
 import type { Report } from "@/hooks/use-reports"
@@ -64,6 +65,30 @@ const recommendationConfig: Record<string, { icon: React.ElementType; color: str
   "按需采购": { icon: CheckCircle, color: "text-green-500" },
 }
 
+// 后端返回中文数据值 → 翻译 key 映射（用于展示，不改动数据结构）
+const trendKeyMap: Record<string, string> = {
+  "上涨": "reports.trend.up",
+  "小幅上涨": "reports.trend.slightUp",
+  "下跌": "reports.trend.down",
+  "小幅下跌": "reports.trend.slightDown",
+  "稳定": "reports.trend.stable",
+  "震荡": "reports.trend.volatile",
+}
+
+const riskKeyMap: Record<string, string> = {
+  "高": "reports.risk.high",
+  "中等": "reports.risk.medium",
+  "低": "reports.risk.low",
+}
+
+const recommendationKeyMap: Record<string, string> = {
+  "建议备库": "reports.recommend.stockUp",
+  "紧急采购": "reports.recommend.urgent",
+  "适当备库": "reports.recommend.moderate",
+  "观望": "reports.recommend.wait",
+  "按需采购": "reports.recommend.asNeeded",
+}
+
 function CollapsibleReportCard({
   report,
   onExport,
@@ -74,6 +99,7 @@ function CollapsibleReportCard({
   onDiscussInChat: () => void
 }) {
   const [isOpen, setIsOpen] = useState(false)
+  const { t } = useLanguage()
   const TrendIcon = trendConfig[report.priceTrend || "稳定"]?.icon || Minus
   const trendColor = trendConfig[report.priceTrend || "稳定"]?.color || "text-gray-500"
   const trendBg = trendConfig[report.priceTrend || "稳定"]?.bg || "bg-gray-500/10"
@@ -95,12 +121,12 @@ function CollapsibleReportCard({
                     {report.priceTrend && (
                       <Badge variant="secondary" className={`flex items-center gap-1 text-xs ${trendBg}`}>
                         <TrendIcon className={`h-3 w-3 ${trendColor}`} />
-                        {report.priceTrend}
+                        {t(trendKeyMap[report.priceTrend] || report.priceTrend)}
                       </Badge>
                     )}
                     {report.riskLevel && (
                       <Badge variant="secondary" className={`text-xs ${riskBg}`}>
-                        {report.riskLevel}风险
+                        {t(riskKeyMap[report.riskLevel] || report.riskLevel)}{t("reports.riskSuffix")}
                       </Badge>
                     )}
                   </div>
@@ -130,13 +156,13 @@ function CollapsibleReportCard({
                     return <RecIcon className={`h-3 w-3 ${color}`} />
                   })()}</>
                 )}
-                <span className="font-medium text-sm">{report.recommendation}</span>
+                <span className="font-medium text-sm">{t(recommendationKeyMap[report.recommendation] || report.recommendation)}</span>
               </div>
             )}
             <div className="flex gap-2 justify-end">
               <Button variant="outline" size="sm" onClick={onDiscussInChat}>
                 <MessageSquare className="h-3 w-3 mr-1" />
-                在Chat中讨论
+                {t("reports.discussInChat")}
               </Button>
               <Button variant="outline" size="sm" onClick={() => onExport("word")}>
                 <FileDown className="h-3 w-3 mr-1" />
@@ -156,6 +182,7 @@ function CollapsibleReportCard({
 
 export default function ReportsPage() {
   const router = useRouter()
+  const { t } = useLanguage()
   const {
     reports,
     stats,
@@ -208,7 +235,7 @@ export default function ReportsPage() {
           className={showFilters ? "bg-primary/10" : ""}
         >
           <Filter className="h-4 w-4 mr-1" />
-          篮选
+          {t("reports.filterByType")}
           {hasActiveFilters && (
             <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 flex items-center justify-center text-xs">
               !
@@ -217,7 +244,7 @@ export default function ReportsPage() {
         </Button>
         <Button variant="outline" size="sm">
           <Sparkles className="h-4 w-4 mr-1" />
-          生成报告
+          {t("reports.generateReport")}
         </Button>
       </div>
 
@@ -226,11 +253,11 @@ export default function ReportsPage() {
           <CardContent className="pt-3 pb-3">
             <div className="flex flex-wrap gap-3 items-end">
               <div className="flex-1 min-w-[180px]">
-                <label className="text-xs font-medium mb-1 block">关键词</label>
+                <label className="text-xs font-medium mb-1 block">{t("reports.keyword")}</label>
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
-                    placeholder="搜索..."
+                    placeholder={t("reports.searchPlaceholder")}
                     className="pl-8 h-8 text-sm"
                     value={filters.keyword || ""}
                     onChange={(e) => updateFilters({ keyword: e.target.value || undefined })}
@@ -239,45 +266,45 @@ export default function ReportsPage() {
               </div>
 
               <div className="w-[140px]">
-                <label className="text-xs font-medium mb-1 block">价格趋势</label>
+                <label className="text-xs font-medium mb-1 block">{t("reports.filterByTrend")}</label>
                 <Select
                   value={filters.trend || ""}
                   onValueChange={(v: string) => updateFilters({ trend: v as "上涨" | "下跌" | "稳定" | "震荡" | "小幅上涨" | "小幅下跌" | undefined || undefined })}
                 >
                   <SelectTrigger className="h-8 text-sm">
-                    <SelectValue placeholder="全部" />
+                    <SelectValue placeholder={t("reports.all")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">全部</SelectItem>
-                    <SelectItem value="上涨">上涨</SelectItem>
-                    <SelectItem value="稳定">稳定</SelectItem>
-                    <SelectItem value="震荡">震荡</SelectItem>
-                    <SelectItem value="下跌">下跌</SelectItem>
+                    <SelectItem value="">{t("reports.all")}</SelectItem>
+                    <SelectItem value="上涨">{t("reports.trend.up")}</SelectItem>
+                    <SelectItem value="稳定">{t("reports.trend.stable")}</SelectItem>
+                    <SelectItem value="震荡">{t("reports.trend.volatile")}</SelectItem>
+                    <SelectItem value="下跌">{t("reports.trend.down")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="w-[120px]">
-                <label className="text-xs font-medium mb-1 block">风险等级</label>
+                <label className="text-xs font-medium mb-1 block">{t("reports.filterByRisk")}</label>
                 <Select
                   value={filters.risk || ""}
                   onValueChange={(v: string) => updateFilters({ risk: v as "高" | "中等" | "低" | undefined || undefined })}
                 >
                   <SelectTrigger className="h-8 text-sm">
-                    <SelectValue placeholder="全部" />
+                    <SelectValue placeholder={t("reports.all")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">全部</SelectItem>
-                    <SelectItem value="高">高</SelectItem>
-                    <SelectItem value="中等">中等</SelectItem>
-                    <SelectItem value="低">低</SelectItem>
+                    <SelectItem value="">{t("reports.all")}</SelectItem>
+                    <SelectItem value="高">{t("reports.risk.high")}</SelectItem>
+                    <SelectItem value="中等">{t("reports.risk.medium")}</SelectItem>
+                    <SelectItem value="低">{t("reports.risk.low")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8">
                 <X className="h-3 w-3 mr-1" />
-                清除
+                {t("reports.clearFilters")}
               </Button>
             </div>
           </CardContent>
@@ -304,7 +331,7 @@ export default function ReportsPage() {
           <Card className="p-6">
             <div className="text-center">
               <FileText className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">暂无报告数据</p>
+              <p className="text-sm text-muted-foreground">{t("reports.noReports")}</p>
             </div>
           </Card>
         ) : (

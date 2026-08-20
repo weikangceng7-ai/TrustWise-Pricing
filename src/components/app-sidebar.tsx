@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { ENTERPRISE_CONFIGS } from "@/services/enterprise-knowledge-config"
+import { useLanguage } from "@/contexts/language-context"
 
 import {
   Sidebar,
@@ -96,10 +97,10 @@ const COLOR_STYLES: Record<string, {
 // 主导航项
 const mainNavItems = [
   {
-    title: "仪表盘",
+    title: "sidebar.dashboard",
     url: "/dashboard",
     icon: LayoutDashboard,
-    description: "数据概览与价格趋势",
+    description: "sidebar.dashboardDesc",
     color: "cyan",
   },
 ]
@@ -107,38 +108,38 @@ const mainNavItems = [
 // 子导航项（仪表盘下的功能模块）
 const subNavItems = [
   {
-    title: "价格预测知识图谱",
+    title: "sidebar.knowledgeGraph",
     url: "/yihua-code-graph",
     icon: Network,
-    description: "市场资讯、企业经验、制度规则知识库",
+    description: "sidebar.knowledgeGraphDesc",
     color: "violet",
   },
   {
-    title: "Agent 决策助手",
+    title: "sidebar.agentChat",
     url: "/agent-chat",
     icon: MessageSquareText,
-    description: "智能采购决策支持",
+    description: "sidebar.agentChatDesc",
     color: "amber",
   },
   {
-    title: "市场分析",
+    title: "sidebar.marketAnalysis",
     url: "/market-analysis",
     icon: Activity,
-    description: "价格追踪、品种对比与模型精度",
+    description: "sidebar.marketAnalysisDesc",
     color: "blue",
   },
   {
-    title: "采购报告单",
+    title: "sidebar.reports",
     url: "/reports",
     icon: FileText,
-    description: "历史报告与数据分析",
+    description: "sidebar.reportsDesc",
     color: "emerald",
   },
   {
-    title: "API Console",
+    title: "sidebar.apiConsole",
     url: "/api-console",
     icon: Key,
-    description: "API Key 管理与文档",
+    description: "sidebar.apiConsoleDesc",
     color: "rose",
   },
 ]
@@ -154,6 +155,7 @@ const staticEnterpriseItems = ENTERPRISE_CONFIGS.map((enterprise) => ({
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const { t } = useLanguage()
   const [enterprisesOpen, setEnterprisesOpen] = useState(true)
   const [dynamicEnterprises, setDynamicEnterprises] = useState<DynamicEnterprise[]>([])
   const [loading, setLoading] = useState(true)
@@ -239,9 +241,9 @@ export function AppSidebar() {
                 </svg>
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight relative">
-                <span className="truncate font-semibold text-slate-900 dark:text-white">硫磺督价与采购</span>
+                <span className="truncate font-semibold text-slate-900 dark:text-white">{t("sidebar.brand")}</span>
                 <span className="truncate text-xs text-slate-500 dark:text-slate-400">
-                  智能决策系统
+                  {t("sidebar.brandSub")}
                 </span>
               </div>
             </SidebarMenuButton>
@@ -254,7 +256,7 @@ export function AppSidebar() {
         {/* 仪表盘主文件夹 */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-wide uppercase px-2">
-            导航菜单
+            {t("sidebar.navMenu")}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -266,7 +268,7 @@ export function AppSidebar() {
                     <SidebarMenuButton
                       render={<Link href={item.url} />}
                       isActive={isActive}
-                      tooltip={item.description}
+                      tooltip={t(item.description)}
                       className={`group relative transition-all duration-300 ${
                         isActive
                           ? `${styles.bg} ${styles.border} shadow-lg ${styles.shadow}`
@@ -279,7 +281,7 @@ export function AppSidebar() {
                         ) : null}
                         <item.icon className={`relative size-4.5 ${isActive ? styles.text : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors'}`} />
                       </div>
-                      <span className={`font-medium ${isActive ? styles.text : 'text-slate-700 dark:text-slate-300'}`}>{item.title}</span>
+                      <span className={`font-medium ${isActive ? styles.text : 'text-slate-700 dark:text-slate-300'}`}>{t(item.title)}</span>
                       <ChevronRight className={`ml-auto size-3.5 transition-transform duration-300 ${
                         isActive ? 'rotate-90 opacity-100' : 'opacity-0 group-hover:opacity-100'
                       }`} />
@@ -294,7 +296,7 @@ export function AppSidebar() {
         {/* 仪表盘子文件夹 */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-medium text-slate-400 dark:text-slate-500 px-2 ml-4">
-            功能模块
+            {t("sidebar.featureModules")}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -306,7 +308,7 @@ export function AppSidebar() {
                     <SidebarMenuButton
                       render={<Link href={item.url} />}
                       isActive={isActive}
-                      tooltip={item.description}
+                      tooltip={t(item.description)}
                       className={`group relative transition-all duration-300 ml-3 ${
                         isActive
                           ? `${styles.bg} ${styles.border} shadow-lg ${styles.shadow}`
@@ -319,7 +321,7 @@ export function AppSidebar() {
                         ) : null}
                         <item.icon className={`relative size-4 ${isActive ? styles.text : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors'}`} />
                       </div>
-                      <span className={`font-medium text-sm ${isActive ? styles.text : 'text-slate-600 dark:text-slate-400'}`}>{item.title}</span>
+                      <span className={`font-medium text-sm ${isActive ? styles.text : 'text-slate-600 dark:text-slate-400'}`}>{t(item.title)}</span>
                       <ChevronRight className={`ml-auto size-3 transition-transform duration-300 ${
                         isActive ? 'rotate-90 opacity-100' : 'opacity-0 group-hover:opacity-100'
                       }`} />
@@ -337,7 +339,7 @@ export function AppSidebar() {
             onClick={() => setEnterprisesOpen(!enterprisesOpen)}
             className="w-full flex items-center justify-between px-2 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-wide uppercase hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
           >
-            <span>定制化企业服务</span>
+            <span>{t("sidebar.enterpriseServices")}</span>
             <ChevronDown className={`size-3.5 transition-transform duration-200 ${enterprisesOpen ? 'rotate-0' : '-rotate-90'}`} />
           </button>
           {enterprisesOpen && (
@@ -376,13 +378,13 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     render={<Link href="/enterprise-manage" />}
                     isActive={pathname === "/enterprise-manage"}
-                    tooltip="添加或导入新企业"
+                    tooltip={t("sidebar.manageEnterpriseTip")}
                     className="group relative transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 border-transparent"
                   >
                     <div className="relative">
                       <Plus className="relative size-4.5 text-slate-500 dark:text-slate-400 group-hover:text-cyan-500 transition-colors" />
                     </div>
-                    <span className="font-medium text-slate-500 dark:text-slate-400 group-hover:text-cyan-500 transition-colors">管理企业</span>
+                    <span className="font-medium text-slate-500 dark:text-slate-400 group-hover:text-cyan-500 transition-colors">{t("sidebar.manageEnterprise")}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>

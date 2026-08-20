@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import { ThreePhaseArchitectureCarousel } from "@/components/three-phase-architecture-carousel"
 import { useChatContext, type ChatMessage, type Conversation } from "@/contexts/chat-context"
+import { useLanguage } from "@/contexts/language-context"
 import { AuthDialog } from "@/components/auth-dialog"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -142,51 +143,51 @@ const proseClassName = `prose prose-sm prose-zinc dark:prose-invert max-w-none
 const timeFormatOptions: Intl.DateTimeFormatOptions = { hour: "2-digit", minute: "2-digit" }
 
 const suggestedQuestions = [
-  "当前硫磺市场趋势如何？",
-  "未来一周采购建议是什么？",
-  "库存水平是否需要调整？",
-  "主要供应商报价对比",
-  "分析近期价格波动原因",
-  "预测下个月价格走势",
-  "生成采购决策分析报告",
-  "国际运费对成本的影响",
+  "chat.suggested.trend",
+  "chat.suggested.weekAdvice",
+  "chat.suggested.inventory",
+  "chat.suggested.supplierCompare",
+  "chat.suggested.volatilityCause",
+  "chat.suggested.nextMonth",
+  "chat.suggested.report",
+  "chat.suggested.freightCost",
 ]
 
-// 追问建议 - 根据关键词匹配
+// 追问建议 - 根据关键词匹配（关键词保持中文，用于匹配中文回复内容）
 const followUpQuestions: Record<string, readonly string[]> = {
   "价格": [
-    "价格还会继续上涨吗？",
-    "什么因素影响价格波动？",
-    "与去年同期价格对比如何？",
-    "最佳采购时机是什么时候？",
+    "chat.followUp.price.rise",
+    "chat.followUp.price.factors",
+    "chat.followUp.price.yoy",
+    "chat.followUp.price.timing",
   ],
   "库存": [
-    "当前库存周转天数是多少？",
-    "建议的安全库存量是多少？",
-    "如何优化库存成本？",
-    "各港口库存分布情况？",
+    "chat.followUp.stock.turnover",
+    "chat.followUp.stock.safety",
+    "chat.followUp.stock.cost",
+    "chat.followUp.stock.port",
   ],
   "采购": [
-    "应该立即采购还是观望？",
-    "建议采购数量是多少？",
-    "分散采购还是集中采购？",
-    "如何降低采购风险？",
+    "chat.followUp.purchase.nowOrWait",
+    "chat.followUp.purchase.quantity",
+    "chat.followUp.purchase.splitOrCentral",
+    "chat.followUp.purchase.risk",
   ],
   "趋势": [
-    "未来一个月趋势预测？",
-    "季节性因素如何影响？",
-    "国际市场趋势如何？",
-    "需求端变化趋势？",
+    "chat.followUp.trend.month",
+    "chat.followUp.trend.seasonal",
+    "chat.followUp.trend.international",
+    "chat.followUp.trend.demand",
   ],
   "风险": [
-    "主要风险因素有哪些？",
-    "如何规避价格风险？",
-    "供应链风险如何应对？",
-    "汇率波动影响多大？",
+    "chat.followUp.risk.main",
+    "chat.followUp.risk.priceHedge",
+    "chat.followUp.risk.supplyChain",
+    "chat.followUp.risk.exchange",
   ],
 } as const
 
-// 根据消息内容获取追问建议
+// 根据消息内容获取追问建议（返回翻译 key）
 function getFollowUpSuggestions(content: string): string[] {
   const suggestions: string[] = []
 
@@ -199,9 +200,9 @@ function getFollowUpSuggestions(content: string): string[] {
   // 默认追问
   if (suggestions.length === 0) {
     suggestions.push(
-      "能否详细解释一下？",
-      "这个结论的数据依据是什么？",
-      "有什么行动建议？",
+      "chat.followUp.default.elaborate",
+      "chat.followUp.default.basis",
+      "chat.followUp.default.action",
     )
   }
 
@@ -224,6 +225,7 @@ const MessageBubble = memo(function MessageBubble({
   copiedId?: string
   onFollowUp?: (question: string) => void
 }) {
+  const { t, lang } = useLanguage()
   const isUser = message.role === "user"
   const followUps = useMemo(
     () => !isUser && message.id !== "welcome" ? getFollowUpSuggestions(message.content) : [],
@@ -296,7 +298,7 @@ const MessageBubble = memo(function MessageBubble({
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={img}
-                        alt={`上传图片 ${index + 1}`}
+                        alt={`${t("chat.uploadImage")} ${index + 1}`}
                         className="max-w-[200px] max-h-[150px] rounded-lg object-cover border border-white/20"
                       />
                     </div>
@@ -313,7 +315,7 @@ const MessageBubble = memo(function MessageBubble({
             </div>
           )}
           <p className={`mt-3 text-xs ${isUser ? "text-white/70" : "text-slate-400 dark:text-slate-500"}`}>
-            {message.timestamp.toLocaleTimeString("zh-CN", timeFormatOptions)}
+            {message.timestamp.toLocaleTimeString(lang === "en" ? "en-US" : "zh-CN", timeFormatOptions)}
           </p>
         </div>
 
@@ -327,7 +329,7 @@ const MessageBubble = memo(function MessageBubble({
               onClick={onRegenerate}
             >
               <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-              重新回答
+              {t("chat.regenerateAnswer")}
             </Button>
             <Button
               variant="ghost"
@@ -340,7 +342,7 @@ const MessageBubble = memo(function MessageBubble({
               ) : (
                 <Copy className="h-3.5 w-3.5 mr-1.5" />
               )}
-              {copiedId === message.id ? "已复制" : "复制"}
+              {copiedId === message.id ? t("chat.copied") : t("chat.copy")}
             </Button>
             <Button
               variant="ghost"
@@ -349,7 +351,7 @@ const MessageBubble = memo(function MessageBubble({
               onClick={onGenerateReport}
             >
               <FileText className="h-3.5 w-3.5 mr-1.5" />
-              生成报告
+              {t("chat.generateReport")}
             </Button>
           </div>
         )}
@@ -362,7 +364,7 @@ const MessageBubble = memo(function MessageBubble({
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-violet-400 blur-lg opacity-60 dark:opacity-30" />
                 <Sparkles className="relative h-4 w-4 text-cyan-500 dark:text-cyan-400" />
               </div>
-              <span className="text-xs text-indigo-500/80 dark:text-slate-400 font-medium">您可能还想了解：</span>
+              <span className="text-xs text-indigo-500/80 dark:text-slate-400 font-medium">{t("chat.mayAlsoAsk")}</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {followUps.map((question, index) => (
@@ -371,9 +373,9 @@ const MessageBubble = memo(function MessageBubble({
                   variant="outline"
                   size="sm"
                   className="h-7 px-3 text-xs bg-gradient-to-r from-slate-50 to-indigo-50 dark:bg-slate-800 dark:from-slate-800 dark:to-slate-800 border border-indigo-100/50 dark:border-slate-700 text-indigo-600 dark:text-slate-300 hover:from-cyan-50 hover:to-violet-50 dark:hover:bg-slate-700 dark:hover:from-slate-700 dark:hover:to-slate-700 hover:border-cyan-300 dark:hover:border-cyan-500/40 hover:text-cyan-600 dark:hover:text-cyan-300 transition-all shadow-sm dark:shadow-none"
-                  onClick={() => onFollowUp?.(question)}
+                  onClick={() => onFollowUp?.(t(question))}
                 >
-                  {question}
+                  {t(question)}
                 </Button>
               ))}
             </div>
@@ -386,6 +388,7 @@ const MessageBubble = memo(function MessageBubble({
 
 // Loading 指示器
 function LoadingIndicator() {
+  const { t } = useLanguage()
   return (
     <div className="flex gap-4">
       <Avatar className="h-10 w-10 shrink-0 relative">
@@ -424,7 +427,7 @@ function LoadingIndicator() {
       <div className="rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 backdrop-blur-sm px-5 py-4">
         <div className="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
           <Loader2 className="h-5 w-5 animate-spin text-cyan-500 dark:text-cyan-400" />
-          <span className="font-medium">Agent 思考中...</span>
+          <span className="font-medium">{t("chat.agentThinking")}</span>
         </div>
       </div>
     </div>
@@ -477,6 +480,7 @@ function ConversationItem({
 }
 
 function AgentChatPage() {
+  const { t } = useLanguage()
   const searchParams = useSearchParams()
   const [userId, setUserId] = useState<string | undefined>()
   const [copiedId, setCopiedId] = useState<string | undefined>()
@@ -637,17 +641,17 @@ function AgentChatPage() {
       }))
 
     if (reportMessages.length === 0) {
-      toast.warning("暂无对话内容可生成报告")
+      toast.warning(t("chat.noContentReport"))
       return
     }
 
     try {
       const { generateChatReport } = await import("@/lib/report-generator")
       const fileName = await generateChatReport(reportMessages)
-      toast.success(`报告已生成：${fileName}`)
+      toast.success(`${t("chat.reportGeneratedPrefix")}${fileName}`)
     } catch (err) {
       console.error("生成报告失败:", err)
-      toast.error("生成报告失败，请稍后重试")
+      toast.error(t("chat.reportFailed"))
     }
   }
 
@@ -673,15 +677,15 @@ function AgentChatPage() {
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-violet-400 blur-lg opacity-50 dark:opacity-30" />
                 <h2 className="relative text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-cyan-600 via-blue-600 to-violet-600 dark:from-cyan-400 dark:via-blue-400 dark:to-violet-400 bg-clip-text text-transparent">
-                  Agent 决策助手
+                  {t("chat.title")}
                 </h2>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <div className="h-px w-8 sm:w-12 bg-gradient-to-r from-cyan-400 via-blue-400 to-transparent dark:from-cyan-500 dark:via-blue-500" />
               <p className="text-indigo-600/70 dark:text-slate-400 text-xs sm:text-sm font-medium">
-                基于 AI 的智能采购决策支持
-                {userId ? " · 历史记录已同步" : " · 登录后可保存对话"}
+                {t("chat.subtitle")}
+                {userId ? ` · ${t("chat.synced")}` : ` · ${t("chat.savePrompt")}`}
               </p>
             </div>
           </div>
@@ -693,7 +697,7 @@ function AgentChatPage() {
               onClick={handleNewChat}
             >
               <Plus className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              新对话
+              {t("chat.newConversation")}
             </Button>
             {!userId && (
               <Button
@@ -702,7 +706,7 @@ function AgentChatPage() {
                 className="border-indigo-200/50 dark:border-slate-600/50 bg-white/60 dark:bg-slate-800/30 text-indigo-700 dark:text-slate-300 hover:bg-gradient-to-r hover:from-violet-50 hover:to-pink-50 dark:hover:bg-violet-500/10 hover:border-violet-300 dark:hover:border-violet-500/40 hover:text-violet-700 dark:hover:text-violet-300 transition-all text-xs sm:text-sm shadow-sm hover:shadow-md"
                 onClick={() => setShowAuthDialog(true)}
               >
-                登录
+                {t("chat.login")}
               </Button>
             )}
           </div>
@@ -716,7 +720,7 @@ function AgentChatPage() {
             <Card className="lg:col-span-1 hidden lg:flex flex-col bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700/50 overflow-hidden max-h-full">
               <CardHeader className="border-b border-slate-200 dark:border-slate-700/50 px-4 py-4 shrink-0">
                 <CardTitle className="text-base flex items-center justify-between">
-                  <span className="text-slate-900 dark:text-white">对话历史</span>
+                  <span className="text-slate-900 dark:text-white">{t("chat.newConversation")}</span>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -731,7 +735,7 @@ function AgentChatPage() {
                 <div className="p-3 space-y-2">
                   {conversations.length === 0 ? (
                     <p className="text-sm text-slate-500 text-center py-6">
-                      暂无历史对话
+                      {t("chat.noHistory")}
                     </p>
                   ) : (
                     conversations.map((conv) => (
@@ -787,8 +791,8 @@ function AgentChatPage() {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <CardTitle className="text-base text-slate-900 dark:text-white">硫磺采购顾问</CardTitle>
-                  <CardDescription className="text-xs text-slate-500 dark:text-slate-400">在线 · 随时为您解答</CardDescription>
+                  <CardTitle className="text-base text-slate-900 dark:text-white">{t("chat.advisorTitle")}</CardTitle>
+                  <CardDescription className="text-xs text-slate-500 dark:text-slate-400">{t("chat.onlineStatus")}</CardDescription>
                 </div>
                 {userId && !showHistory && (
                   <Button
@@ -809,7 +813,7 @@ function AgentChatPage() {
                 onClick={() => setShowArchitecture(!showArchitecture)}
                 className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
               >
-                <span className="text-sm font-medium text-slate-600 dark:text-slate-300">系统架构</span>
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{t("chat.systemArchitecture")}</span>
                 <ChevronRight className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${showArchitecture ? 'rotate-90' : ''}`} />
               </button>
               {showArchitecture && (
@@ -845,7 +849,7 @@ function AgentChatPage() {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={img}
-                        alt={`预览图片 ${index + 1}`}
+                        alt={`${t("chat.previewImage")} ${index + 1}`}
                         className="w-20 h-20 rounded-lg object-cover border border-slate-200 dark:border-slate-600"
                       />
                       <button
@@ -873,7 +877,7 @@ function AgentChatPage() {
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isLoading}
                   className="shrink-0 bg-slate-100 dark:bg-slate-700/30 border-slate-300 dark:border-slate-600/50 hover:bg-slate-200 dark:hover:bg-slate-700/50"
-                  title="上传图片"
+                  title={t("chat.uploadImage")}
                 >
                   <ImageIcon className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                 </Button>
@@ -882,7 +886,7 @@ function AgentChatPage() {
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
                   onPaste={handlePaste}
-                  placeholder={uploadedImages.length > 0 ? "添加描述或直接发送..." : "输入您的问题（支持粘贴图片）..."}
+                  placeholder={uploadedImages.length > 0 ? t("chat.inputPlaceholderImage") : t("chat.inputPlaceholderPaste")}
                   disabled={isLoading}
                   className="flex-1 bg-slate-100 dark:bg-slate-700/30 border-slate-300 dark:border-slate-600/50 text-slate-900 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-700/50 focus:border-cyan-500/50"
                 />
@@ -910,7 +914,7 @@ function AgentChatPage() {
                     <div className="absolute inset-0 bg-cyan-400/30 blur-lg" />
                     <Sparkles className="relative h-5 w-5 text-cyan-500 dark:text-cyan-400" />
                   </div>
-                  快捷提问
+                  {t("chat.quickQuestions")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -919,11 +923,11 @@ function AgentChatPage() {
                     key={index}
                     variant="ghost"
                     className="w-full justify-start text-sm h-auto py-3 px-4 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-cyan-50 dark:hover:bg-cyan-500/10 border border-transparent hover:border-cyan-300 dark:hover:border-cyan-500/30 transition-all text-left"
-                    onClick={() => handleSuggestedQuestion(question)}
+                    onClick={() => handleSuggestedQuestion(t(question))}
                     disabled={isLoading}
                   >
                     <ChevronRight className="h-4 w-4 mr-2 opacity-50" />
-                    {question}
+                    {t(question)}
                   </Button>
                 ))}
               </CardContent>
@@ -933,30 +937,30 @@ function AgentChatPage() {
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-base text-slate-900 dark:text-white">
                   <Lightbulb className="h-5 w-5 text-violet-500 dark:text-violet-400" />
-                  使用提示
+                  {t("chat.usageTips")}
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-500 dark:text-slate-400">如何更好地使用助手</CardDescription>
+                <CardDescription className="text-xs text-slate-500 dark:text-slate-400">{t("chat.howToUse")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
                 <div className="flex items-start gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400 mt-1.5 shrink-0" />
-                  提问时尽量具体，包含时间范围
+                  {t("chat.tip.specific")}
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400 mt-1.5 shrink-0" />
-                  可以要求生成数据对比表格
+                  {t("chat.tip.table")}
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400 mt-1.5 shrink-0" />
-                  支持追问和多轮对话
+                  {t("chat.tip.followUp")}
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400 mt-1.5 shrink-0" />
-                  可请求生成采购建议报告
+                  {t("chat.tip.report")}
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400 mt-1.5 shrink-0" />
-                  点击追问按钮快速深入了解
+                  {t("chat.tip.clickFollowUp")}
                 </div>
               </CardContent>
             </Card>
@@ -965,26 +969,26 @@ function AgentChatPage() {
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-base text-slate-900 dark:text-white">
                   <TrendingUp className="h-5 w-5 text-amber-500 dark:text-amber-400" />
-                  深度分析
+                  {t("chat.deepAnalysis")}
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-500 dark:text-slate-400">进阶提问技巧</CardDescription>
+                <CardDescription className="text-xs text-slate-500 dark:text-slate-400">{t("chat.advancedTips")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
                 <div className="flex items-start gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-400 mt-1.5 shrink-0" />
-                  要求解释数据来源和计算方法
+                  {t("chat.tip.explainSource")}
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-400 mt-1.5 shrink-0" />
-                  询问不同情景下的分析
+                  {t("chat.tip.scenarios")}
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-400 mt-1.5 shrink-0" />
-                  请求对比多个供应商/地区
+                  {t("chat.tip.compare")}
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-400 mt-1.5 shrink-0" />
-                  让 AI 列出风险和不确定性
+                  {t("chat.tip.risks")}
                 </div>
               </CardContent>
             </Card>

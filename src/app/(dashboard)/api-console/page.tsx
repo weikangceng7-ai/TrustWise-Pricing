@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { useLanguage } from "@/contexts/language-context"
 import { Key, Plus, Trash2, RefreshCw, Copy, Check, AlertTriangle, Loader2 } from "lucide-react"
 
 interface ApiKey {
@@ -27,6 +28,7 @@ interface Quota {
 }
 
 export default function ApiConsolePage() {
+  const { t } = useLanguage()
   const [selectedEndpoint, setSelectedEndpoint] = useState("prices")
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
   const [quota, setQuota] = useState<Quota | null>(null)
@@ -78,11 +80,11 @@ export default function ApiConsolePage() {
         setNewKeyName("")
         fetchApiKeys()
       } else {
-        toast.error(data.error || "创建失败")
+        toast.error(data.error || t("apiConsole.createFailed"))
       }
     } catch (error) {
       console.error("创建 API Key 失败:", error)
-      toast.error("创建失败")
+      toast.error(t("apiConsole.createFailed"))
     } finally {
       setCreating(false)
     }
@@ -90,7 +92,7 @@ export default function ApiConsolePage() {
 
   // 删除 Key
   const handleDeleteKey = async (id: string) => {
-    if (!confirm("确定要删除此 API Key 吗？删除后无法恢复。")) return
+    if (!confirm(t("apiConsole.confirmDeleteKey"))) return
     try {
       setDeletingId(id)
       const res = await fetch(`/api/api-keys/${id}`, { method: "DELETE" })
@@ -98,11 +100,11 @@ export default function ApiConsolePage() {
       if (data.success) {
         fetchApiKeys()
       } else {
-        toast.error(data.error || "删除失败")
+        toast.error(data.error || t("apiConsole.deleteFailed"))
       }
     } catch (error) {
       console.error("删除 API Key 失败:", error)
-      toast.error("删除失败")
+      toast.error(t("apiConsole.deleteFailed"))
     } finally {
       setDeletingId(null)
     }
@@ -119,11 +121,11 @@ export default function ApiConsolePage() {
         setResetDialogOpen(true)
         fetchApiKeys()
       } else {
-        toast.error(data.error || "重置失败")
+        toast.error(data.error || t("apiConsole.resetFailed"))
       }
     } catch (error) {
       console.error("重置 API Key 失败:", error)
-      toast.error("重置失败")
+      toast.error(t("apiConsole.resetFailed"))
     } finally {
       setResettingId(null)
     }
@@ -175,7 +177,7 @@ export default function ApiConsolePage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <Key className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
-            <CardTitle>API Keys 管理</CardTitle>
+            <CardTitle>{t("apiKeys.title")}</CardTitle>
           </div>
           <Button
             onClick={() => setCreateDialogOpen(true)}
@@ -184,7 +186,7 @@ export default function ApiConsolePage() {
             disabled={apiKeys.length >= 5}
           >
             <Plus className="h-4 w-4" />
-            创建 Key
+            {t("apiConsole.createKeyBtn")}
           </Button>
         </CardHeader>
         <CardContent>
@@ -192,20 +194,20 @@ export default function ApiConsolePage() {
           {quota && (
             <div className="mb-4 p-3 rounded-lg bg-cyan-50/50 dark:bg-cyan-500/10 border border-cyan-200/50 dark:border-cyan-500/20">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600 dark:text-slate-400">API 配额（本月剩余）</span>
+                <span className="text-sm text-slate-600 dark:text-slate-400">{t("apiConsole.quotaInfo")}</span>
                 <div className="flex items-center gap-3">
                   <span className="text-sm">
                     <span className="text-cyan-600 dark:text-cyan-400 font-medium">{quota.free}</span>
-                    <span className="text-slate-400"> 免费</span>
+                    <span className="text-slate-400"> {t("apiConsole.free")}</span>
                   </span>
                   {quota.paid > 0 && (
                     <span className="text-sm">
                       <span className="text-violet-600 dark:text-violet-400 font-medium">{quota.paid}</span>
-                      <span className="text-slate-400"> 付费</span>
+                      <span className="text-slate-400"> {t("apiConsole.paid")}</span>
                     </span>
                   )}
                   <Badge variant="outline" className="text-xs">
-                    共 {quota.total} 次
+                    {t("apiConsole.totalPrefix")}{quota.total}{t("apiConsole.totalSuffix")}
                   </Badge>
                 </div>
               </div>
@@ -216,13 +218,13 @@ export default function ApiConsolePage() {
           {loading ? (
             <div className="text-center py-8 text-slate-400">
               <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
-              加载中...
+              {t("common.loading")}
             </div>
           ) : apiKeys.length === 0 ? (
             <div className="text-center py-8 text-slate-400">
               <Key className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>暂无 API Key</p>
-              <p className="text-sm mt-1">创建一个 API Key 开始使用 API 服务</p>
+              <p>{t("apiConsole.noKeys")}</p>
+              <p className="text-sm mt-1">{t("apiConsole.emptyDesc")}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -235,17 +237,17 @@ export default function ApiConsolePage() {
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-medium text-slate-900 dark:text-white">{apiKey.name}</span>
                       {apiKey.isActive ? (
-                        <Badge variant="default" className="text-xs bg-emerald-500">活跃</Badge>
+                        <Badge variant="default" className="text-xs bg-emerald-500">{t("apiKeys.active")}</Badge>
                       ) : (
-                        <Badge variant="secondary" className="text-xs">已禁用</Badge>
+                        <Badge variant="secondary" className="text-xs">{t("apiConsole.inactive")}</Badge>
                       )}
                     </div>
                     <code className="text-sm text-slate-600 dark:text-slate-400 font-mono">
                       {apiKey.key}
                     </code>
                     <div className="text-xs text-slate-400 mt-1">
-                      创建于 {new Date(apiKey.createdAt).toLocaleDateString()}
-                      {apiKey.lastUsedAt && ` · 最后使用 ${new Date(apiKey.lastUsedAt).toLocaleDateString()}`}
+                      {t("apiConsole.createdAt")}{new Date(apiKey.createdAt).toLocaleDateString()}
+                      {apiKey.lastUsedAt && `${t("apiConsole.lastUsed")}${new Date(apiKey.lastUsedAt).toLocaleDateString()}`}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -261,7 +263,7 @@ export default function ApiConsolePage() {
                       ) : (
                         <RefreshCw className="h-4 w-4" />
                       )}
-                      重置
+                      {t("apiConsole.reset")}
                     </Button>
                     <Button
                       variant="outline"
@@ -286,7 +288,7 @@ export default function ApiConsolePage() {
           {apiKeys.length >= 5 && (
             <div className="mt-4 flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
               <AlertTriangle className="h-4 w-4" />
-              API Key 数量已达上限（最多 5 个）
+              {t("apiConsole.limitReached")}
             </div>
           )}
         </CardContent>
@@ -296,26 +298,26 @@ export default function ApiConsolePage() {
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>创建 API Key</DialogTitle>
+            <DialogTitle>{t("apiConsole.createKey")}</DialogTitle>
           </DialogHeader>
           {!newlyCreatedKey ? (
             <>
               <div className="py-4">
-                <label className="text-sm text-slate-600 dark:text-slate-400 mb-2 block">Key 名称</label>
+                <label className="text-sm text-slate-600 dark:text-slate-400 mb-2 block">{t("apiConsole.keyName")}</label>
                 <Input
                   value={newKeyName}
                   onChange={(e) => setNewKeyName(e.target.value)}
-                  placeholder="例如：生产环境 Key"
+                  placeholder={t("apiConsole.keyNamePlaceholderExample")}
                   maxLength={50}
                 />
-                <p className="text-xs text-slate-400 mt-2">为 API Key 设置一个易于识别的名称</p>
+                <p className="text-xs text-slate-400 mt-2">{t("apiConsole.keyNameDesc")}</p>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => { setCreateDialogOpen(false); setNewKeyName(""); }}>
-                  取消
+                  {t("apiConsole.cancel")}
                 </Button>
                 <Button onClick={handleCreateKey} disabled={!newKeyName.trim() || creating}>
-                  {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : "创建"}
+                  {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : t("apiConsole.create")}
                 </Button>
               </DialogFooter>
             </>
@@ -324,7 +326,7 @@ export default function ApiConsolePage() {
               <div className="py-4">
                 <div className="flex items-center gap-2 mb-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
                   <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                  <span className="text-sm text-amber-700 dark:text-amber-300">请妥善保存此 API Key，创建后将不再显示完整值</span>
+                  <span className="text-sm text-amber-700 dark:text-amber-300">{t("apiConsole.keyCreatedWarning")}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 p-3 rounded-lg bg-slate-100 dark:bg-slate-800 font-mono text-sm break-all">
@@ -337,13 +339,13 @@ export default function ApiConsolePage() {
                     className="flex items-center gap-1"
                   >
                     {copiedKey ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
-                    {copiedKey ? "已复制" : "复制"}
+                    {copiedKey ? t("apiConsole.copied") : t("apiConsole.copy")}
                   </Button>
                 </div>
               </div>
               <DialogFooter>
                 <Button onClick={() => { setCreateDialogOpen(false); setNewlyCreatedKey(null); }}>
-                  完成
+                  {t("apiConsole.done")}
                 </Button>
               </DialogFooter>
             </>
@@ -355,12 +357,12 @@ export default function ApiConsolePage() {
       <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>API Key 已重置</DialogTitle>
+            <DialogTitle>{t("apiConsole.resetTitle")}</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <div className="flex items-center gap-2 mb-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
               <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              <span className="text-sm text-amber-700 dark:text-amber-300">旧 Key 已失效，请保存新的 Key</span>
+              <span className="text-sm text-amber-700 dark:text-amber-300">{t("apiConsole.resetWarning")}</span>
             </div>
             <div className="flex items-center gap-2">
               <code className="flex-1 p-3 rounded-lg bg-slate-100 dark:bg-slate-800 font-mono text-sm break-all">
@@ -373,13 +375,13 @@ export default function ApiConsolePage() {
                 className="flex items-center gap-1"
               >
                 {copiedKey ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
-                {copiedKey ? "已复制" : "复制"}
+                {copiedKey ? t("apiConsole.copied") : t("apiConsole.copy")}
               </Button>
             </div>
           </div>
           <DialogFooter>
             <Button onClick={() => { setResetDialogOpen(false); setResetKey(null); }}>
-              完成
+              {t("apiConsole.done")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -388,17 +390,17 @@ export default function ApiConsolePage() {
       {/* API 文档 */}
       <Card>
         <CardHeader>
-          <CardTitle>API 文档</CardTitle>
+          <CardTitle>{t("apiConsole.apiDocs")}</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs value={selectedEndpoint} onValueChange={setSelectedEndpoint}>
             <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full">
-              <TabsTrigger value="prices">价格查询</TabsTrigger>
-              <TabsTrigger value="predict">价格预测</TabsTrigger>
-              <TabsTrigger value="decision">决策建议</TabsTrigger>
-              <TabsTrigger value="inventory">库存数据</TabsTrigger>
-              <TabsTrigger value="news">市场新闻</TabsTrigger>
-              <TabsTrigger value="chat">AI 聊天</TabsTrigger>
+              <TabsTrigger value="prices">{t("apiConsole.tabPrices")}</TabsTrigger>
+              <TabsTrigger value="predict">{t("apiConsole.tabPredict")}</TabsTrigger>
+              <TabsTrigger value="decision">{t("apiConsole.tabDecision")}</TabsTrigger>
+              <TabsTrigger value="inventory">{t("apiConsole.tabInventory")}</TabsTrigger>
+              <TabsTrigger value="news">{t("apiConsole.tabNews")}</TabsTrigger>
+              <TabsTrigger value="chat">{t("apiConsole.tabChat")}</TabsTrigger>
             </TabsList>
 
             {/* 价格查询 */}
@@ -408,29 +410,29 @@ export default function ApiConsolePage() {
                   <Badge>GET</Badge>
                   <code className="text-sm">/api/v1/prices</code>
                 </div>
-                <p className="text-sm text-muted-foreground">获取硫磺价格历史数据</p>
+                <p className="text-sm text-muted-foreground">{t("apiConsole.descPrices")}</p>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">请求参数</h4>
+                <h4 className="font-semibold mb-2">{t("apiConsole.requestParams")}</h4>
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2">参数</th>
-                      <th className="text-left py-2">类型</th>
-                      <th className="text-left py-2">说明</th>
+                      <th className="text-left py-2">{t("apiConsole.paramName")}</th>
+                      <th className="text-left py-2">{t("apiConsole.paramType")}</th>
+                      <th className="text-left py-2">{t("apiConsole.paramDesc")}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-b"><td className="py-2">startDate</td><td className="py-2">string</td><td className="py-2">开始日期 (YYYY-MM-DD)</td></tr>
-                    <tr className="border-b"><td className="py-2">endDate</td><td className="py-2">string</td><td className="py-2">结束日期 (YYYY-MM-DD)</td></tr>
-                    <tr className="border-b"><td className="py-2">region</td><td className="py-2">string</td><td className="py-2">地区筛选</td></tr>
-                    <tr className="border-b"><td className="py-2">market</td><td className="py-2">string</td><td className="py-2">市场筛选</td></tr>
-                    <tr><td className="py-2">limit</td><td className="py-2">integer</td><td className="py-2">返回数量 (默认 30)</td></tr>
+                    <tr className="border-b"><td className="py-2">startDate</td><td className="py-2">string</td><td className="py-2">{t("apiConsole.startDate")}</td></tr>
+                    <tr className="border-b"><td className="py-2">endDate</td><td className="py-2">string</td><td className="py-2">{t("apiConsole.endDate")}</td></tr>
+                    <tr className="border-b"><td className="py-2">region</td><td className="py-2">string</td><td className="py-2">{t("apiConsole.regionFilter")}</td></tr>
+                    <tr className="border-b"><td className="py-2">market</td><td className="py-2">string</td><td className="py-2">{t("apiConsole.marketFilter")}</td></tr>
+                    <tr><td className="py-2">limit</td><td className="py-2">integer</td><td className="py-2">{t("apiConsole.returnCount30")}</td></tr>
                   </tbody>
                 </table>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">示例代码</h4>
+                <h4 className="font-semibold mb-2">{t("apiConsole.exampleCode")}</h4>
                 <div className="relative">
                   <pre className="bg-muted rounded-lg p-4 text-sm overflow-x-auto">
 {`curl -X GET "https://sulfur-agent-web.vercel.app/api/v1/prices?limit=10" \\
@@ -456,10 +458,10 @@ export default function ApiConsolePage() {
                   <Badge variant="default">POST</Badge>
                   <code className="text-sm">/api/v1/prices/predict</code>
                 </div>
-                <p className="text-sm text-muted-foreground">预测未来硫磺价格</p>
+                <p className="text-sm text-muted-foreground">{t("apiConsole.descPredict")}</p>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">请求体</h4>
+                <h4 className="font-semibold mb-2">{t("apiConsole.requestBody")}</h4>
                 <pre className="bg-muted rounded-lg p-4 text-sm overflow-x-auto">
 {`{
   "days": 7
@@ -467,7 +469,7 @@ export default function ApiConsolePage() {
                 </pre>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">示例代码</h4>
+                <h4 className="font-semibold mb-2">{t("apiConsole.exampleCode")}</h4>
                 <div className="relative">
                   <pre className="bg-muted rounded-lg p-4 text-sm overflow-x-auto">
 {`curl -X POST "https://sulfur-agent-web.vercel.app/api/v1/prices/predict" \\
@@ -497,10 +499,10 @@ export default function ApiConsolePage() {
                   <Badge variant="default">POST</Badge>
                   <code className="text-sm">/api/v1/decision</code>
                 </div>
-                <p className="text-sm text-muted-foreground">获取采购决策建议</p>
+                <p className="text-sm text-muted-foreground">{t("apiConsole.descDecision")}</p>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">请求体</h4>
+                <h4 className="font-semibold mb-2">{t("apiConsole.requestBody")}</h4>
                 <pre className="bg-muted rounded-lg p-4 text-sm overflow-x-auto">
 {`{
   "days": 7,
@@ -511,7 +513,7 @@ export default function ApiConsolePage() {
                 </pre>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">示例代码</h4>
+                <h4 className="font-semibold mb-2">{t("apiConsole.exampleCode")}</h4>
                 <div className="relative">
                   <pre className="bg-muted rounded-lg p-4 text-sm overflow-x-auto">
 {`curl -X POST "https://sulfur-agent-web.vercel.app/api/v1/decision" \\
@@ -541,26 +543,26 @@ export default function ApiConsolePage() {
                   <Badge>GET</Badge>
                   <code className="text-sm">/api/v1/data/inventory</code>
                 </div>
-                <p className="text-sm text-muted-foreground">获取港口库存数据</p>
+                <p className="text-sm text-muted-foreground">{t("apiConsole.descInventory")}</p>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">请求参数</h4>
+                <h4 className="font-semibold mb-2">{t("apiConsole.requestParams")}</h4>
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2">参数</th>
-                      <th className="text-left py-2">类型</th>
-                      <th className="text-left py-2">说明</th>
+                      <th className="text-left py-2">{t("apiConsole.paramName")}</th>
+                      <th className="text-left py-2">{t("apiConsole.paramType")}</th>
+                      <th className="text-left py-2">{t("apiConsole.paramDesc")}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-b"><td className="py-2">port</td><td className="py-2">string</td><td className="py-2">港口筛选</td></tr>
-                    <tr><td className="py-2">limit</td><td className="py-2">integer</td><td className="py-2">返回数量 (默认 30)</td></tr>
+                    <tr className="border-b"><td className="py-2">port</td><td className="py-2">string</td><td className="py-2">{t("apiConsole.portFilter")}</td></tr>
+                    <tr><td className="py-2">limit</td><td className="py-2">integer</td><td className="py-2">{t("apiConsole.returnCount30")}</td></tr>
                   </tbody>
                 </table>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">示例代码</h4>
+                <h4 className="font-semibold mb-2">{t("apiConsole.exampleCode")}</h4>
                 <div className="relative">
                   <pre className="bg-muted rounded-lg p-4 text-sm overflow-x-auto">
 {`curl -X GET "https://sulfur-agent-web.vercel.app/api/v1/data/inventory?limit=10" \\
@@ -586,26 +588,26 @@ export default function ApiConsolePage() {
                   <Badge>GET</Badge>
                   <code className="text-sm">/api/v1/data/news</code>
                 </div>
-                <p className="text-sm text-muted-foreground">获取市场新闻动态</p>
+                <p className="text-sm text-muted-foreground">{t("apiConsole.descNews")}</p>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">请求参数</h4>
+                <h4 className="font-semibold mb-2">{t("apiConsole.requestParams")}</h4>
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2">参数</th>
-                      <th className="text-left py-2">类型</th>
-                      <th className="text-left py-2">说明</th>
+                      <th className="text-left py-2">{t("apiConsole.paramName")}</th>
+                      <th className="text-left py-2">{t("apiConsole.paramType")}</th>
+                      <th className="text-left py-2">{t("apiConsole.paramDesc")}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-b"><td className="py-2">keyword</td><td className="py-2">string</td><td className="py-2">关键词筛选</td></tr>
-                    <tr><td className="py-2">limit</td><td className="py-2">integer</td><td className="py-2">返回数量 (默认 20)</td></tr>
+                    <tr className="border-b"><td className="py-2">keyword</td><td className="py-2">string</td><td className="py-2">{t("apiConsole.keywordFilter")}</td></tr>
+                    <tr><td className="py-2">limit</td><td className="py-2">integer</td><td className="py-2">{t("apiConsole.returnCount20")}</td></tr>
                   </tbody>
                 </table>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">示例代码</h4>
+                <h4 className="font-semibold mb-2">{t("apiConsole.exampleCode")}</h4>
                 <div className="relative">
                   <pre className="bg-muted rounded-lg p-4 text-sm overflow-x-auto">
 {`curl -X GET "https://sulfur-agent-web.vercel.app/api/v1/data/news?limit=10" \\
@@ -631,10 +633,10 @@ export default function ApiConsolePage() {
                   <Badge variant="default">POST</Badge>
                   <code className="text-sm">/api/v1/chat</code>
                 </div>
-                <p className="text-sm text-muted-foreground">与 AI 聊天助手对话</p>
+                <p className="text-sm text-muted-foreground">{t("apiConsole.descChat")}</p>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">请求体</h4>
+                <h4 className="font-semibold mb-2">{t("apiConsole.requestBody")}</h4>
                 <pre className="bg-muted rounded-lg p-4 text-sm overflow-x-auto">
 {`{
   "message": "当前硫磺价格趋势如何？",
@@ -643,7 +645,7 @@ export default function ApiConsolePage() {
                 </pre>
               </div>
               <div>
-                <h4 className="font-semibold mb-2">示例代码</h4>
+                <h4 className="font-semibold mb-2">{t("apiConsole.exampleCode")}</h4>
                 <div className="relative">
                   <pre className="bg-muted rounded-lg p-4 text-sm overflow-x-auto">
 {`curl -X POST "https://sulfur-agent-web.vercel.app/api/v1/chat" \\

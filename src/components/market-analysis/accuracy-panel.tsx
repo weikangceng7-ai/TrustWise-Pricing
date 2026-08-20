@@ -44,6 +44,16 @@ interface AccuracyData {
     mae: number
     predictionCount: number
   }>
+  dataSource?: "backtest" | "naive_backtest" | "db_records" | "none"
+  insufficientData?: boolean
+  message?: string
+}
+
+const DATA_SOURCE_LABEL: Record<string, string> = {
+  backtest: "真实回测（Hybrid ARIMA + XGBoost）",
+  naive_backtest: "朴素基准模型（Naive forecast）",
+  db_records: "企业预测记录",
+  none: "无数据",
 }
 
 function EnterpriseAccuracyCard({
@@ -128,12 +138,33 @@ export function AccuracyPanel() {
 
   const { overview, accuracyTrend, historicalPredictions, byEnterprise } = data
 
+  // 诚实空态：无真实数据时展示说明，而非伪造数字
+  if (data.insufficientData || overview.totalPredictions === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-2">
+        <div className="text-slate-500 dark:text-slate-400 text-sm">
+          {data.message || "暂无足够的历史预测与实价对比数据，无法计算模型精度"}
+        </div>
+        <div className="text-xs text-slate-400 dark:text-slate-500">
+          模型精度需基于真实预测 vs 实价的对比记录计算
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
       {/* 面板说明 */}
-      <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-        基于 {overview.totalPredictions} 次历史预测的模型性能评估
-      </p>
+      <div className="flex items-center gap-2 mb-4">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          基于 {overview.totalPredictions} 次历史预测的模型性能评估
+        </p>
+        {data.dataSource && (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400">
+            {DATA_SOURCE_LABEL[data.dataSource] || data.dataSource}
+          </span>
+        )}
+      </div>
 
       {/* 四个指标卡片 */}
       <div className="grid grid-cols-4 gap-3 mb-4">
@@ -298,19 +329,21 @@ export function AccuracyPanel() {
       </div>
 
       {/* 按企业精度分布 */}
-      <div className="bg-white/80 dark:bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-slate-200 dark:border-white/10 shadow-sm">
-        <div className="flex items-center gap-2 mb-3">
-          <Target className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-            按企业精度分布
-          </h3>
+      {byEnterprise.length > 0 && (
+        <div className="bg-white/80 dark:bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-slate-200 dark:border-white/10 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <Target className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+              按企业精度分布
+            </h3>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            {byEnterprise.map((enterprise, idx) => (
+              <EnterpriseAccuracyCard key={enterprise.code} enterprise={enterprise} index={idx} />
+            ))}
+          </div>
         </div>
-        <div className="grid grid-cols-3 gap-4">
-          {byEnterprise.map((enterprise, idx) => (
-            <EnterpriseAccuracyCard key={enterprise.code} enterprise={enterprise} index={idx} />
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   )
 }

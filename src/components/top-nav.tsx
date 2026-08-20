@@ -1,15 +1,17 @@
 "use client"
 
-import { Moon, Sun, Home } from "lucide-react"
+import { Moon, Sun, Home, Globe } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "@/components/theme-provider"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { UserDropdown } from "@/components/user-dropdown"
 import { NotificationPanel } from "@/components/notification-panel"
+import { useLanguage } from "@/contexts/language-context"
 
 export function TopNav() {
   const { setTheme, resolvedTheme, mounted } = useTheme()
+  const { t, lang, setLang } = useLanguage()
 
   const toggleTheme = () => {
     setTheme(resolvedTheme === "dark" ? "light" : "dark")
@@ -17,7 +19,7 @@ export function TopNav() {
 
   // Use a default icon during SSR to avoid hydration mismatch
   const ThemeIcon = !mounted ? Sun : (resolvedTheme === "dark" ? Moon : Sun)
-  const themeTitle = !mounted ? "切换主题" : (resolvedTheme === "dark" ? "切换浅色模式" : "切换深色模式")
+  const themeTitle = !mounted ? t("topnav.toggleTheme") : (resolvedTheme === "dark" ? t("topnav.lightMode") : t("topnav.darkMode"))
 
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b border-slate-200 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 px-4 backdrop-blur-xl supports-backdrop-filter:bg-white/60 dark:supports-backdrop-filter:bg-slate-900/60">
@@ -36,7 +38,7 @@ export function TopNav() {
         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all duration-300"
       >
         <Home className="h-4 w-4" />
-        <span className="text-sm font-medium">首页</span>
+        <span className="text-sm font-medium">{t("topnav.home")}</span>
       </Link>
 
       {/* Page title area */}
@@ -81,7 +83,7 @@ export function TopNav() {
         </div>
         <div className="space-y-0.5">
           <h1 className="text-lg font-semibold bg-linear-to-r from-slate-900 dark:from-white to-slate-600 dark:to-slate-300 bg-clip-text text-transparent">
-            硫磺督价与采购智能决策系统
+            {t("topnav.title")}
           </h1>
           <div className="flex items-center gap-2">
             <div className="h-px w-12 bg-linear-to-r from-cyan-500 to-transparent" />
@@ -92,6 +94,18 @@ export function TopNav() {
 
       {/* Right side actions */}
       <div className="flex items-center gap-2 relative">
+        {/* Language toggle */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setLang(lang === "zh" ? "en" : "zh")}
+          className="h-9 px-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all duration-300"
+          title={lang === "zh" ? "Switch to English" : "切换到中文"}
+        >
+          <Globe className="h-4 w-4" />
+          <span className="text-xs font-medium ml-1">{lang === "zh" ? "EN" : "中"}</span>
+        </Button>
+
         {/* Theme toggle */}
         <Button
           variant="ghost"
@@ -101,7 +115,7 @@ export function TopNav() {
           title={themeTitle}
         >
           <ThemeIcon className="h-4.5 w-4.5" />
-          <span className="sr-only">切换主题</span>
+          <span className="sr-only">{t("topnav.toggleTheme")}</span>
         </Button>
 
         {/* Notifications */}

@@ -315,6 +315,7 @@ class SulfurPricePredictor:
 
         return {
             'mse': float(mse),
+            'rmse': float(np.sqrt(mse)),
             'mae': float(mae),
             'r2': float(r2),
             'mape': float(mape),
@@ -326,6 +327,9 @@ class SulfurPricePredictor:
             'xgb_lags': self.lags,
             'external_factors': self.factor_cols,
             'feature_dim': self.lags + len(self.factor_cols),
+            'test_dates': [d.strftime('%Y-%m-%d') for d in test_price.index],
+            'test_actual': [float(v) for v in test_price.values],
+            'test_pred': [float(v) for v in final_pred.values],
         }
 
     def predict(self, days: int = 7) -> Dict[str, Any]:
@@ -1285,6 +1289,51 @@ def train_model():
             'success': False,
             'error': str(e)
         }), 500
+
+
+@app.route('/backtest', methods=['POST'])
+def backtest():
+    """回测模型：在真实历史价格上划分训练/测试集，返回逐点预测 vs 实际与精度指标"""
+    try:
+        data = request.get_json() or {}
+        test_ratio = data.get('test_ratio', 0.1)
+        commodity_code = data.get('commodity_code', 'sulfur')
+
+        predictor._commodity_code = commodity_code
+        predictor.load_data(commodity_code)
+        result = predictor.train(test_ratio=test_ratio)
+
+        data_source = 'postgresql' if _USE_DB else 'excel' if os.path.exists(DATA_FILE) else 'mock'
+        predictions = [
+            {
+                'date': d,
+                'actual': round(float(a), 2),
+                'predicted': round(float(p), 2),
+            }
+            for d, a, p in zip(
+                result.get('test_dates', []),
+                result.get('test_actual', []),
+                result.get('test_pred', []),
+            )
+        ]
+
+        return jsonify({
+            'success': True,
+            'data_source': data_source,
+            'price_count': len(predictor.price_data) if predictor.price_data is not None else 0,
+            'metrics': {
+                'mae': result.get('mae'),
+                'rmse': result.get('rmse'),
+                'mape': result.get('mape'),
+                'r2': result.get('r2'),
+                'train_size': result.get('train_size'),
+                'test_size': result.get('test_size'),
+                'model_type': result.get('model_type'),
+            },
+            'predictions': predictions,
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/predict', methods=['POST'])

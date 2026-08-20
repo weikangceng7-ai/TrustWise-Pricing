@@ -5,6 +5,7 @@ import { useSession, signOut } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { AuthDialog } from "@/components/auth-dialog"
 import { LogOut, User } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ function useMounted() {
 
 export function UserDropdown() {
   const { data: session, isPending } = useSession()
+  const { t } = useLanguage()
   const [showAuthDialog, setShowAuthDialog] = useState(false)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
   // 使用 useSyncExternalStore 避免 SSR hydration mismatch
@@ -34,7 +36,7 @@ export function UserDropdown() {
     return (
       <Button variant="outline" size="sm" disabled>
         <User className="size-4" />
-        <span className="hidden md:inline">登录</span>
+        <span className="hidden md:inline">{t("user.login")}</span>
       </Button>
     )
   }
@@ -58,7 +60,7 @@ export function UserDropdown() {
           onClick={() => setShowAuthDialog(true)}
         >
           <User className="size-4" />
-          <span className="hidden md:inline">登录</span>
+          <span className="hidden md:inline">{t("user.login")}</span>
         </Button>
         <AuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} />
       </>
@@ -74,20 +76,20 @@ export function UserDropdown() {
         onClick={() => setShowLogoutDialog(true)}
       >
         <User className="size-4" />
-        <span className="hidden md:inline">{session.user?.name || session.user?.email || "用户"}</span>
+        <span className="hidden md:inline">{session.user?.name || session.user?.email || t("user.defaultName")}</span>
       </Button>
 
       <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>退出登录</DialogTitle>
+            <DialogTitle>{t("user.logout")}</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-muted-foreground">确定要退出登录吗？</p>
+            <p className="text-muted-foreground">{t("user.logoutConfirm")}</p>
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setShowLogoutDialog(false)}>
-              取消
+              {t("user.cancel")}
             </Button>
             <Button
               onClick={async () => {
@@ -96,7 +98,7 @@ export function UserDropdown() {
               }}
             >
               <LogOut className="size-4 mr-2" />
-              退出
+              {t("user.confirm")}
             </Button>
           </div>
         </DialogContent>

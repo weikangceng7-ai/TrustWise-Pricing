@@ -248,6 +248,47 @@ export async function trainModel(testRatio: number = 0.1, serviceUrl?: string, a
 }
 
 /**
+ * 回测模型：调用 Python /backtest 获取真实预测 vs 实际的逐点对比与精度指标
+ * @param testRatio 测试数据比例
+ * @param serviceUrl 可选的自定义服务地址
+ * @param apiKey 可选的 API 密钥
+ */
+export async function backtestModel(testRatio: number = 0.1, serviceUrl?: string, apiKey?: string): Promise<{
+  success: boolean
+  data_source?: string
+  price_count?: number
+  metrics?: {
+    mae: number
+    rmse: number
+    mape: number
+    r2: number
+    train_size: number
+    test_size: number
+    model_type: string
+  }
+  predictions?: Array<{ date: string; actual: number; predicted: number }>
+  error?: string
+}> {
+  const url = getServiceUrl(serviceUrl)
+  try {
+    const response = await fetch(`${url}/backtest`, {
+      method: 'POST',
+      headers: buildHeaders(apiKey),
+      body: JSON.stringify({ test_ratio: testRatio }),
+      signal: AbortSignal.timeout(15000), // 15秒超时，训练 ARIMA+XGBoost 需要时间
+    })
+
+    return await response.json()
+  } catch (error) {
+    console.error('回测服务调用失败:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : '回测服务调用失败',
+    }
+  }
+}
+
+/**
  * 检查预测服务健康状态
  * @param serviceUrl 可选的自定义服务地址
  * @param apiKey 可选的 API 密钥

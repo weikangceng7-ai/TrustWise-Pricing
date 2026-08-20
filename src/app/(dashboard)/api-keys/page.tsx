@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { useLanguage } from "@/contexts/language-context"
 import {
   Key, Plus, Trash2, RefreshCw, Copy, Check,
   AlertTriangle, BarChart, ArrowRight, Loader2
@@ -29,6 +30,7 @@ interface QuotaData {
 }
 
 export default function ApiKeysPage() {
+  const { t } = useLanguage()
   const router = useRouter()
   const [apiKeys, setApiKeys] = useState<ApiKeyData[]>([])
   const [quota, setQuota] = useState<QuotaData | null>(null)
@@ -65,7 +67,7 @@ export default function ApiKeysPage() {
 
   async function createKey() {
     if (!newKeyName.trim()) {
-      setError("请先填写 Key 名称")
+      setError(t("apiKeys.error.nameRequired"))
       return
     }
 
@@ -85,18 +87,18 @@ export default function ApiKeysPage() {
         setNewKeyName("")
         await fetchApiKeys()
       } else {
-        setError(data.error || "创建失败")
+        setError(data.error || t("apiConsole.createFailed"))
       }
     } catch (error) {
       console.error("创建失败:", error)
-      setError("创建失败，请稍后重试")
+      setError(t("apiKeys.error.createRetry"))
     } finally {
       setCreating(false)
     }
   }
 
   async function deleteKey(id: string) {
-    if (!confirm("确定要删除此 API Key 吗？")) return
+    if (!confirm(t("apiConsole.confirmDeleteKey"))) return
 
     try {
       const res = await fetch(`/api/api-keys/${id}`, { method: "DELETE" })
@@ -111,7 +113,7 @@ export default function ApiKeysPage() {
   }
 
   async function resetKey(id: string) {
-    if (!confirm("重置后旧 Key 将失效，确定继续？")) return
+    if (!confirm(t("apiKeys.confirmReset"))) return
 
     setError(null)
     try {
@@ -122,11 +124,11 @@ export default function ApiKeysPage() {
         setShowFullKey(data.data.key)
         await fetchApiKeys()
       } else {
-        setError(data.error || "重置失败")
+        setError(data.error || t("apiConsole.resetFailed"))
       }
     } catch (error) {
       console.error("重置失败:", error)
-      setError("重置失败，请稍后重试")
+      setError(t("apiKeys.error.resetRetry"))
     }
   }
 
@@ -149,13 +151,13 @@ export default function ApiKeysPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">API Keys 管理</h1>
-          <p className="text-muted-foreground">管理你的 API 密钥和配额</p>
+          <h1 className="text-3xl font-bold">{t("apiKeys.title")}</h1>
+          <p className="text-muted-foreground">{t("apiKeys.desc")}</p>
         </div>
         <Link href="/api-console">
           <Button variant="outline">
             <BarChart className="mr-2 h-4 w-4" />
-            API 文档
+            {t("apiKeys.apiDocs")}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </Link>
@@ -165,20 +167,20 @@ export default function ApiKeysPage() {
       {quota && (
         <Card className="mb-6">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">配额余额</CardTitle>
+            <CardTitle className="text-lg">{t("apiKeys.quotaBalance")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex gap-6">
               <div>
-                <p className="text-sm text-muted-foreground">免费额度</p>
+                <p className="text-sm text-muted-foreground">{t("apiKeys.freeQuota")}</p>
                 <p className="text-2xl font-bold">{quota.free}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">付费额度</p>
+                <p className="text-sm text-muted-foreground">{t("apiKeys.paidQuota")}</p>
                 <p className="text-2xl font-bold">{quota.paid}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">总剩余</p>
+                <p className="text-sm text-muted-foreground">{t("apiKeys.totalRemaining")}</p>
                 <p className="text-2xl font-bold text-primary">{quota.total}</p>
               </div>
             </div>
@@ -189,12 +191,12 @@ export default function ApiKeysPage() {
       {/* New Key Form */}
       <Card className="mb-6">
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg">创建新 API Key</CardTitle>
+          <CardTitle className="text-lg">{t("apiKeys.createNewKey")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
             <Input
-              placeholder="Key 名称（如：生产环境）"
+              placeholder={t("apiKeys.keyNamePlaceholder")}
               value={newKeyName}
               onChange={(e) => setNewKeyName(e.target.value)}
               className="max-w-xs"
@@ -205,7 +207,7 @@ export default function ApiKeysPage() {
               ) : (
                 <Plus className="mr-2 h-4 w-4" />
               )}
-              创建
+              {t("common.create")}
             </Button>
           </div>
           {error && (
@@ -221,9 +223,9 @@ export default function ApiKeysPage() {
             <div className="flex items-start gap-4">
               <AlertTriangle className="h-6 w-6 text-yellow-500" />
               <div className="flex-1">
-                <p className="font-semibold mb-2">请保存此 API Key</p>
+                <p className="font-semibold mb-2">{t("apiKeys.saveKeyWarning")}</p>
                 <p className="text-sm text-muted-foreground mb-4">
-                  此 Key 仅显示一次，关闭后将无法再次查看完整值
+                  {t("apiKeys.keyShownOnce")}
                 </p>
                 <div className="flex items-center gap-2">
                   <code className="bg-muted px-3 py-2 rounded text-sm font-mono flex-1">
@@ -247,7 +249,7 @@ export default function ApiKeysPage() {
                   className="mt-2"
                   onClick={() => setShowFullKey(null)}
                 >
-                  关闭
+                  {t("common.close")}
                 </Button>
               </div>
             </div>
@@ -258,14 +260,14 @@ export default function ApiKeysPage() {
       {/* Keys List */}
       <Card>
         <CardHeader>
-          <CardTitle>已创建的 API Keys</CardTitle>
-          <CardDescription>最多可创建 5 个 API Key</CardDescription>
+          <CardTitle>{t("apiKeys.yourKeys")}</CardTitle>
+          <CardDescription>{t("apiKeys.maxKeys")}</CardDescription>
         </CardHeader>
         <CardContent>
           {apiKeys.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Key className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>暂无 API Key，请创建一个</p>
+              <p>{t("apiKeys.noKeysHint")}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -278,17 +280,17 @@ export default function ApiKeysPage() {
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-semibold">{key.name}</span>
                       <Badge variant={key.isActive ? "default" : "secondary"}>
-                        {key.isActive ? "活跃" : "已禁用"}
+                        {key.isActive ? t("apiKeys.active") : t("apiConsole.inactive")}
                       </Badge>
                     </div>
                     <code className="text-sm text-muted-foreground font-mono">
                       {key.key}
                     </code>
                     <div className="text-xs text-muted-foreground mt-1">
-                      创建: {new Date(key.createdAt).toLocaleDateString()}
+                      {t("apiKeys.createdAtLabel")}{new Date(key.createdAt).toLocaleDateString()}
                       {key.lastUsedAt && (
                         <span className="ml-4">
-                          最后使用: {new Date(key.lastUsedAt).toLocaleDateString()}
+                          {t("apiKeys.lastUsedLabel")}{new Date(key.lastUsedAt).toLocaleDateString()}
                         </span>
                       )}
                     </div>

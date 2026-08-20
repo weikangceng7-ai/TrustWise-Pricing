@@ -8,12 +8,14 @@ import { getBackgroundImage } from "@/config/images"
 import { TrackerPanel } from "@/components/market-analysis/tracker-panel"
 import { CommoditiesPanel } from "@/components/market-analysis/commodities-panel"
 import { AccuracyPanel } from "@/components/market-analysis/accuracy-panel"
+import { useLanguage } from "@/contexts/language-context"
 
 const TAB_KEYS = ["tracker", "commodities", "accuracy"] as const
 type TabKey = (typeof TAB_KEYS)[number]
 
 function MarketAnalysisContent() {
   const router = useRouter()
+  const { t } = useLanguage()
   const searchParams = useSearchParams()
   const tabParam = searchParams.get("tab")
   const initialTab: TabKey = TAB_KEYS.includes(tabParam as TabKey) ? (tabParam as TabKey) : "tracker"
@@ -45,8 +47,8 @@ function MarketAnalysisContent() {
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">市场分析</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">价格追踪、品种对比与模型精度评估</p>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">{t("marketAnalysis.title")}</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t("marketAnalysis.desc")}</p>
           </div>
         </div>
 
@@ -55,15 +57,15 @@ function MarketAnalysisContent() {
           <TabsList className="mb-3">
             <TabsTrigger value="tracker" className="gap-1.5 px-3">
               <Bell className="h-3.5 w-3.5" />
-              Tracker 追踪
+              {t("marketAnalysis.tracker")}
             </TabsTrigger>
             <TabsTrigger value="commodities" className="gap-1.5 px-3">
               <Layers className="h-3.5 w-3.5" />
-              品种对比
+              {t("marketAnalysis.commodities")}
             </TabsTrigger>
             <TabsTrigger value="accuracy" className="gap-1.5 px-3">
               <Target className="h-3.5 w-3.5" />
-              模型精度
+              {t("marketAnalysis.accuracy")}
             </TabsTrigger>
           </TabsList>
 

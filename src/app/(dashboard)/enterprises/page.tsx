@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Building2, Search, TrendingUp, Users, MapPin, Factory } from 'lucide-react'
+import { useLanguage } from "@/contexts/language-context"
 
 interface Enterprise {
   id: string
@@ -33,6 +34,7 @@ interface Stats {
 }
 
 export default function EnterprisesPage() {
+  const { t, lang } = useLanguage()
   const [enterprises, setEnterprises] = useState<Enterprise[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -84,7 +86,7 @@ export default function EnterprisesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">加载中...</div>
+        <div className="text-lg">{t("common.loading")}</div>
       </div>
     )
   }
@@ -93,13 +95,13 @@ export default function EnterprisesPage() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">化工企业数据库</h1>
+          <h1 className="text-3xl font-bold">{t("enterprises.title")}</h1>
           <p className="text-muted-foreground mt-1">
-            示例数据 · 企业信息已匿名化处理 · 最后更新: {new Date(lastUpdated).toLocaleString('zh-CN')}
+            {t("enterprises.sampleNote")}{new Date(lastUpdated).toLocaleString(lang === "en" ? 'en-US' : 'zh-CN')}
           </p>
         </div>
         <Badge variant="outline" className="text-sm">
-          共 {stats?.total || 0} 家企业
+          {t("enterprises.totalPrefix")}{stats?.total || 0}{t("enterprises.totalSuffix")}
         </Badge>
       </div>
 
@@ -111,7 +113,7 @@ export default function EnterprisesPage() {
                 <Factory className="h-5 w-5 text-blue-500" />
                 <div>
                   <p className="text-2xl font-bold">{stats.total}</p>
-                  <p className="text-xs text-muted-foreground">企业总数</p>
+                  <p className="text-xs text-muted-foreground">{t("enterprises.total")}</p>
                 </div>
               </div>
             </CardContent>
@@ -122,7 +124,7 @@ export default function EnterprisesPage() {
                 <TrendingUp className="h-5 w-5 text-green-500" />
                 <div>
                   <p className="text-2xl font-bold">{stats.listed}</p>
-                  <p className="text-xs text-muted-foreground">上市企业</p>
+                  <p className="text-xs text-muted-foreground">{t("enterprises.listed")}</p>
                 </div>
               </div>
             </CardContent>
@@ -133,7 +135,7 @@ export default function EnterprisesPage() {
                 <Building2 className="h-5 w-5 text-purple-500" />
                 <div>
                   <p className="text-2xl font-bold">{stats.industries}</p>
-                  <p className="text-xs text-muted-foreground">行业分类</p>
+                  <p className="text-xs text-muted-foreground">{t("enterprises.industries")}</p>
                 </div>
               </div>
             </CardContent>
@@ -144,7 +146,7 @@ export default function EnterprisesPage() {
                 <MapPin className="h-5 w-5 text-orange-500" />
                 <div>
                   <p className="text-2xl font-bold">{stats.provinces}</p>
-                  <p className="text-xs text-muted-foreground">省份分布</p>
+                  <p className="text-xs text-muted-foreground">{t("enterprises.provinces")}</p>
                 </div>
               </div>
             </CardContent>
@@ -155,7 +157,7 @@ export default function EnterprisesPage() {
                 <Users className="h-5 w-5 text-red-500" />
                 <div>
                   <p className="text-2xl font-bold">{stats.unlisted}</p>
-                  <p className="text-xs text-muted-foreground">非上市企业</p>
+                  <p className="text-xs text-muted-foreground">{t("enterprises.unlisted")}</p>
                 </div>
               </div>
             </CardContent>
@@ -165,7 +167,7 @@ export default function EnterprisesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">筛选条件</CardTitle>
+          <CardTitle className="text-lg">{t("enterprises.filterTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-4">
@@ -173,7 +175,7 @@ export default function EnterprisesPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="搜索企业名称、产品..."
+                  placeholder={t("enterprises.searchPlaceholder")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -182,10 +184,10 @@ export default function EnterprisesPage() {
             </div>
             <Select value={industryFilter} onValueChange={setIndustryFilter}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="行业分类" />
+                <SelectValue placeholder={t("enterprises.filterIndustry")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全部行业</SelectItem>
+                <SelectItem value="all">{t("enterprises.allIndustries")}</SelectItem>
                 {industries.map(industry => (
                   <SelectItem key={industry} value={industry}>{industry}</SelectItem>
                 ))}
@@ -193,10 +195,10 @@ export default function EnterprisesPage() {
             </Select>
             <Select value={provinceFilter} onValueChange={setProvinceFilter}>
               <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="省份" />
+                <SelectValue placeholder={t("enterprises.filterProvince")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全部省份</SelectItem>
+                <SelectItem value="all">{t("enterprises.allProvinces")}</SelectItem>
                 {provinces.map(province => (
                   <SelectItem key={province} value={province}>{province}</SelectItem>
                 ))}
@@ -207,7 +209,7 @@ export default function EnterprisesPage() {
       </Card>
 
       <div className="text-sm text-muted-foreground">
-        找到 {filteredEnterprises.length} 家企业
+        {t("enterprises.foundPrefix")}{filteredEnterprises.length}{t("enterprises.foundSuffix")}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -221,7 +223,7 @@ export default function EnterprisesPage() {
                 </div>
                 {enterprise.listed && (
                   <Badge variant="default" className="bg-green-500">
-                    上市
+                    {t("enterprises.listedBadge")}
                   </Badge>
                 )}
               </div>
@@ -233,17 +235,17 @@ export default function EnterprisesPage() {
               </div>
               
               <div className="text-sm">
-                <span className="text-muted-foreground">主要产品：</span>
+                <span className="text-muted-foreground">{t("enterprises.mainProductsLabel")}</span>
                 <span>{enterprise.mainProducts.slice(0, 3).join('、')}</span>
               </div>
-              
+
               <div className="flex justify-between text-sm">
                 <div>
-                  <span className="text-muted-foreground">营收：</span>
+                  <span className="text-muted-foreground">{t("enterprises.revenueLabel")}</span>
                   <span className="font-medium">{formatRevenue(enterprise.revenue)}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">员工：</span>
+                  <span className="text-muted-foreground">{t("enterprises.employeesLabel")}</span>
                   <span className="font-medium">
                     {enterprise.employees ? `${(enterprise.employees / 1000).toFixed(0)}K` : '-'}
                   </span>
@@ -261,7 +263,7 @@ export default function EnterprisesPage() {
                   rel="noopener noreferrer"
                   className="text-xs text-blue-500 hover:underline block"
                 >
-                  访问官网 →
+                  {t("enterprises.websiteLink")}
                 </a>
               )}
             </CardContent>
