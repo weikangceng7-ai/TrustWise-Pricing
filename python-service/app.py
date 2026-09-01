@@ -143,28 +143,60 @@ class FeatureEngineer:
         return df
 
     @classmethod
-    def build_residual_features(cls, resid: pd.Series) -> pd.DataFrame:
+    def build_residual_features(cls, resid: pd.Series, price: pd.Series = None) -> pd.DataFrame:
         """构建残差特征（增强版，相对于原文的简单滞后）
 
-        特征维度从 3 扩展到 10+，覆盖趋势、动量、波动率
+        特征维度从 3 扩展到 20+，覆盖趋势、动量、波动率、季节性、技术指标
         """
         features = pd.DataFrame(index=resid.index)
 
-        # 滞后特征（与原文相同）
-        for lag in [1, 2, 3]:
+        # ===== 1. 滞后特征（短期 + 中长期）=====
+        for lag in [1, 2, 3, 7, 14, 30]:
             features[f'resid_lag_{lag}'] = resid.shift(lag)
 
-        # 移动平均特征（新增）
-        features['resid_ma_3'] = resid.rolling(window=3).mean()
-        features['resid_ma_7'] = resid.rolling(window=7).mean()
+        # ===== 2. 移动平均特征（多窗口）=====
+        for window in [3, 7, 14, 30]:
+            features[f'resid_ma_{window}'] = resid.rolling(window=window).mean()
 
-        # 动量特征（新增）
-        features['resid_momentum_3'] = resid - resid.shift(3)
-        features['resid_momentum_7'] = resid - resid.shift(7)
+        # ===== 3. 动量特征（价格变化）=====
+        for period in [1, 3, 7, 14]:
+            features[f'resid_momentum_{period}'] = resid - resid.shift(period)
+            features[f'resid_roc_{period}'] = (resid - resid.shift(period)) / (resid.shift(period).abs() + 1e-8) * 100
 
-        # 波动率特征（新增）
-        features['resid_vol_3'] = resid.rolling(window=3).std()
-        features['resid_vol_7'] = resid.rolling(window=7).std()
+        # ===== 4. 波动率特征（多窗口）=====
+        for window in [3, 7, 14, 30]:
+            features[f'resid_vol_{window}'] = resid.rolling(window=window).std()
+            features[f'resid_vol_ratio_{window}'] = resid.rolling(window=window).std() / (resid.rolling(window=window*2).std() + 1e-8)
+
+        # ===== 5. 价格相关特征（如果有价格数据）=====
+        if price is not None:
+            aligned_price = price.reindex(features.index)
+            # 价格变化率
+            for period in [1, 3, 7, 14]:
+                features[f'price_pct_change_{period}'] = aligned_price.pct_change(period) * 100
+            # 价格与移动平均的偏离度
+            for window in [7, 14, 30]:
+                ma = aligned_price.rolling(window=window).mean()
+                features[f'price_ma_ratio_{window}'] = (aligned_price - ma) / (ma + 1e-8) * 100
+            # 价格动量
+            for period in [7, 14, 30]:
+                features[f'price_momentum_{period}'] = aligned_price - aligned_price.shift(period)
+
+        # ===== 6. 日历特征（季节性）=====
+        if hasattr(resid.index, 'month'):
+            dates = resid.index
+            features['month_sin'] = np.sin(2 * np.pi * dates.month / 12)
+            features['month_cos'] = np.cos(2 * np.pi * dates.month / 12)
+            features['day_of_week_sin'] = np.sin(2 * np.pi * dates.dayofweek / 7)
+            features['day_of_week_cos'] = np.cos(2 * np.pi * dates.dayofweek / 7)
+            features['quarter'] = dates.quarter / 4.0 - 0.5  # 归一化到 [-0.5, 0.5]
+
+        # ===== 7. 统计特征 =====
+        features['resid_skew_14'] = resid.rolling(window=14).skew()
+        features['resid_kurt_14'] = resid.rolling(window=14).kurt()
+        features['resid_min_7'] = resid.rolling(window=7).min()
+        features['resid_max_7'] = resid.rolling(window=7).max()
+        features['resid_range_7'] = features['resid_max_7'] - features['resid_min_7']
 
         return features.dropna()
 
@@ -397,8 +429,8 @@ class SulfurPricePredictor:
         self.resid_mean = resid.mean()
         self.resid_std = resid.std()
 
-        # 构建增强残差特征（改进点：10 维 vs 原文 3 阶滞后）
-        resid_features = FeatureEngineer.build_residual_features(resid)
+        # 构建增强残差特征（改进点：20+ 维 vs 原文 3 阶滞后）
+        resid_features = FeatureEngineer.build_residual_features(resid, price=train_price)
         self.residual_features = resid_features.columns.tolist()
 
         # 对齐数据
@@ -566,8 +598,8 @@ class SulfurPricePredictor:
         # 获取残差用于特征构建
         resid = arima_result.resid
 
-        # 构建增强残差特征
-        resid_features = FeatureEngineer.build_residual_features(resid)
+        # 构建增强残差特征（需要传入价格数据以保持特征一致）
+        resid_features = FeatureEngineer.build_residual_features(resid, price=price)
 
         if len(resid_features) == 0:
             # 如果特征不够，用均值预测
