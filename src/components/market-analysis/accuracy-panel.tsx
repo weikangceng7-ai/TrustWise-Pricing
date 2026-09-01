@@ -220,19 +220,21 @@ export function AccuracyPanel() {
 
       {/* 四个指标卡片 */}
       <div className="grid grid-cols-4 gap-3 mb-4">
-        {/* MAPE: 平均绝对百分比误差，越小越好。<3%优秀(绿)，3-5%良好(黄)，>5%需关注(红) */}
+        {/* MAPE: 平均误差百分比。如 MAPE=5% 表示预测价与实际价平均偏差 5%。
+            阈值按商品价格比例设定：<5%优秀(绿)，5-10%良好(黄)，>10%需关注(红) */}
         {(() => {
           const mapeVal = overview.mape
-          const mapeColor = mapeVal < 3 ? "emerald" : mapeVal < 5 ? "amber" : "red"
+          const mapeColor = mapeVal < 5 ? "emerald" : mapeVal < 10 ? "amber" : "red"
           const mapeBg = mapeColor === "emerald" ? "from-emerald-50 to-green-50 dark:from-emerald-500/10 dark:to-green-500/10" : mapeColor === "amber" ? "from-amber-50 to-yellow-50 dark:from-amber-500/10 dark:to-yellow-500/10" : "from-red-50 to-rose-50 dark:from-red-500/10 dark:to-rose-500/10"
           const mapeBorder = mapeColor === "emerald" ? "border-emerald-200/50 dark:border-emerald-500/20" : mapeColor === "amber" ? "border-amber-200/50 dark:border-amber-500/20" : "border-red-200/50 dark:border-red-500/20"
           const mapeText = mapeColor === "emerald" ? "text-emerald-600 dark:text-emerald-400" : mapeColor === "amber" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
           const mapeIcon = mapeColor === "emerald" ? "text-emerald-600 dark:text-emerald-400" : mapeColor === "amber" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
           const mapeLabel = mapeColor === "emerald" ? "优秀" : mapeColor === "amber" ? "良好" : "需关注"
+          const mapeExplain = mapeColor === "emerald" ? "预测偏差<5%，可直接参考" : mapeColor === "amber" ? "偏差5-10%，建议结合判断" : "偏差>10%，仅供参考趋势"
           return (
             <div className={`bg-gradient-to-br ${mapeBg} backdrop-blur-sm rounded-lg p-3 border ${mapeBorder}`}>
               <div className="flex items-center justify-between mb-0.5">
-                <span className="text-sm text-slate-500 dark:text-slate-400">MAPE <span className="text-xs text-slate-400">(平均误差率)</span></span>
+                <span className="text-sm text-slate-500 dark:text-slate-400">MAPE <span className="text-xs text-slate-400">(误差百分比)</span></span>
                 <Target className={`h-4 w-4 ${mapeIcon}`} />
               </div>
               <span className={`text-lg font-bold ${mapeText}`}>
@@ -242,25 +244,27 @@ export function AccuracyPanel() {
                 <span className={`text-xs px-1.5 py-0.5 rounded ${mapeColor === "emerald" ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : mapeColor === "amber" ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300" : "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
                   {mapeLabel}
                 </span>
-                <span className="text-xs text-slate-400">误差率，越低越好</span>
+                <span className="text-xs text-slate-400">{mapeExplain}</span>
               </div>
             </div>
           )
         })()}
 
-        {/* MAE: 平均绝对误差，单位元。<20优秀(绿)，20-40良好(黄)，>40需关注(红) */}
+        {/* MAE: 平均绝对误差。如 MAE=¥30 表示预测价与实际价平均每次偏差 30 元。
+            阈值按硫磺价格(~940元/吨)设定：<30元优秀(绿)，30-60元良好(黄)，>60元需关注(红) */}
         {(() => {
           const maeVal = overview.mae
-          const maeColor = maeVal < 20 ? "emerald" : maeVal < 40 ? "amber" : "red"
+          const maeColor = maeVal < 30 ? "emerald" : maeVal < 60 ? "amber" : "red"
           const maeBg = maeColor === "emerald" ? "from-emerald-50 to-green-50 dark:from-emerald-500/10 dark:to-green-500/10" : maeColor === "amber" ? "from-amber-50 to-yellow-50 dark:from-amber-500/10 dark:to-yellow-500/10" : "from-red-50 to-rose-50 dark:from-red-500/10 dark:to-rose-500/10"
           const maeBorder = maeColor === "emerald" ? "border-emerald-200/50 dark:border-emerald-500/20" : maeColor === "amber" ? "border-amber-200/50 dark:border-amber-500/20" : "border-red-200/50 dark:border-red-500/20"
           const maeText = maeColor === "emerald" ? "text-emerald-600 dark:text-emerald-400" : maeColor === "amber" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
           const maeIcon = maeColor === "emerald" ? "text-emerald-600 dark:text-emerald-400" : maeColor === "amber" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
           const maeLabel = maeColor === "emerald" ? "优秀" : maeColor === "amber" ? "良好" : "需关注"
+          const maeExplain = maeColor === "emerald" ? "平均偏差<30元，精度高" : maeColor === "amber" ? "偏差30-60元，可参考" : "平均偏差>60元，仅看趋势"
           return (
             <div className={`bg-gradient-to-br ${maeBg} backdrop-blur-sm rounded-lg p-3 border ${maeBorder}`}>
               <div className="flex items-center justify-between mb-0.5">
-                <span className="text-sm text-slate-500 dark:text-slate-400">MAE <span className="text-xs text-slate-400">(平均偏差)</span></span>
+                <span className="text-sm text-slate-500 dark:text-slate-400">MAE <span className="text-xs text-slate-400">(每次偏差多少元)</span></span>
                 <Activity className={`h-4 w-4 ${maeIcon}`} />
               </div>
               <span className={`text-lg font-bold ${maeText}`}>
@@ -270,25 +274,27 @@ export function AccuracyPanel() {
                 <span className={`text-xs px-1.5 py-0.5 rounded ${maeColor === "emerald" ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : maeColor === "amber" ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300" : "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
                   {maeLabel}
                 </span>
-                <span className="text-xs text-slate-400">元，偏差越小越好</span>
+                <span className="text-xs text-slate-400">{maeExplain}</span>
               </div>
             </div>
           )
         })()}
 
-        {/* RMSE: 均方根误差，对大误差更敏感。<30优秀(绿)，30-50良好(黄)，>50需关注(红) */}
+        {/* RMSE: 均方根误差。与 MAE 类似，但对特别大的偏差更敏感。
+            比如某次预测偏差 200 元，RMSE 会放大这个影响。阈值：<40元优秀(绿)，40-80元良好(黄)，>80元需关注(红) */}
         {(() => {
           const rmseVal = overview.rmse
-          const rmseColor = rmseVal < 30 ? "emerald" : rmseVal < 50 ? "amber" : "red"
+          const rmseColor = rmseVal < 40 ? "emerald" : rmseVal < 80 ? "amber" : "red"
           const rmseBg = rmseColor === "emerald" ? "from-emerald-50 to-green-50 dark:from-emerald-500/10 dark:to-green-500/10" : rmseColor === "amber" ? "from-amber-50 to-yellow-50 dark:from-amber-500/10 dark:to-yellow-500/10" : "from-red-50 to-rose-50 dark:from-red-500/10 dark:to-rose-500/10"
           const rmseBorder = rmseColor === "emerald" ? "border-emerald-200/50 dark:border-emerald-500/20" : rmseColor === "amber" ? "border-amber-200/50 dark:border-amber-500/20" : "border-red-200/50 dark:border-red-500/20"
           const rmseText = rmseColor === "emerald" ? "text-emerald-600 dark:text-emerald-400" : rmseColor === "amber" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
           const rmseIcon = rmseColor === "emerald" ? "text-emerald-600 dark:text-emerald-400" : rmseColor === "amber" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
           const rmseLabel = rmseColor === "emerald" ? "优秀" : rmseColor === "amber" ? "良好" : "需关注"
+          const rmseExplain = rmseColor === "emerald" ? "无异常大偏差，稳定可靠" : rmseColor === "amber" ? "偶有较大偏差，需注意" : "存在较大偏差，谨慎参考"
           return (
             <div className={`bg-gradient-to-br ${rmseBg} backdrop-blur-sm rounded-lg p-3 border ${rmseBorder}`}>
               <div className="flex items-center justify-between mb-0.5">
-                <span className="text-sm text-slate-500 dark:text-slate-400">RMSE <span className="text-xs text-slate-400">(大误差敏感度)</span></span>
+                <span className="text-sm text-slate-500 dark:text-slate-400">RMSE <span className="text-xs text-slate-400">(大偏差放大)</span></span>
                 <BarChart3 className={`h-4 w-4 ${rmseIcon}`} />
               </div>
               <span className={`text-lg font-bold ${rmseText}`}>
@@ -298,25 +304,28 @@ export function AccuracyPanel() {
                 <span className={`text-xs px-1.5 py-0.5 rounded ${rmseColor === "emerald" ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : rmseColor === "amber" ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300" : "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
                   {rmseLabel}
                 </span>
-                <span className="text-xs text-slate-400">元，对大误差更敏感</span>
+                <span className="text-xs text-slate-400">{rmseExplain}</span>
               </div>
             </div>
           )
         })()}
 
-        {/* R²: 决定系数，越接近1越好。>0.9优秀(绿)，0.8-0.9良好(黄)，<0.8需关注(红) */}
+        {/* R²: 决定系数。衡量模型预测的可靠程度。
+            1.0 = 完美预测，0.8-0.9 = 较可靠，<0 = 模型还不如直接取平均值。
+            >0.9优秀(绿)，0.7-0.9良好(黄)，<0.7需关注(红) */}
         {(() => {
           const r2Val = overview.r2
-          const r2Color = r2Val > 0.9 ? "emerald" : r2Val > 0.8 ? "amber" : "red"
+          const r2Color = r2Val > 0.9 ? "emerald" : r2Val > 0.7 ? "amber" : "red"
           const r2Bg = r2Color === "emerald" ? "from-emerald-50 to-green-50 dark:from-emerald-500/10 dark:to-green-500/10" : r2Color === "amber" ? "from-amber-50 to-yellow-50 dark:from-amber-500/10 dark:to-yellow-500/10" : "from-red-50 to-rose-50 dark:from-red-500/10 dark:to-rose-500/10"
           const r2Border = r2Color === "emerald" ? "border-emerald-200/50 dark:border-emerald-500/20" : r2Color === "amber" ? "border-amber-200/50 dark:border-amber-500/20" : "border-red-200/50 dark:border-red-500/20"
           const r2Text = r2Color === "emerald" ? "text-emerald-600 dark:text-emerald-400" : r2Color === "amber" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
           const r2Icon = r2Color === "emerald" ? "text-emerald-600 dark:text-emerald-400" : r2Color === "amber" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
           const r2Label = r2Color === "emerald" ? "优秀" : r2Color === "amber" ? "良好" : "需关注"
+          const r2Explain = r2Val > 0.9 ? "预测非常可靠" : r2Val > 0.7 ? "预测较可靠" : r2Val > 0 ? "有一定参考价值" : "需积累更多数据训练"
           return (
             <div className={`bg-gradient-to-br ${r2Bg} backdrop-blur-sm rounded-lg p-3 border ${r2Border}`}>
               <div className="flex items-center justify-between mb-0.5">
-                <span className="text-sm text-slate-500 dark:text-slate-400">R² <span className="text-xs text-slate-400">(拟合度)</span></span>
+                <span className="text-sm text-slate-500 dark:text-slate-400">R² <span className="text-xs text-slate-400">(预测可靠度)</span></span>
                 <TrendingUp className={`h-4 w-4 ${r2Icon}`} />
               </div>
               <span className={`text-lg font-bold ${r2Text}`}>
@@ -326,11 +335,20 @@ export function AccuracyPanel() {
                 <span className={`text-xs px-1.5 py-0.5 rounded ${r2Color === "emerald" ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : r2Color === "amber" ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300" : "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
                   {r2Label}
                 </span>
-                <span className="text-xs text-slate-400">越接近1越好</span>
+                <span className="text-xs text-slate-400">{r2Explain}</span>
               </div>
             </div>
           )
         })()}
+      </div>
+
+      {/* 精度说明 */}
+      <div className="mb-4 px-3 py-2 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+          <span className="font-medium text-slate-600 dark:text-slate-300">指标说明：</span>
+          绿色 = 精度高可直接参考，黄色 = 有一定偏差建议结合判断，红色 = 偏差较大仅看趋势方向。
+          当前模型训练数据有限，精度会随数据积累逐步提升。R² 为负数表示模型尚未优于简单平均值预测，属于训练初期的正常现象。
+        </p>
       </div>
 
       {/* 融合预测展示 */}

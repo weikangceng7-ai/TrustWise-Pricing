@@ -390,18 +390,20 @@ class SulfurPricePredictor:
         except:
             return False
 
-    def train(self, data: pd.DataFrame = None, test_ratio: float = 0.1) -> Dict[str, Any]:
+    def train(self, data: pd.DataFrame = None, test_ratio: float = 0.1, auto_tune: bool = True) -> Dict[str, Any]:
         """
         训练 Hybrid Residual Ensemble 模型
 
         改进点:
-        - 增强残差特征: 10 维 (MA、动量、波动率) vs 原文 3 阶滞后
+        - 增强残差特征: 20+ 维
         - XGBoost + LightGBM 双模型残差学习
+        - Optuna 自动调参
         - 波动率 regime 检测
 
         Args:
             data: 价格数据，如果为 None 则使用已加载的数据
             test_ratio: 测试集比例
+            auto_tune: 是否使用 Optuna 自动调参
 
         Returns:
             训练结果，包含评估指标
@@ -461,14 +463,54 @@ class SulfurPricePredictor:
         X_train = train_features.values
         y_train = train_labels.values
 
+        # Optuna 自动调参
+        best_xgb_params = {'n_estimators': 100, 'max_depth': 3, 'learning_rate': 0.1}
+        best_lgb_params = {'n_estimators': 100, 'max_depth': 3, 'learning_rate': 0.1}
+
+        if auto_tune:
+            try:
+                import optuna
+                optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+                def objective(trial):
+                    # XGBoost 参数搜索
+                    xgb_params = {
+                        'n_estimators': trial.suggest_int('xgb_n_estimators', 50, 300),
+                        'max_depth': trial.suggest_int('xgb_max_depth', 2, 8),
+                        'learning_rate': trial.suggest_float('xgb_learning_rate', 0.01, 0.3, log=True),
+                        'subsample': trial.suggest_float('xgb_subsample', 0.6, 1.0),
+                        'colsample_bytree': trial.suggest_float('xgb_colsample', 0.6, 1.0),
+                        'objective': 'reg:squarederror',
+                        'random_state': 42
+                    }
+
+                    # 5折交叉验证
+                    from sklearn.model_selection import cross_val_score
+                    model = xgb.XGBRegressor(**xgb_params)
+                    scores = cross_val_score(model, X_train, y_train, cv=5, scoring='neg_mean_absolute_error')
+                    return -scores.mean()
+
+                print("Optuna 调参中...")
+                study = optuna.create_study(direction='minimize')
+                study.optimize(objective, n_trials=20, timeout=60)  # 最多20次试验或60秒
+
+                best_xgb_params = {
+                    'n_estimators': study.best_params['xgb_n_estimators'],
+                    'max_depth': study.best_params['xgb_max_depth'],
+                    'learning_rate': study.best_params['xgb_learning_rate'],
+                    'subsample': study.best_params['xgb_subsample'],
+                    'colsample_bytree': study.best_params['xgb_colsample'],
+                }
+                print(f"最佳参数: {best_xgb_params}")
+            except Exception as e:
+                print(f"Optuna 调参失败，使用默认参数: {e}")
+
         # 训练 XGBoost 模型预测残差
         print("训练 XGBoost 模型...")
         self.xgb_model = xgb.XGBRegressor(
             objective='reg:squarederror',
-            n_estimators=100,
-            max_depth=3,
-            learning_rate=0.1,
-            random_state=42
+            random_state=42,
+            **best_xgb_params
         )
         self.xgb_model.fit(X_train, y_train)
 
@@ -479,11 +521,9 @@ class SulfurPricePredictor:
             try:
                 self.lgb_model = lgb.LGBMRegressor(
                     objective='regression',
-                    n_estimators=100,
-                    max_depth=3,
-                    learning_rate=0.1,
                     random_state=42,
-                    verbose=-1
+                    verbose=-1,
+                    **best_lgb_params
                 )
                 self.lgb_model.fit(X_train, y_train)
                 print("LightGBM 训练成功")
