@@ -32,6 +32,7 @@ export const DATA_SOURCE_CONFIG = {
   bdi: { timeoutMs: 15000, cacheTtlSeconds: 2 * 60 * 60 }, // BDI 2 小时
   spot: { timeoutMs: 15000, cacheTtlSeconds: 6 * 60 * 60 }, // 现货 6 小时
   gdelt: { timeoutMs: 8000, cacheTtlSeconds: 2 * 60 * 60 }, // 新闻 2 小时
+  firecrawl: { timeoutMs: 30000, cacheTtlSeconds: 4 * 60 * 60 }, // 网页爬取 4 小时
 } as const
 
 export type DataSourceKey = keyof typeof DATA_SOURCE_CONFIG

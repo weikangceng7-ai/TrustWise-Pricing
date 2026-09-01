@@ -10,12 +10,19 @@ RUN sed -i 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.li
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装 Python 依赖（清华源）
+# 安装核心 Python 依赖（清华源，不含 torch/transformers）
 COPY python-service/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
+# 可选：CPU-only PyTorch（~200MB，比 CUDA 版小 10 倍）+ Transformers
+# 安装失败也不影响核心 ARIMA+XGBoost 功能
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu \
+    && pip install --no-cache-dir transformers -i https://pypi.tuna.tsinghua.edu.cn/simple \
+    || echo "[WARN] Transformer 安装失败，将使用 ARIMA+XGBoost 降级模式"
+
 # 复制源码
 COPY python-service/app.py .
+COPY python-service/external_data.py .
 RUN mkdir -p data models
 
 # gunicorn 生产模式

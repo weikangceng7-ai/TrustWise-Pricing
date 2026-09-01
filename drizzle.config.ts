@@ -6,7 +6,7 @@ loadEnv({ path: resolve(process.cwd(), ".env.local"), quiet: true })
 loadEnv({ path: resolve(process.cwd(), ".env"), quiet: true })
 
 export default defineConfig({
-  schema: "./src/db/schema.ts",
+  schema: ["./src/db/schema.ts", "./src/db/schema-rag.ts"],
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {

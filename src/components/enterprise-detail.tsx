@@ -33,6 +33,8 @@ import {
   isStaticEnterprise,
 } from "@/services/enterprise-storage"
 import { InventoryVisualization } from "./inventory-visualization"
+import { InventoryHealthDashboard } from "./inventory-health-dashboard"
+import { useLanguage } from "@/contexts/language-context"
 
 // 类型定义
 interface FactorWeight {
@@ -89,23 +91,23 @@ const TransportIcon = ({ mode }: { mode: "water" | "rail" | "road" }) => {
 }
 
 // 运输方式名称映射
-const TransportLabel = ({ mode }: { mode: "water" | "rail" | "road" }) => {
+const TransportLabel = ({ mode, t }: { mode: "water" | "rail" | "road"; t: (key: string) => string }) => {
   switch (mode) {
     case "water":
-      return "水运"
+      return t("enterpriseDetail.transport.water")
     case "rail":
-      return "铁路"
+      return t("enterpriseDetail.transport.rail")
     case "road":
-      return "公路"
+      return t("enterpriseDetail.transport.road")
   }
 }
 
 // 库存策略标签
-const InventoryStrategyBadge = ({ strategy }: { strategy: "aggressive" | "moderate" | "conservative" }) => {
+const InventoryStrategyBadge = ({ strategy, t }: { strategy: "aggressive" | "moderate" | "conservative"; t: (key: string) => string }) => {
   const config = {
-    aggressive: { label: "激进型", color: "text-rose-500 border-rose-500", desc: "低库存高周转" },
-    moderate: { label: "稳健型", color: "text-amber-500 border-amber-500", desc: "平衡库存周转" },
-    conservative: { label: "保守型", color: "text-emerald-500 border-emerald-500", desc: "高库存保供应" },
+    aggressive: { label: t("enterpriseDetail.strategy.aggressive"), color: "text-rose-500 border-rose-500", desc: t("enterpriseDetail.strategy.aggressiveDesc") },
+    moderate: { label: t("enterpriseDetail.strategy.moderate"), color: "text-amber-500 border-amber-500", desc: t("enterpriseDetail.strategy.moderateDesc") },
+    conservative: { label: t("enterpriseDetail.strategy.conservative"), color: "text-emerald-500 border-emerald-500", desc: t("enterpriseDetail.strategy.conservativeDesc") },
   }
   const c = config[strategy]
   return (
@@ -116,13 +118,13 @@ const InventoryStrategyBadge = ({ strategy }: { strategy: "aggressive" | "modera
 }
 
 // 因子类别图标和颜色
-const CategoryConfig: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
-  supply: { icon: <Truck className="h-3.5 w-3.5" />, color: "text-blue-500", label: "供应端" },
-  demand: { icon: <Users className="h-3.5 w-3.5" />, color: "text-violet-500", label: "需求端" },
-  inventory: { icon: <Warehouse className="h-3.5 w-3.5" />, color: "text-amber-500", label: "库存" },
-  external: { icon: <Globe className="h-3.5 w-3.5" />, color: "text-cyan-500", label: "外部" },
-  internal: { icon: <Factory className="h-3.5 w-3.5" />, color: "text-emerald-500", label: "内部" },
-}
+const CategoryConfig = (t: (key: string) => string): Record<string, { icon: React.ReactNode; color: string; label: string }> => ({
+  supply: { icon: <Truck className="h-3.5 w-3.5" />, color: "text-blue-500", label: t("enterpriseDetail.category.supply") },
+  demand: { icon: <Users className="h-3.5 w-3.5" />, color: "text-violet-500", label: t("enterpriseDetail.category.demand") },
+  inventory: { icon: <Warehouse className="h-3.5 w-3.5" />, color: "text-amber-500", label: t("enterpriseDetail.category.inventory") },
+  external: { icon: <Globe className="h-3.5 w-3.5" />, color: "text-cyan-500", label: t("enterpriseDetail.category.external") },
+  internal: { icon: <Factory className="h-3.5 w-3.5" />, color: "text-emerald-500", label: t("enterpriseDetail.category.internal") },
+})
 
 // 企业颜色（静态）
 const STATIC_ENTERPRISE_COLORS: Record<string, string> = {
@@ -162,8 +164,8 @@ function getDefaultEnterpriseData(code: string): EnterpriseData | null {
     return {
       code: storedEnterprise.code,
       name: storedEnterprise.name,
-      location: storedEnterprise.location || '未知地区',
-      province: storedEnterprise.province || '华东',
+      location: storedEnterprise.location || '',
+      province: storedEnterprise.province || '',
       capacity: storedEnterprise.capacity || 80,
       transportMode: storedEnterprise.transportMode || 'water',
       mainProducts: storedEnterprise.mainProducts || [],
@@ -194,18 +196,21 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
   const [enterprise, setEnterprise] = useState<EnterpriseData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { t } = useLanguage()
 
   useEffect(() => {
     async function fetchEnterpriseData() {
       setLoading(true)
       setError(null)
       try {
-        // 从 Neo4j 图谱 API 获取企业数据
-        const response = await fetch(`/api/neo4j/graph?enterprise=${enterpriseCode}`)
-        if (!response.ok) {
-          throw new Error("获取企业数据失败")
+        const [neo4jRes] = await Promise.all([
+          fetch(`/api/neo4j/graph?enterprise=${enterpriseCode}`),
+        ])
+
+        if (!neo4jRes.ok) {
+          throw new Error("Failed to fetch enterprise data")
         }
-        const data = await response.json()
+        const data = await neo4jRes.json()
 
         // 解析图谱数据
         const enterpriseNode = data.nodes.find((n: { type: string }) => n.type === "Enterprise")
@@ -251,7 +256,7 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
         setEnterprise(enterpriseData)
       } catch (err) {
         console.error("Failed to fetch enterprise data:", err)
-        setError("无法加载企业数据，使用默认数据")
+        setError(t("enterpriseDetail.loadError"))
         // 使用默认数据
         const defaultData = getDefaultEnterpriseData(enterpriseCode)
         if (defaultData) {
@@ -278,7 +283,7 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
   }
 
   if (!enterprise) {
-    return <div className="text-center py-8 text-slate-500">企业信息不存在</div>
+    return <div className="text-center py-8 text-slate-500">{t("enterpriseDetail.notFound")}</div>
   }
 
   // 按类别分组因子
@@ -326,7 +331,7 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
               style={{ borderColor: enterprise.color, color: enterprise.color }}
             >
               <Factory className="h-3.5 w-3.5 mr-1" />
-              产能 {enterprise.capacity} 万吨/年
+              {t("enterpriseDetail.capacityPrefix")}{enterprise.capacity}{t("enterpriseDetail.capacitySuffix")}
             </Badge>
           </div>
         </CardHeader>
@@ -339,24 +344,24 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
             <div className="flex items-center gap-2">
               <TransportIcon mode={enterprise.transportMode} />
               <span className="text-sm text-slate-600 dark:text-slate-400">
-                主要运输：<TransportLabel mode={enterprise.transportMode} />
+                {t("enterpriseDetail.mainTransport")}<TransportLabel mode={enterprise.transportMode} t={t} />
               </span>
             </div>
             <div className="flex items-center gap-2">
               <Leaf className="h-4 w-4 text-slate-400" />
               <span className="text-sm text-slate-600 dark:text-slate-400">
-                主营：{enterprise.mainProducts.slice(0, 2).join("、")}
+                {t("enterpriseDetail.mainProducts")}{enterprise.mainProducts.slice(0, 2).join(", ")}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <Warehouse className="h-4 w-4 text-slate-400" />
-              <span className="text-sm text-slate-600 dark:text-slate-400">库存策略：</span>
-              <InventoryStrategyBadge strategy={enterprise.inventoryStrategy} />
+              <span className="text-sm text-slate-600 dark:text-slate-400">{t("enterpriseDetail.inventoryStrategy")}</span>
+              <InventoryStrategyBadge strategy={enterprise.inventoryStrategy} t={t} />
             </div>
           </div>
           <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
             <div className="flex flex-wrap gap-2">
-              <span className="text-xs text-slate-500">销售区域：</span>
+              <span className="text-xs text-slate-500">{t("enterpriseDetail.salesRegions")}</span>
               {enterprise.customerRegions.map((region, i) => (
                 <Badge key={i} variant="secondary" className="text-xs">
                   {region}
@@ -373,21 +378,21 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Target className="h-5 w-5" style={{ color: enterprise.color }} />
-              <CardTitle className="text-lg text-slate-900 dark:text-white">价格影响因子权重</CardTitle>
+              <CardTitle className="text-lg text-slate-900 dark:text-white">{t("enterpriseDetail.factorWeights")}</CardTitle>
             </div>
             <Badge variant="outline" className="text-xs text-slate-500">
               <Info className="h-3 w-3 mr-1" />
-              基于企业特征差异化计算
+              {t("enterpriseDetail.factorWeightsDesc")}
             </Badge>
           </div>
           <CardDescription>
-            根据{enterprise.name}的运输方式、库存策略、客户结构等特征，动态计算各因子权重
+            {t("enterpriseDetail.factorWeightsDetailPrefix")}{enterprise.name}{t("enterpriseDetail.factorWeightsDetailSuffix")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {/* 因子类别图例 */}
           <div className="flex flex-wrap gap-3 mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
-            {Object.entries(CategoryConfig).map(([key, config]) => (
+            {Object.entries(CategoryConfig(t)).map(([key, config]) => (
               <div key={key} className="flex items-center gap-1.5">
                 <span className={config.color}>{config.icon}</span>
                 <span className="text-xs text-slate-500">{config.label}</span>
@@ -398,7 +403,7 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
           {/* 因子列表 - 带原因说明 */}
           <div className="space-y-4">
             {enterprise.factorWeights.slice(0, 8).map((factor, index) => {
-              const catConfig = CategoryConfig[factor.category] || CategoryConfig.external
+              const catConfig = CategoryConfig(t)[factor.category] || CategoryConfig(t).external
               return (
                 <div key={index} className="space-y-1.5">
                   <div className="flex items-center justify-between">
@@ -446,10 +451,10 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Truck className="h-5 w-5 text-blue-500" />
-              <CardTitle className="text-base text-slate-900 dark:text-white">供应端因素</CardTitle>
+              <CardTitle className="text-base text-slate-900 dark:text-white">{t("enterpriseDetail.supplyFactors")}</CardTitle>
             </div>
             <CardDescription className="text-xs">
-              企业间差异较小，国际采购为主
+              {t("enterpriseDetail.supplyFactorsDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -465,7 +470,7 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
                 </div>
               ))}
               {(!factorsByCategory.supply || factorsByCategory.supply.length === 0) && (
-                <p className="text-xs text-slate-400 text-center py-2">暂无供应端因素数据</p>
+                <p className="text-xs text-slate-400 text-center py-2">{t("enterpriseDetail.noSupplyData")}</p>
               )}
             </div>
           </CardContent>
@@ -476,10 +481,10 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5 text-violet-500" />
-              <CardTitle className="text-base text-slate-900 dark:text-white">需求端因素</CardTitle>
+              <CardTitle className="text-base text-slate-900 dark:text-white">{t("enterpriseDetail.demandFactors")}</CardTitle>
             </div>
             <CardDescription className="text-xs">
-              企业差异大，取决于产能和客户结构
+              {t("enterpriseDetail.demandFactorsDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -495,7 +500,7 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
                 </div>
               ))}
               {(!factorsByCategory.demand || factorsByCategory.demand.length === 0) && (
-                <p className="text-xs text-slate-400 text-center py-2">暂无需求端因素数据</p>
+                <p className="text-xs text-slate-400 text-center py-2">{t("enterpriseDetail.noDemandData")}</p>
               )}
             </div>
           </CardContent>
@@ -506,10 +511,10 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Warehouse className="h-5 w-5 text-amber-500" />
-              <CardTitle className="text-base text-slate-900 dark:text-white">库存因素</CardTitle>
+              <CardTitle className="text-base text-slate-900 dark:text-white">{t("enterpriseDetail.inventoryFactors")}</CardTitle>
             </div>
             <CardDescription className="text-xs">
-              取决于企业库存策略：{enterprise.inventoryStrategy === "aggressive" ? "激进" : enterprise.inventoryStrategy === "conservative" ? "保守" : "稳健"}
+              {t("enterpriseDetail.inventoryFactorsDescPrefix")}{enterprise.inventoryStrategy === "aggressive" ? t("enterpriseDetail.strategy.aggressive") : enterprise.inventoryStrategy === "conservative" ? t("enterpriseDetail.strategy.conservative") : t("enterpriseDetail.strategy.moderate")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -525,7 +530,7 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
                 </div>
               ))}
               {(!factorsByCategory.inventory || factorsByCategory.inventory.length === 0) && (
-                <p className="text-xs text-slate-400 text-center py-2">暂无库存因素数据</p>
+                <p className="text-xs text-slate-400 text-center py-2">{t("enterpriseDetail.noInventoryData")}</p>
               )}
             </div>
           </CardContent>
@@ -541,14 +546,19 @@ export function EnterpriseDetail({ enterpriseCode }: EnterpriseDetailProps) {
         />
       )}
 
+      {/* 库存健康度仪表盘 */}
+      {enterprise.inventory && (
+        <InventoryHealthDashboard inventory={enterprise.inventory} />
+      )}
+
       {/* 价格预测图表 */}
       <Card className="bg-white/80 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Brain className="h-5 w-5" style={{ color: enterprise.color }} />
-            <CardTitle className="text-lg text-slate-900 dark:text-white">价格预测趋势</CardTitle>
+            <CardTitle className="text-lg text-slate-900 dark:text-white">{t("enterpriseDetail.pricePrediction")}</CardTitle>
           </div>
-          <CardDescription>Hybrid ARIMA + XGBoost 模型预测结果</CardDescription>
+          <CardDescription>{t("enterpriseDetail.pricePredictionDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           <EnterprisePredictionChart enterpriseCode={enterpriseCode} days={90} />

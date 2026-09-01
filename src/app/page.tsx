@@ -65,11 +65,12 @@ function useInView(options = {}) {
 // 轮播价值主张
 function RotatingValueProps() {
   const [currentIdx, setCurrentIdx] = useState(0)
+  const { t } = useLanguage()
   const items = [
-    { icon: <TrendingUp className="h-4 w-4" />, text: "实时价格预测", label: "Hybrid ARIMA + XGBoost 混合模型" },
-    { icon: <Brain className="h-4 w-4" />, text: "智能采购决策", label: "AI Agent 多维度分析建议" },
-    { icon: <Shield className="h-4 w-4" />, text: "风险预警管理", label: "价格异动主动推送通知" },
-    { icon: <BarChart3 className="h-4 w-4" />, text: "知识图谱推理", label: "Neo4j 双层因果推理引擎" },
+    { icon: <TrendingUp className="h-4 w-4" />, text: t("landing.valueProps.realtime"), label: t("landing.valueProps.realtimeLabel") },
+    { icon: <Brain className="h-4 w-4" />, text: t("landing.valueProps.decision"), label: t("landing.valueProps.decisionLabel") },
+    { icon: <Shield className="h-4 w-4" />, text: t("landing.valueProps.risk"), label: t("landing.valueProps.riskLabel") },
+    { icon: <BarChart3 className="h-4 w-4" />, text: t("landing.valueProps.graph"), label: t("landing.valueProps.graphLabel") },
   ]
 
   useEffect(() => {
@@ -83,7 +84,7 @@ function RotatingValueProps() {
     <div className="flex items-center gap-3">
       <div className="relative flex items-center gap-2 px-3 py-2 rounded-lg bg-white/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 min-w-[260px]">
         <span className="absolute top-0 left-3 -translate-y-1/2 text-[10px] px-1.5 py-0.5 bg-cyan-100 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 rounded font-medium">
-          核心能力
+          {t("landing.valueProps.coreLabel")}
         </span>
         {items.map((item, idx) => (
           <div
@@ -366,7 +367,7 @@ function Navbar() {
             <button
               onClick={() => setLang(lang === "zh" ? "en" : "zh")}
               className="p-2 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors flex items-center gap-1 text-xs font-medium"
-              title={lang === "zh" ? "Switch to English" : "切换到中文"}
+              title={t(lang === "zh" ? "nav.switchLang" : "nav.switchLang")}
             >
               <Globe className="h-4 w-4" />
               <span>{lang === "zh" ? "EN" : "中"}</span>
@@ -375,7 +376,7 @@ function Navbar() {
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-              title={mounted ? (resolvedTheme === "dark" ? "切换浅色模式" : "切换深色模式") : "切换主题"}
+              title={mounted ? (resolvedTheme === "dark" ? t("nav.lightMode") : t("nav.darkMode")) : t("nav.switchTheme")}
             >
               <ThemeIcon className="h-5 w-5" />
             </button>
@@ -436,14 +437,14 @@ function Navbar() {
                   className="text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm py-2.5 rounded-lg flex items-center gap-2"
                 >
                   <ThemeIcon className="h-4 w-4" />
-                  {mounted ? (resolvedTheme === "dark" ? "浅色模式" : "深色模式") : "切换主题"}
+                  {mounted ? (resolvedTheme === "dark" ? t("nav.lightMode") : t("nav.darkMode")) : t("nav.switchTheme")}
                 </button>
                 <button
                   onClick={() => setLang(lang === "zh" ? "en" : "zh")}
                   className="text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm py-2.5 rounded-lg flex items-center gap-2"
                 >
                   <Globe className="h-4 w-4" />
-                  {lang === "zh" ? "English" : "中文"}
+                  {lang === "zh" ? t("nav.english") : t("nav.chinese")}
                 </button>
               </div>
               <Link href="/login" className="text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm py-2.5 px-3 rounded-lg">
@@ -573,8 +574,7 @@ function HeroSection() {
             <p
               className={`text-xl text-slate-600 dark:text-slate-400 mb-4 max-w-lg leading-relaxed transition-all duration-700 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
             >
-              基于 AI 的市场价格分析与采购决策支持平台，
-              为化工企业提供精准的价格预测与智能采购建议。
+              <span>{t("landing.hero.sub")}</span>
             </p>
 
             {/* 轮播价值主张 */}
@@ -617,7 +617,7 @@ function HeroSection() {
                 <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center ring-2 ring-white dark:ring-slate-900"><Building2 className="h-3 w-3 text-white" /></div>
                 <div className="w-6 h-6 rounded-full bg-violet-500 flex items-center justify-center ring-2 ring-white dark:ring-slate-900"><Star className="h-3 w-3 text-white" /></div>
               </div>
-              <span>已服务 <strong className="text-slate-700 dark:text-slate-300">100+</strong> 化工企业，包括行业龙头企业</span>
+              <span>{t("landing.trustedBy.served")} <strong className="text-slate-700 dark:text-slate-300">100+</strong> {t("landing.trustedBy.units")}</span>
             </div>
 
             {/* 数据卡片 */}
@@ -648,7 +648,7 @@ function HeroSection() {
                 </div>
                 <div>
                   <div className="text-sm text-slate-500 dark:text-slate-400">{t("landing.stats.data")}</div>
-                  <div className="text-lg font-bold text-slate-900 dark:text-white">10年+</div>
+                  <div className="text-lg font-bold text-slate-900 dark:text-white">{t("landing.stats.dataYears")}</div>
                 </div>
               </div>
             </div>
@@ -666,7 +666,7 @@ function HeroSection() {
                   <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500" />
                   <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-green-500 to-green-600" />
                 </div>
-                <span className="text-xs text-slate-500 dark:text-slate-500 font-medium px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-700/50">实时价格预测</span>
+                <span className="text-xs text-slate-500 dark:text-slate-500 font-medium px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-700/50">{t("landing.chartTitle")}</span>
               </div>
 
               {/* 动态图表 */}
@@ -675,19 +675,19 @@ function HeroSection() {
               {/* 底部统计 */}
               <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-200 dark:border-slate-700/50">
                 <div className="group hover:scale-105 transition-transform cursor-default">
-                  <div className="text-xs text-slate-500 dark:text-slate-500 mb-2">当前价格</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-500 mb-2">{t("landing.currentPrice")}</div>
                   <div className="text-xl font-bold text-slate-900 dark:text-white">¥1,850</div>
-                  <div className="text-xs text-slate-400 dark:text-slate-400 mt-1">/吨</div>
+                  <div className="text-xs text-slate-400 dark:text-slate-400 mt-1">{t("dashboard.perTon")}</div>
                 </div>
                 <div className="group hover:scale-105 transition-transform cursor-default">
-                  <div className="text-xs text-slate-500 dark:text-slate-500 mb-2">7日预测</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-500 mb-2">{t("landing.sevenDay")}</div>
                   <div className="text-xl font-bold text-cyan-600 dark:text-cyan-400 flex items-center gap-1">
                     <TrendingUp className="h-4 w-4" />
                     +3.2%
                   </div>
                 </div>
                 <div className="group hover:scale-105 transition-transform cursor-default">
-                  <div className="text-xs text-slate-500 dark:text-slate-500 mb-2">置信度</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-500 mb-2">{t("landing.confidence")}</div>
                   <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">96%</div>
                 </div>
               </div>
@@ -696,7 +696,7 @@ function HeroSection() {
             {/* 浮动标签 */}
             <div className="absolute -top-5 -right-5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 text-white text-sm font-semibold shadow-xl shadow-emerald-500/40 animate-bounce-slow flex items-center gap-2">
               <Zap className="h-4 w-4" />
-              AI 实时分析
+              {t("landing.aiLabel")}
             </div>
 
             {/* 装饰元素 */}
@@ -717,35 +717,35 @@ function FeaturesSection() {
   const features = [
     {
       icon: <LineChart className="h-7 w-7" />,
-      title: "智能价格预测",
-      description: "融合深度学习模型，结合多维度市场数据，实现精准的短期与中长期价格预测",
+      title: t("landing.features.price"),
+      description: t("landing.features.priceDesc"),
       color: "from-cyan-500 via-blue-500 to-cyan-600",
       delay: 100,
-      tags: ["深度学习", "多维度分析"]
+      tagKeys: ["landing.features.priceTag1", "landing.features.priceTag2"]
     },
     {
       icon: <Brain className="h-7 w-7" />,
-      title: "AI 决策助手",
-      description: "基于大语言模型的智能对话系统，随时解答市场疑问、提供采购建议",
+      title: t("landing.features.agent"),
+      description: t("landing.features.agentDesc"),
       color: "from-violet-500 via-purple-500 to-violet-600",
       delay: 200,
-      tags: ["LLM", "智能对话"]
+      tagKeys: ["landing.features.agentTag1", "landing.features.agentTag2"]
     },
     {
       icon: <BarChart3 className="h-7 w-7" />,
-      title: "知识图谱引擎",
-      description: "可视化呈现价格与供需、成本、政策等因素的复杂关联关系",
+      title: t("landing.features.graph"),
+      description: t("landing.features.graphDesc"),
       color: "from-blue-500 via-indigo-500 to-blue-600",
       delay: 300,
-      tags: ["可视化", "关联分析"]
+      tagKeys: ["landing.features.graphTag1", "landing.features.graphTag2"]
     },
     {
       icon: <FileText className="h-7 w-7" />,
-      title: "自动化报告",
-      description: "一键生成专业采购决策报告，包含价格预测、风险评估、采购策略",
+      title: t("landing.features.report"),
+      description: t("landing.features.reportDesc"),
       color: "from-amber-500 via-orange-500 to-amber-600",
       delay: 400,
-      tags: ["一键生成", "专业报告"]
+      tagKeys: ["landing.features.reportTag1", "landing.features.reportTag2"]
     }
   ]
 
@@ -766,7 +766,7 @@ function FeaturesSection() {
             {t("landing.features.subtitle")}
           </h2>
           <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            从数据采集到决策输出，全链路 AI 驱动的价格预测与采购决策支持
+            {t("landing.features.desc")}
           </p>
         </div>
 
@@ -796,12 +796,12 @@ function FeaturesSection() {
 
               {/* 标签 */}
               <div className="relative flex gap-2">
-                {feature.tags.map((tag, idx) => (
+                {feature.tagKeys.map((tagKey: string, idx: number) => (
                   <span
                     key={idx}
                     className={`px-3 py-1 rounded-lg text-xs font-medium bg-gradient-to-r ${feature.color} bg-opacity-10 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600`}
                   >
-                    {tag}
+                    {t(tagKey)}
                   </span>
                 ))}
               </div>
@@ -833,10 +833,10 @@ function StatsSection() {
   const { ref: sectionRef, isInView } = useInView()
 
   const stats = [
-    { value: "95.2%", label: t("landing.stats.accuracy"), icon: <Target className="h-6 w-6" />, delay: 100, desc: "基于历史验证" },
-    { value: "100+", label: t("landing.stats.enterprises"), icon: <Users className="h-6 w-6" />, delay: 200, desc: "化工行业龙头" },
-    { value: "10年+", label: t("landing.stats.data"), icon: <Database className="h-6 w-6" />, delay: 300, desc: "全球市场覆盖" },
-    { value: "24/7", label: t("landing.stats.monitoring"), icon: <Activity className="h-6 w-6" />, delay: 400, desc: "全天候预警" }
+    { value: "95.2%", label: t("landing.stats.accuracy"), icon: <Target className="h-6 w-6" />, delay: 100, desc: t("landing.stats.accuracyVerified") },
+    { value: "100+", label: t("landing.stats.enterprises"), icon: <Users className="h-6 w-6" />, delay: 200, desc: t("landing.stats.enterprisesLeader") },
+    { value: t("landing.stats.dataYears"), label: t("landing.stats.data"), icon: <Database className="h-6 w-6" />, delay: 300, desc: t("landing.stats.dataGlobal") },
+    { value: "24/7", label: t("landing.stats.monitoring"), icon: <Activity className="h-6 w-6" />, delay: 400, desc: t("landing.stats.monitoringAlways") }
   ]
 
   return (
@@ -881,17 +881,18 @@ function StatsSection() {
 
 // 客户 Logo 墙
 function TrustedBySection() {
+  const { t } = useLanguage()
   const { ref: sectionRef, isInView } = useInView()
 
   const clients = [
-    { name: "HX集团", industry: "磷化工", shortCode: "HX" },
-    { name: "HY集团", industry: "化肥制造", shortCode: "HY" },
-    { name: "TC集团", industry: "复合肥", shortCode: "TC" },
-    { name: "YN集团", industry: "磷化工", shortCode: "YN" },
-    { name: "XF集团", industry: "磷复肥", shortCode: "XF" },
-    { name: "SD集团", industry: "化肥", shortCode: "SD" },
-    { name: "LH集团", industry: "化工", shortCode: "LH" },
-    { name: "BS集团", industry: "复合肥", shortCode: "BS" },
+    { name: "HX集团", industry: t("client.industry.phosphorus"), shortCode: "HX" },
+    { name: "HY集团", industry: t("client.industry.fertilizer"), shortCode: "HY" },
+    { name: "TC集团", industry: t("client.industry.compound"), shortCode: "TC" },
+    { name: "YN集团", industry: t("client.industry.phosphorus"), shortCode: "YN" },
+    { name: "XF集团", industry: t("client.industry.compound"), shortCode: "XF" },
+    { name: "SD集团", industry: t("client.industry.fertilizerShort"), shortCode: "SD" },
+    { name: "LH集团", industry: t("client.industry.chemical"), shortCode: "LH" },
+    { name: "BS集团", industry: t("client.industry.compound"), shortCode: "BS" },
   ]
 
   return (
@@ -900,13 +901,13 @@ function TrustedBySection() {
         <div className={`text-center mb-12 transition-all duration-600 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-200/50 dark:bg-slate-700/50 mb-5">
             <Building2 className="h-4 w-4 text-cyan-500" />
-            <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">他们都在使用 SulfurAI</span>
+            <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">{t("landing.trustedBy.badge")}</span>
           </div>
           <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-3 tracking-tight">
-            已服务行业龙头企业
+            {t("landing.trustedBy.title")}
           </h2>
-          <p className="text-base text-slate-500 dark:text-slate-400">覆盖磷化工、化肥制造、复合肥等多个细分领域</p>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">* 演示示例数据，企业名称已匿名化处理</p>
+          <p className="text-base text-slate-500 dark:text-slate-400">{t("landing.trustedBy.desc")}</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">{t("landing.trustedBy.note")}</p>
         </div>
 
         <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
@@ -932,34 +933,35 @@ function TrustedBySection() {
 // 合作伙伴区域
 function PartnersSection() {
   const { ref: sectionRef, isInView } = useInView()
+  const { t } = useLanguage()
 
   const partners = [
     {
-      category: "行业协会",
+      category: t("landing.partner.associationCategory"),
       icon: <Award className="h-5 w-5" />,
       items: [
-        { name: "中国磷复肥工业协会", role: "行业标准合作" },
-        { name: "中国硫酸工业协会", role: "数据与资讯合作" },
+        { name: t("landing.partner.association1"), role: t("landing.partner.association1Role") },
+        { name: t("landing.partner.association2"), role: t("landing.partner.association2Role") },
       ],
       delay: 100,
     },
     {
-      category: "数据合作伙伴",
+      category: t("landing.partner.dataCategory"),
       icon: <Globe className="h-5 w-5" />,
       items: [
-        { name: "EIA 美国能源信息署", role: "原油价格数据" },
-        { name: "FRED 美联储经济数据", role: "宏观经济指标" },
-        { name: "GDELT 全球事件数据库", role: "地缘事件监测" },
+        { name: t("landing.partner.data1"), role: t("landing.partner.data1Role") },
+        { name: t("landing.partner.data2"), role: t("landing.partner.data2Role") },
+        { name: t("landing.partner.data3"), role: t("landing.partner.data3Role") },
       ],
       delay: 200,
     },
     {
-      category: "技术合作伙伴",
+      category: t("landing.partner.techCategory"),
       icon: <Cpu className="h-5 w-5" />,
       items: [
-        { name: "OpenRouter AI", role: "LLM 模型服务" },
-        { name: "Neo4j 图数据库", role: "知识图谱引擎" },
-        { name: "Vercel 云平台", role: "全球部署与托管" },
+        { name: t("landing.partner.tech1"), role: t("landing.partner.tech1Role") },
+        { name: t("landing.partner.tech2"), role: t("landing.partner.tech2Role") },
+        { name: t("landing.partner.tech3"), role: t("landing.partner.tech3Role") },
       ],
       delay: 300,
     },
@@ -972,12 +974,12 @@ function PartnersSection() {
         <div className={`text-center mb-12 transition-all duration-600 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-200/50 dark:bg-slate-700/50 mb-5">
             <Star className="h-4 w-4 text-cyan-500" />
-            <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">合作伙伴生态</span>
+            <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">{t("landing.partnerBadge")}</span>
           </div>
           <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-3 tracking-tight">
-            行业认可与合作
+            {t("landing.partnerTitle")}
           </h2>
-          <p className="text-base text-slate-500 dark:text-slate-400">与全球顶尖机构合作，构建行业数据智慧网络</p>
+          <p className="text-base text-slate-500 dark:text-slate-400">{t("landing.partnerDesc")}</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -1015,12 +1017,13 @@ function PartnersSection() {
 // 关于区域
 function AboutSection() {
   const { ref: sectionRef, isInView } = useInView()
+  const { t } = useLanguage()
 
   const benefits = [
-    { text: "降低采购成本 8-15%", icon: <TrendingUp className="h-5 w-5" />, delay: 100 },
-    { text: "分析效率提升 70%", icon: <Zap className="h-5 w-5" />, delay: 200 },
-    { text: "提前预警价格波动", icon: <Shield className="h-5 w-5" />, delay: 300 },
-    { text: "数据驱动决策", icon: <Activity className="h-5 w-5" />, delay: 400 }
+    { text: t("landing.benefits.cost"), icon: <TrendingUp className="h-5 w-5" />, delay: 100 },
+    { text: t("landing.benefits.efficiency"), icon: <Zap className="h-5 w-5" />, delay: 200 },
+    { text: t("landing.benefits.alert"), icon: <Shield className="h-5 w-5" />, delay: 300 },
+    { text: t("landing.benefits.dataDriven"), icon: <Activity className="h-5 w-5" />, delay: 400 }
   ]
 
   return (
@@ -1034,15 +1037,14 @@ function AboutSection() {
           <div className={`transition-all duration-800 ${isInView ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-16'}`}>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-100/50 dark:bg-cyan-500/10 mb-6">
               <CheckCircle2 className="h-4 w-4 text-cyan-500" />
-              <span className="text-sm text-cyan-600 dark:text-cyan-400 font-medium">核心价值</span>
+              <span className="text-sm text-cyan-600 dark:text-cyan-400 font-medium">{t("landing.benefits.coreValue")}</span>
             </div>
 
             <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight">
-              为什么选择我们
+              {t("landing.about.title")}
             </h2>
             <p className="text-lg text-slate-600 dark:text-slate-400 mb-10 leading-relaxed">
-              我们结合深度学习算法、大语言模型和知识图谱技术，
-              为化工行业提供前所未有的价格预测精度和决策支持能力。
+              {t("landing.about.desc")}
             </p>
 
             <div className="space-y-5">
@@ -1070,11 +1072,10 @@ function AboutSection() {
               <div className="absolute -top-10 -right-10 w-40 h-40 bg-cyan-500/20 rounded-full blur-[60px]" />
 
               <h3 className="relative text-2xl font-bold text-slate-900 dark:text-white mb-5">
-                开始智能采购之旅
+                {t("landing.ctaCard.title")}
               </h3>
               <p className="relative text-slate-600 dark:text-slate-400 mb-8 leading-relaxed">
-                立即注册，获取免费试用体验，
-                让 AI 为您的采购决策保驾护航。
+                {t("landing.ctaCard.desc")}
               </p>
 
               <div className="relative flex flex-col sm:flex-row gap-4">
@@ -1082,14 +1083,14 @@ function AboutSection() {
                   href="/register"
                   className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-500 to-cyan-600 text-white text-lg font-semibold hover:from-cyan-400 hover:via-blue-400 hover:to-cyan-500 transition-all shadow-xl shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:scale-105"
                 >
-                  预约演示
+                  {t("landing.ctaCard.demo")}
                   <ArrowRight className="h-5 w-5" />
                 </Link>
                 <Link
                   href="/success-cases"
                   className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-lg font-semibold hover:bg-white dark:hover:bg-slate-700 transition-all"
                 >
-                  查看案例
+                  {t("landing.ctaCard.cases")}
                 </Link>
               </div>
 
@@ -1104,62 +1105,62 @@ function AboutSection() {
 }
 
 
-// 右下角快速页面导航 - 静态配置
-const QUICK_NAV_PAGES = [
+// 右下角快速页面导航 - 静态配置（使用翻译工厂函数）
+const getQuickNavPages = (t: (key: string) => string) => [
   {
-    title: "首页",
+    title: t("quickNav.home"),
     icon: HomeIcon,
     href: "/",
-    description: "产品介绍与功能展示",
+    description: t("quickNav.homeDesc"),
     color: "cyan"
   },
   {
-    title: "仪表盘",
+    title: t("quickNav.dashboard"),
     icon: BarChart3,
     href: "/dashboard",
-    description: "市场概览与价格走势",
+    description: t("quickNav.dashboardDesc"),
     color: "violet"
   },
   {
-    title: "知识图谱",
+    title: t("quickNav.knowledgeGraph"),
     icon: Network,
     href: "/yihua-code-graph",
-    description: "价格知识图谱可视化",
+    description: t("quickNav.knowledgeGraphDesc"),
     color: "amber"
   },
   {
-    title: "HX集团",
+    title: t("quickNav.hx"),
     icon: TrendingUp,
     href: "/enterprise/yihua",
-    description: "硫磺产能约120万吨/年",
+    description: t("quickNav.hxDesc"),
     color: "cyan"
   },
   {
-    title: "HY集团",
+    title: t("quickNav.hy"),
     icon: TrendingUp,
     href: "/enterprise/luxi",
-    description: "华北地区大型化工企业",
+    description: t("quickNav.hyDesc"),
     color: "violet"
   },
   {
-    title: "TC集团",
+    title: t("quickNav.tc"),
     icon: TrendingUp,
     href: "/enterprise/jinzhengda",
-    description: "华东地区复合肥企业",
+    description: t("quickNav.tcDesc"),
     color: "amber"
   },
   {
-    title: "AI对话",
+    title: t("quickNav.aiChat"),
     icon: Sparkles,
     href: "/agent-chat",
-    description: "智能问答助手",
+    description: t("quickNav.aiChatDesc"),
     color: "rose"
   },
   {
-    title: "决策报告",
+    title: t("quickNav.reports"),
     icon: FileText,
     href: "/reports",
-    description: "采购决策报告",
+    description: t("quickNav.reportsDesc"),
     color: "blue"
   },
 ]
@@ -1174,13 +1175,16 @@ const QUICK_NAV_COLOR_CLASSES: Record<string, { bg: string; border: string; text
 }
 
 function QuickPageNavigator() {
+  const { t } = useLanguage()
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isExpanded, setIsExpanded] = useState(false)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
   const touchStartY = useRef(0)
   const touchEndY = useRef(0)
 
-  const pagesLength = QUICK_NAV_PAGES.length
+  const quickNavPages = getQuickNavPages(t)
+
+  const pagesLength = quickNavPages.length
 
   // 自动轮播
   useEffect(() => {
@@ -1220,7 +1224,7 @@ function QuickPageNavigator() {
     }
   }
 
-  const currentPage = QUICK_NAV_PAGES[currentIndex]
+  const currentPage = quickNavPages[currentIndex]
   const colors = QUICK_NAV_COLOR_CLASSES[currentPage.color] || QUICK_NAV_COLOR_CLASSES.cyan
   const IconComponent = currentPage.icon
 
@@ -1270,7 +1274,7 @@ function QuickPageNavigator() {
 
             {/* 页面指示器 */}
             <div className="flex items-center gap-1">
-              {QUICK_NAV_PAGES.map((page, idx) => (
+              {quickNavPages.map((page, idx) => (
                 <button
                   key={idx}
                   onClick={() => {

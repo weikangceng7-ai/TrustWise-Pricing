@@ -5,6 +5,7 @@ import OpenAI from "openai"
 import { generateSystemPromptWithContext } from "@/lib/system-prompt"
 import { getPrices, getInventory } from "@/services/prices"
 import { searchKnowledge, formatKnowledgeContext } from "@/services/rag-search"
+import { fetchRealtimeMarketContext, isMarketRelatedQuery } from "@/lib/realtime-market-context"
 import type { ApiKey, ApiQuota } from "@/db/schema"
 
 export const maxDuration = 60
@@ -45,9 +46,15 @@ export async function POST(request: NextRequest) {
         searchKnowledge(message, 3).catch(() => []),
       ])
 
+      // 如果 RAG 检索结果不足，且用户问市场相关问题，尝试实时爬取
+      let realtimeContext: string | undefined
+      if (ragResults.length < 2 && isMarketRelatedQuery(message)) {
+        realtimeContext = await fetchRealtimeMarketContext(message)
+      }
+
       const knowledgeContext = ragResults.length > 0
         ? formatKnowledgeContext(ragResults)
-        : undefined
+        : realtimeContext
 
       const systemPrompt = generateSystemPromptWithContext({
         prices: prices && prices.length > 0 ? formatPrices(prices) : undefined,

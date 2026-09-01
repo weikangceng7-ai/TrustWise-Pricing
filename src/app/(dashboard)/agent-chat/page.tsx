@@ -27,6 +27,7 @@ import {
   X,
 } from "lucide-react"
 import { ThreePhaseArchitectureCarousel } from "@/components/three-phase-architecture-carousel"
+import { MultiAgentView } from "@/components/multi-agent-view"
 import { useChatContext, type ChatMessage, type Conversation } from "@/contexts/chat-context"
 import { useLanguage } from "@/contexts/language-context"
 import { AuthDialog } from "@/components/auth-dialog"
@@ -227,10 +228,15 @@ const MessageBubble = memo(function MessageBubble({
 }) {
   const { t, lang } = useLanguage()
   const isUser = message.role === "user"
+  const [mounted, setMounted] = useState(false)
   const followUps = useMemo(
     () => !isUser && message.id !== "welcome" ? getFollowUpSuggestions(message.content) : [],
     [isUser, message.id, message.content]
   )
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <div className={`flex gap-4 ${isUser ? "flex-row-reverse" : ""}`}>
@@ -315,7 +321,7 @@ const MessageBubble = memo(function MessageBubble({
             </div>
           )}
           <p className={`mt-3 text-xs ${isUser ? "text-white/70" : "text-slate-400 dark:text-slate-500"}`}>
-            {message.timestamp.toLocaleTimeString(lang === "en" ? "en-US" : "zh-CN", timeFormatOptions)}
+            {mounted ? message.timestamp.toLocaleTimeString(lang === "en" ? "en-US" : "zh-CN", timeFormatOptions) : "\u00A0"}
           </p>
         </div>
 

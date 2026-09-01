@@ -12,6 +12,7 @@ import {
   getSubscriptions,
   getTrackerStatus,
 } from "@/services/tracker/SubscriptionManager"
+import { trackerAgent } from "@/services/tracker/TrackerAgent"
 import type { NewTrackerSubscription, AlertRuleConfig, NotificationChannelConfig } from "@/db/schema-tracker"
 
 /**
@@ -137,11 +138,31 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 创建后立即执行一次追踪任务（解决本地开发无 cron 调度器的问题）
+    let executionResult = null
+    try {
+      const record = await trackerAgent.executeTracking(subscription)
+      executionResult = {
+        status: record?.status || "failed",
+        recordId: record?.id,
+        message: record?.status === "success"
+          ? "订阅创建成功并已执行首次追踪"
+          : "订阅创建成功，但首次追踪执行失败",
+      }
+    } catch (execError) {
+      console.error("首次追踪执行失败:", execError)
+      executionResult = {
+        status: "failed",
+        message: "订阅创建成功，但首次追踪执行失败",
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: {
         subscription,
-        message: "订阅创建成功",
+        execution: executionResult,
+        message: executionResult?.message || "订阅创建成功",
       },
     })
   } catch (error) {

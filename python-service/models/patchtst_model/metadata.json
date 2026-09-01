@@ -1,0 +1,1 @@
+{"context_length": 48, "prediction_length": 7, "resid_std": 0.4117096960544586, "metrics": {"mape": 179.38, "mae": 0.34, "rmse": 0.42}}

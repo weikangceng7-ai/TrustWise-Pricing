@@ -8,6 +8,7 @@ import { getBackgroundImage } from "@/config/images"
 import { TrackerPanel } from "@/components/market-analysis/tracker-panel"
 import { CommoditiesPanel } from "@/components/market-analysis/commodities-panel"
 import { AccuracyPanel } from "@/components/market-analysis/accuracy-panel"
+import { SupplyDemandAnalysis } from "@/components/supply-demand-analysis"
 import { useLanguage } from "@/contexts/language-context"
 
 const TAB_KEYS = ["tracker", "commodities", "accuracy"] as const
@@ -50,6 +51,11 @@ function MarketAnalysisContent() {
             <h1 className="text-xl font-bold text-slate-900 dark:text-white">{t("marketAnalysis.title")}</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{t("marketAnalysis.desc")}</p>
           </div>
+        </div>
+
+        {/* Supply & Demand Analysis */}
+        <div className="mb-4">
+          <SupplyDemandAnalysis />
         </div>
 
         {/* Tab 切换 */}

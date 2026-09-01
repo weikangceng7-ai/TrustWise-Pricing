@@ -8,9 +8,11 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { PRICING_PLANS, type PricingPlan } from "@/lib/pricing"
 import { Check, Loader2, ArrowLeft, ArrowRight } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 function PricingContent() {
   const router = useRouter()
+  const { t } = useLanguage()
   const searchParams = useSearchParams()
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)

@@ -106,6 +106,8 @@ export interface PredictionSnapshot {
     min: number
     max: number
   }
+  regime?: string
+  riskAdjustment?: number
   generatedAt: string
 }
 

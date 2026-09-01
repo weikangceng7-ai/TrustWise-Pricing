@@ -16,9 +16,11 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Loader2, Key, Copy, Check, ArrowRight } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 export function RegisterClient() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showApiKey, setShowApiKey] = useState(false)

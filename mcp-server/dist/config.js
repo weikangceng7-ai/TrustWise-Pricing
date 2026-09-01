@@ -50,6 +50,7 @@ export function loadConfig() {
     const INDUSTRY_CODE = process.env.INDUSTRY_CODE?.trim() || "sulfur";
     const MCP_TRANSPORT = process.env.MCP_TRANSPORT?.trim() || "stdio";
     const MCP_PORT = Number(process.env.MCP_PORT) || 3100;
+    const PREDICTION_SERVICE_URL = process.env.PREDICTION_SERVICE_URL?.trim();
     if (!DEMO_MODE && !API_KEY) {
         throw new Error("缺少环境变量 API_KEY（或设置 DEMO_MODE=true 使用演示模式）");
     }
@@ -62,5 +63,6 @@ export function loadConfig() {
         MCP_TRANSPORT,
         MCP_PORT,
         DEMO_MODE,
+        PREDICTION_SERVICE_URL,
     };
 }

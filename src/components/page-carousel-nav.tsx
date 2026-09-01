@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 interface PageCarouselNavProps {
   /**
@@ -112,6 +113,8 @@ export function PageCarouselNav({
 
   if (totalPages <= 1) return null
 
+  const { t } = useLanguage()
+
   return (
     <div
       className={`flex items-center justify-center gap-2 ${className}`}
@@ -122,7 +125,7 @@ export function PageCarouselNav({
         <button
           onClick={goToPrevious}
           className={`p-1.5 rounded-lg bg-white/80 dark:bg-slate-800/80 shadow-sm hover:bg-white dark:hover:bg-slate-700 transition-all duration-200 hover:scale-105 active:scale-95 ${arrowButtonClassName}`}
-          aria-label="上一页"
+          aria-label={t("pageCarousel.prevPage")}
         >
           <ChevronLeft className="h-4 w-4 text-slate-600 dark:text-slate-300" />
         </button>
@@ -140,7 +143,7 @@ export function PageCarouselNav({
                   ? `w-6 ${activeColor}`
                   : "w-2 bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 dark:hover:bg-slate-500"
               }`}
-              aria-label={`切换到第 ${index + 1} 页`}
+              aria-label={`${t("pageCarousel.goToPagePrefix")}${index + 1}${t("pageCarousel.goToPageSuffix")}`}
               aria-current={currentPage === index ? "page" : undefined}
             />
           ))}
@@ -152,7 +155,7 @@ export function PageCarouselNav({
         <button
           onClick={goToNext}
           className={`p-1.5 rounded-lg bg-white/80 dark:bg-slate-800/80 shadow-sm hover:bg-white dark:hover:bg-slate-700 transition-all duration-200 hover:scale-105 active:scale-95 ${arrowButtonClassName}`}
-          aria-label="下一页"
+          aria-label={t("pageCarousel.nextPage")}
         >
           <ChevronRight className="h-4 w-4 text-slate-600 dark:text-slate-300" />
         </button>

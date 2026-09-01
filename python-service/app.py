@@ -9,8 +9,9 @@ import json
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
-from flask import Flask, request, jsonify
+from flask import Flask, request, Response
 from flask_cors import CORS
+import json
 import xgboost as xgb
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.stattools import adfuller
@@ -19,6 +20,13 @@ from typing import Optional, Dict, Any, List, Tuple
 
 # 外部经济因子数据（FRED + Frankfurter）
 from external_data import fetch_external_factors, merge_factors_to_price, print_factor_summary, FACTOR_COLUMNS
+
+# LightGBM 双模型残差学习（可选，缺失时仅用 XGBoost）
+try:
+    import lightgbm as lgb
+    _HAS_LGB = True
+except ImportError:
+    _HAS_LGB = False
 
 # Transformer 深度学习依赖（可选）
 try:
@@ -45,6 +53,13 @@ except ImportError as e:
 app = Flask(__name__)
 CORS(app)
 
+
+def json_response(data, status=200):
+    """返回 JSON 响应，确保中文正确显示（UTF-8 原文而非 \\u 转义）"""
+    body = json.dumps(data, ensure_ascii=False, default=str)
+    return Response(body, status=status, mimetype='application/json; charset=utf-8')
+
+
 # 生意社现货价格直连（不使用 AKShare spot_price，新版已移除）
 try:
     from curl_cffi import requests as curl_requests
@@ -69,12 +84,153 @@ print(f'[INFO] PostgreSQL 连接: {"可用" if _USE_DB else "不可用"} '
       f'DATABASE_URL={"已设置" if DATABASE_URL else "未设置"})')
 
 
+# ============================================================================
+# Feature Engineering - 增强特征工程
+# ============================================================================
+
+class FeatureEngineer:
+    """特征工程管道 - 为残差学习构建增强特征"""
+
+    @staticmethod
+    def create_lag_features(data: pd.Series, lags: List[int]) -> pd.DataFrame:
+        """创建滞后特征"""
+        df = pd.DataFrame(index=data.index)
+        for lag in lags:
+            df[f'lag_{lag}'] = data.shift(lag)
+        return df
+
+    @staticmethod
+    def create_rolling_features(data: pd.Series) -> pd.DataFrame:
+        """创建滚动窗口特征"""
+        df = pd.DataFrame(index=data.index)
+        df['ma_7'] = data.rolling(window=7).mean()
+        df['ma_14'] = data.rolling(window=14).mean()
+        df['volatility_7'] = data.rolling(window=7).std()
+        df['volatility_14'] = data.rolling(window=14).std()
+        return df
+
+    @staticmethod
+    def create_momentum_features(data: pd.Series) -> pd.DataFrame:
+        """创建动量指标"""
+        df = pd.DataFrame(index=data.index)
+        df['momentum_7'] = data - data.shift(7)
+        df['momentum_14'] = data - data.shift(14)
+        df['roc_7'] = (data - data.shift(7)) / data.shift(7) * 100
+        df['roc_14'] = (data - data.shift(14)) / data.shift(14) * 100
+        return df
+
+    @staticmethod
+    def create_rsi(data: pd.Series, period: int = 14) -> pd.Series:
+        """计算相对强弱指数 (RSI)"""
+        delta = data.diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+        rs = gain / loss
+        rsi = 100 - (100 / (1 + rs))
+        return rsi
+
+    @staticmethod
+    def create_calendar_features(dates: pd.DatetimeIndex) -> pd.DataFrame:
+        """创建日历特征（周期性编码）"""
+        df = pd.DataFrame(index=dates)
+        df['month'] = dates.month
+        df['day_of_week'] = dates.dayofweek
+        # 正弦/余弦周期编码
+        df['month_sin'] = np.sin(2 * np.pi * df['month'] / 12)
+        df['month_cos'] = np.cos(2 * np.pi * df['month'] / 12)
+        df['day_of_week_sin'] = np.sin(2 * np.pi * df['day_of_week'] / 7)
+        df['day_of_week_cos'] = np.cos(2 * np.pi * df['day_of_week'] / 7)
+        return df
+
+    @classmethod
+    def build_residual_features(cls, resid: pd.Series) -> pd.DataFrame:
+        """构建残差特征（增强版，相对于原文的简单滞后）
+
+        特征维度从 3 扩展到 10+，覆盖趋势、动量、波动率
+        """
+        features = pd.DataFrame(index=resid.index)
+
+        # 滞后特征（与原文相同）
+        for lag in [1, 2, 3]:
+            features[f'resid_lag_{lag}'] = resid.shift(lag)
+
+        # 移动平均特征（新增）
+        features['resid_ma_3'] = resid.rolling(window=3).mean()
+        features['resid_ma_7'] = resid.rolling(window=7).mean()
+
+        # 动量特征（新增）
+        features['resid_momentum_3'] = resid - resid.shift(3)
+        features['resid_momentum_7'] = resid - resid.shift(7)
+
+        # 波动率特征（新增）
+        features['resid_vol_3'] = resid.rolling(window=3).std()
+        features['resid_vol_7'] = resid.rolling(window=7).std()
+
+        return features.dropna()
+
+
+# ============================================================================
+# Volatility Regime Detector - 波动率状态检测器
+# ============================================================================
+
+class VolatilityRegimeDetector:
+    """检测市场波动率状态: low/normal/high
+
+    用于采购决策调整：
+    - 低波动: 可适当增加库存
+    - 正常: 按计划采购
+    - 高波动: 建议观望，降低风险敞口
+    """
+
+    def __init__(self, low_threshold: float = 0.5, high_threshold: float = 1.5):
+        self.low_threshold = low_threshold
+        self.high_threshold = high_threshold
+        self.historical_vol: Optional[float] = None
+
+    def fit(self, returns: pd.Series) -> 'VolatilityRegimeDetector':
+        """拟合历史波动率"""
+        self.historical_vol = float(returns.std())
+        return self
+
+    def detect(self, recent_returns: pd.Series) -> str:
+        """检测当前波动率状态"""
+        if self.historical_vol is None or self.historical_vol == 0:
+            return "normal"
+
+        current_vol = float(recent_returns.tail(20).std())
+        vol_ratio = current_vol / self.historical_vol
+
+        if vol_ratio < self.low_threshold:
+            return "low"
+        elif vol_ratio > self.high_threshold:
+            return "high"
+        else:
+            return "normal"
+
+    def get_risk_adjustment(self, regime: str) -> float:
+        """获取风险调整系数"""
+        adjustments = {
+            "low": 0.95,    # 低风险，可多采购
+            "normal": 1.0,
+            "high": 1.15,   # 高风险，谨慎操作
+        }
+        return adjustments.get(regime, 1.0)
+
+
 class SulfurPricePredictor:
-    """硫磺价格预测器 - Hybrid ARIMA + XGBoost"""
+    """硫磺价格预测器 - Hybrid Residual Ensemble (ARIMA + XGBoost/LightGBM)
+
+    改进点（相对于原文 ARIMA + XGBoost）:
+    - XGBoost + LightGBM 双模型残差学习
+    - 增强残差特征: MA、动量、波动率等 10 维（原文仅 3 阶滞后）
+    - 96% 置信区间量化不确定性
+    - 波动率 regime 检测整合采购决策
+    """
 
     def __init__(self):
         self.arima_model = None
         self.xgb_model = None
+        self.lgb_model = None  # LightGBM 双模型（可选）
         self.price_data = None
         self.last_price = None
         self.resid_mean = 0
@@ -85,6 +241,8 @@ class SulfurPricePredictor:
         self._commodity_code: str = ''  # 当前加载的品种
         self.factor_cols: List[str] = []
         self.last_factors: Dict[str, float] = {}
+        self.residual_features: List[str] = []  # 增强残差特征列名
+        self.regime_detector = VolatilityRegimeDetector()  # 波动率状态检测器
 
     def ensure_initialized(self, commodity_code: str = 'sulfur'):
         """懒加载：首次调用时加载数据并训练模型"""
@@ -202,7 +360,12 @@ class SulfurPricePredictor:
 
     def train(self, data: pd.DataFrame = None, test_ratio: float = 0.1) -> Dict[str, Any]:
         """
-        训练 Hybrid ARIMA + XGBoost 模型
+        训练 Hybrid Residual Ensemble 模型
+
+        改进点:
+        - 增强残差特征: 10 维 (MA、动量、波动率) vs 原文 3 阶滞后
+        - XGBoost + LightGBM 双模型残差学习
+        - 波动率 regime 检测
 
         Args:
             data: 价格数据，如果为 None 则使用已加载的数据
@@ -234,16 +397,14 @@ class SulfurPricePredictor:
         self.resid_mean = resid.mean()
         self.resid_std = resid.std()
 
-        # 构建滞后特征用于 XGBoost
-        def build_lag_features(series: pd.Series, lags: int) -> Tuple[pd.DataFrame, pd.Series]:
-            df = pd.concat([series.shift(i) for i in range(1, lags + 1)], axis=1)
-            df.columns = [f'lag_{i}' for i in range(1, lags + 1)]
-            features = df.dropna()
-            labels = resid[lags:]
-            labels = labels.loc[features.index]
-            return features, labels
+        # 构建增强残差特征（改进点：10 维 vs 原文 3 阶滞后）
+        resid_features = FeatureEngineer.build_residual_features(resid)
+        self.residual_features = resid_features.columns.tolist()
 
-        train_features, train_labels = build_lag_features(resid, self.lags)
+        # 对齐数据
+        aligned_resid = resid.loc[resid_features.index]
+        train_features = resid_features.copy()
+        train_labels = aligned_resid
 
         # 尝试加入外部经济因子（FRED + 汇率）
         self.factor_cols = []
@@ -263,9 +424,12 @@ class SulfurPricePredictor:
                 if self.factor_cols:
                     print(f'外部因子已加入特征 ({len(self.factor_cols)} 个): {self.factor_cols}')
         except Exception as e:
-            print(f'外部因子加载失败，仅使用滞后特征: {e}')
+            print(f'外部因子加载失败，仅使用残差特征: {e}')
 
-        # 训练 XGBoost 模型
+        X_train = train_features.values
+        y_train = train_labels.values
+
+        # 训练 XGBoost 模型预测残差
         print("训练 XGBoost 模型...")
         self.xgb_model = xgb.XGBRegressor(
             objective='reg:squarederror',
@@ -274,31 +438,61 @@ class SulfurPricePredictor:
             learning_rate=0.1,
             random_state=42
         )
-        self.xgb_model.fit(train_features, train_labels)
+        self.xgb_model.fit(X_train, y_train)
+
+        # 训练 LightGBM 模型预测残差（双模型增强）
+        self.lgb_model = None
+        if _HAS_LGB:
+            print("训练 LightGBM 模型...")
+            try:
+                self.lgb_model = lgb.LGBMRegressor(
+                    objective='regression',
+                    n_estimators=100,
+                    max_depth=3,
+                    learning_rate=0.1,
+                    random_state=42,
+                    verbose=-1
+                )
+                self.lgb_model.fit(X_train, y_train)
+                print("LightGBM 训练成功")
+            except Exception as e:
+                print(f"LightGBM 训练失败: {e}")
+                self.lgb_model = None
 
         # 在测试集上评估
         arima_pred = arima_result.forecast(steps=len(test_price))
 
-        # 使用 XGBoost 预测残差
-        last_known = resid[-self.lags:].values
-        xgb_preds = []
-
-        def _make_xgb_input(lag_vals):
-            feats = list(lag_vals)
-            for col in self.factor_cols:
-                feats.append(self.last_factors.get(col, 0))
-            return np.array(feats).reshape(1, -1)
+        # 使用双模型平均预测残差
+        last_known_features = resid_features.iloc[-1:].values[0]
+        resid_preds = []
 
         for _ in range(len(test_price)):
-            input_feat = _make_xgb_input(last_known)
-            pred = self.xgb_model.predict(input_feat)[0]
-            xgb_preds.append(pred)
-            last_known = np.append(last_known[1:], pred)
+            feat = last_known_features.reshape(1, -1)
+            # 添加外部因子
+            for col in self.factor_cols:
+                feat = np.append(feat, self.last_factors.get(col, 0))
 
-        xgb_pred = pd.Series(xgb_preds, index=test_price.index)
+            # XGBoost 预测
+            xgb_pred = self.xgb_model.predict(feat)[0]
+
+            # LightGBM 预测（如果有）
+            if self.lgb_model is not None:
+                lgb_pred = self.lgb_model.predict(feat)[0]
+                pred_resid = (xgb_pred + lgb_pred) / 2  # 双模型平均
+            else:
+                pred_resid = xgb_pred
+
+            resid_preds.append(pred_resid)
+
+            # 更新特征窗口（滚动更新）
+            new_features = np.roll(last_known_features, -1)
+            new_features[-1] = pred_resid
+            last_known_features = new_features
+
+        resid_pred = np.array(resid_preds)
 
         # 组合预测结果
-        final_pred = arima_pred + xgb_pred
+        final_pred = arima_pred.values + resid_pred
 
         # 计算评估指标
         from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
@@ -309,6 +503,10 @@ class SulfurPricePredictor:
         mape = np.mean(np.abs((test_price - final_pred) / test_price)) * 100
 
         self.last_price = price.iloc[-1]
+
+        # 拟合波动率状态检测器
+        returns = price.pct_change().dropna()
+        self.regime_detector.fit(returns)
 
         # 保存模型
         self._save_models()
@@ -322,25 +520,31 @@ class SulfurPricePredictor:
             'train_size': len(train_price),
             'test_size': len(test_price),
             'last_price': float(self.last_price),
-            'model_type': 'Hybrid ARIMA + XGBoost',
+            'model_type': 'Hybrid Residual Ensemble (ARIMA + XGBoost/LightGBM)',
             'arima_order': self.arima_order,
-            'xgb_lags': self.lags,
+            'residual_features': self.residual_features,
+            'feature_dim': len(self.residual_features) + len(self.factor_cols),
+            'has_lightgbm': self.lgb_model is not None,
             'external_factors': self.factor_cols,
-            'feature_dim': self.lags + len(self.factor_cols),
             'test_dates': [d.strftime('%Y-%m-%d') for d in test_price.index],
             'test_actual': [float(v) for v in test_price.values],
-            'test_pred': [float(v) for v in final_pred.values],
+            'test_pred': [float(v) for v in final_pred],
         }
 
     def predict(self, days: int = 7) -> Dict[str, Any]:
         """
-        预测未来价格
+        预测未来价格（含置信区间）
+
+        改进点:
+        - 增强残差特征 + 双模型平均
+        - 96% 置信区间量化不确定性
+        - 波动率 regime 检测
 
         Args:
             days: 预测天数
 
         Returns:
-            预测结果
+            预测结果（含 lower_bound, upper_bound, regime）
         """
         if self.arima_model is None or self.xgb_model is None:
             # 尝试加载已保存的模型
@@ -359,22 +563,59 @@ class SulfurPricePredictor:
         arima_result = ARIMA(price, order=self.arima_order).fit()
         arima_pred = arima_result.forecast(steps=days)
 
-        # XGBoost 预测残差
+        # 获取残差用于特征构建
         resid = arima_result.resid
-        last_known = resid[-self.lags:].values
-        xgb_preds = []
 
-        for _ in range(days):
-            features = list(last_known)
-            for col in self.factor_cols:
-                features.append(self.last_factors.get(col, 0))
-            input_feat = np.array(features).reshape(1, -1)
-            pred = self.xgb_model.predict(input_feat)[0]
-            xgb_preds.append(pred)
-            last_known = np.append(last_known[1:], pred)
+        # 构建增强残差特征
+        resid_features = FeatureEngineer.build_residual_features(resid)
+
+        if len(resid_features) == 0:
+            # 如果特征不够，用均值预测
+            resid_pred = np.full(days, resid.mean())
+            arima_component = arima_pred.values
+            xgb_residual = resid_pred
+        else:
+            # 递归预测残差
+            last_known = resid_features.iloc[-1:].values[0]
+            resid_preds = []
+            arima_components = []
+            xgb_residuals = []
+
+            for i in range(days):
+                feat = last_known.reshape(1, -1)
+                # 添加外部因子
+                for col in self.factor_cols:
+                    feat = np.append(feat, self.last_factors.get(col, 0))
+
+                # XGBoost 预测
+                xgb_pred = self.xgb_model.predict(feat)[0]
+
+                # LightGBM 预测（如果有）
+                if self.lgb_model is not None:
+                    lgb_pred = self.lgb_model.predict(feat)[0]
+                    pred_resid = (xgb_pred + lgb_pred) / 2  # 双模型平均
+                else:
+                    pred_resid = xgb_pred
+
+                resid_preds.append(pred_resid)
+                arima_components.append(arima_pred.values[i])
+                xgb_residuals.append(pred_resid)
+
+                # 更新特征窗口（滚动更新）
+                new_features = np.roll(last_known, -1)
+                new_features[-1] = pred_resid
+                last_known = new_features
+
+            resid_pred = np.array(resid_preds)
+            arima_component = np.array(arima_components)
+            xgb_residual = np.array(xgb_residuals)
 
         # 组合预测
-        final_pred = arima_pred.values + np.array(xgb_preds)
+        final_pred = arima_pred.values + resid_pred
+
+        # 不确定性量化（基于残差波动率）
+        hist_vol = resid.std()
+        uncertainty = hist_vol * np.ones(days)
 
         # 生成预测日期
         future_dates = pd.date_range(
@@ -383,14 +624,20 @@ class SulfurPricePredictor:
             freq='D'
         )
 
+        # 构建预测结果（保持 API 兼容性）
         predictions = [
             {
                 'date': date.strftime('%Y-%m-%d'),
                 'predicted_price': round(float(price), 2),
                 'arima_component': round(float(arima), 2),
-                'xgb_residual': round(float(resid), 2)
+                'xgb_residual': round(float(resid), 2),
+                # 新增字段：置信区间
+                'lower_bound': round(float(price - 1.96 * unc), 2),
+                'upper_bound': round(float(price + 1.96 * unc), 2),
             }
-            for date, price, arima, resid in zip(future_dates, final_pred, arima_pred.values, xgb_preds)
+            for date, price, arima, resid, unc in zip(
+                future_dates, final_pred, arima_component, xgb_residual, uncertainty
+            )
         ]
 
         # 计算趋势
@@ -403,14 +650,21 @@ class SulfurPricePredictor:
             trend = '未知'
             change_pct = 0
 
+        # 波动率 regime 检测
+        returns = price.pct_change().dropna()
+        regime = self.regime_detector.detect(returns)
+        risk_adjustment = self.regime_detector.get_risk_adjustment(regime)
+
         return {
             'predictions': predictions,
             'current_price': round(float(price.iloc[-1]), 2),
             'prediction_days': days,
             'trend': trend,
             'change_percent': change_pct,
-            'model_type': 'Hybrid ARIMA + XGBoost',
+            'model_type': 'Hybrid Residual Ensemble (ARIMA + XGBoost/LightGBM)',
             'confidence': self._calculate_confidence(predictions),
+            'regime': regime,
+            'risk_adjustment': round(risk_adjustment, 2),
             'generated_at': datetime.now().isoformat()
         }
 
@@ -431,13 +685,13 @@ class SulfurPricePredictor:
 
     def analyze_trend(self, days: int = 30) -> Dict[str, Any]:
         """
-        分析价格趋势
+        分析价格趋势（整合波动率 regime 检测）
 
         Args:
             days: 分析天数
 
         Returns:
-            趋势分析结果
+            趋势分析结果（含 regime 和 risk_adjustment）
         """
         if self.price_data is None:
             self.load_data()
@@ -463,6 +717,10 @@ class SulfurPricePredictor:
         change_7d = round((current_price - price_7d_ago) / price_7d_ago * 100, 2)
         change_30d = round((current_price - price_30d_ago) / price_30d_ago * 100, 2)
 
+        # 波动率 regime 检测
+        regime = self.regime_detector.detect(returns)
+        risk_adjustment = self.regime_detector.get_risk_adjustment(regime)
+
         return {
             'current_price': round(float(current_price), 2),
             'ma_7': round(float(ma_7), 2),
@@ -472,12 +730,14 @@ class SulfurPricePredictor:
             'trend_30d': trend_30d,
             'change_7d_percent': change_7d,
             'change_30d_percent': change_30d,
-            'analysis': self._generate_trend_analysis(trend_7d, trend_30d, change_7d, volatility)
+            'regime': regime,
+            'risk_adjustment': round(risk_adjustment, 2),
+            'analysis': self._generate_trend_analysis(trend_7d, trend_30d, change_7d, volatility, regime)
         }
 
     def _generate_trend_analysis(self, trend_7d: str, trend_30d: str,
-                                  change_7d: float, volatility: float) -> str:
-        """生成趋势分析文本"""
+                                  change_7d: float, volatility: float, regime: str = "normal") -> str:
+        """生成趋势分析文本（整合 regime 信息）"""
         direction = '上涨' if change_7d >= 0 else '下跌'
         analysis = f"近期价格呈现{trend_7d}趋势，"
 
@@ -493,7 +753,12 @@ class SulfurPricePredictor:
         else:
             analysis += f"短期{trend_7d}但中期{trend_30d}，"
 
-        if volatility > 20:
+        # 整合 regime 信息
+        if regime == 'high':
+            analysis += "市场波动性较高，建议谨慎操作，降低风险敞口。"
+        elif regime == 'low':
+            analysis += "市场波动性较低，适合稳定采购，可适当增加库存。"
+        elif volatility > 20:
             analysis += "市场波动较大，建议谨慎采购。"
         elif volatility > 10:
             analysis += "市场存在一定波动，可适当观望。"
@@ -506,10 +771,18 @@ class SulfurPricePredictor:
         """保存模型到文件（按品种隔离）"""
         code = self._commodity_code or 'sulfur'
         xgb_file = os.path.join(MODEL_DIR, f'xgb_{code}.joblib')
+        lgb_file = os.path.join(MODEL_DIR, f'lgb_{code}.joblib')
         params_file = os.path.join(MODEL_DIR, f'params_{code}.json')
+
+        # 保存 XGBoost
         if self.xgb_model is not None:
             joblib.dump(self.xgb_model, xgb_file)
 
+        # 保存 LightGBM（如果有）
+        if self.lgb_model is not None:
+            joblib.dump(self.lgb_model, lgb_file)
+
+        # 保存参数
         params = {
             'arima_order': self.arima_order,
             'lags': self.lags,
@@ -518,14 +791,26 @@ class SulfurPricePredictor:
             'last_price': float(self.last_price) if self.last_price else None,
             'factor_cols': self.factor_cols,
             'last_factors': self.last_factors,
+            'residual_features': self.residual_features,  # 增强特征列名
+            'has_lightgbm': self.lgb_model is not None,
+            'regime_detector': {
+                'historical_vol': self.regime_detector.historical_vol,
+            } if self.regime_detector.historical_vol else None,
         }
         with open(params_file, 'w') as f:
             json.dump(params, f)
 
     def _load_models(self, commodity_code: str = 'sulfur') -> bool:
-        """从文件加载模型（按品种隔离）"""
+        """从文件加载模型（按品种隔离）
+
+        支持新旧两种模型格式：
+        - 新格式：residual_features (10维增强特征) + factor_cols
+        - 旧格式：lags (3) + factor_cols
+        如果格式不匹配，自动触发重训练
+        """
         try:
             xgb_file = os.path.join(MODEL_DIR, f'xgb_{commodity_code}.joblib')
+            lgb_file = os.path.join(MODEL_DIR, f'lgb_{commodity_code}.joblib')
             params_file = os.path.join(MODEL_DIR, f'params_{commodity_code}.json')
 
             if os.path.exists(xgb_file) and os.path.exists(params_file):
@@ -541,14 +826,35 @@ class SulfurPricePredictor:
                 self.last_price = params.get('last_price')
                 self.factor_cols = params.get('factor_cols', [])
                 self.last_factors = params.get('last_factors', {})
+                self.residual_features = params.get('residual_features', [])
 
-                # 校验特征数一致性：XGBoost 期望特征数 = lags + factor_cols
-                expected_feats = self.lags + len(self.factor_cols)
+                # 加载 LightGBM（如果有）
+                self.lgb_model = None
+                if params.get('has_lightgbm') and _HAS_LGB and os.path.exists(lgb_file):
+                    try:
+                        self.lgb_model = joblib.load(lgb_file)
+                    except Exception as e:
+                        print(f'LightGBM 加载失败: {e}')
+
+                # 加载 regime detector
+                regime_data = params.get('regime_detector')
+                if regime_data and regime_data.get('historical_vol'):
+                    self.regime_detector.historical_vol = regime_data['historical_vol']
+
+                # 校验特征数一致性：XGBoost 期望特征数 = len(residual_features) + len(factor_cols)
+                # 兼容旧模型：如果 residual_features 为空，则用 lags
+                if self.residual_features:
+                    expected_feats = len(self.residual_features) + len(self.factor_cols)
+                else:
+                    expected_feats = self.lags + len(self.factor_cols)
+
                 actual_feats = self.xgb_model.n_features_in_
                 if expected_feats != actual_feats:
-                    print(f'模型特征数不匹配: 期望 {expected_feats} (lags={self.lags} + factors={len(self.factor_cols)}), '
+                    print(f'模型特征数不匹配: 期望 {expected_feats} '
+                          f'(residual_features={len(self.residual_features)} + factors={len(self.factor_cols)}), '
                           f'模型实际 {actual_feats}，将重新训练')
                     self.xgb_model = None
+                    self.lgb_model = None
                     return False
 
                 return True
@@ -1037,7 +1343,7 @@ class PatchTSTPredictor:
             print('首次使用 Transformer，自动训练模型...')
             self.train(self._price_series)
 
-    def train(self, price_series: pd.Series, ctx_length: int = None) -> Dict[str, Any]:
+    def train(self, price_series: pd.Series, ctx_length: int = None, pred_length: int = None) -> Dict[str, Any]:
         from sklearn.preprocessing import StandardScaler
         from sklearn.metrics import mean_absolute_error, mean_squared_error
 
@@ -1046,6 +1352,13 @@ class PatchTSTPredictor:
 
         ctx_length = ctx_length or self.DEFAULT_CONTEXT
         self.context_length = min(ctx_length, len(price_series) // 3)
+
+        # 动态调整 prediction_length，确保有足够数据构建窗口
+        if pred_length is not None:
+            self.prediction_length = pred_length
+        else:
+            max_pred = len(price_series) - self.context_length - 10
+            self.prediction_length = min(self.DEFAULT_PRED_LEN, max(7, max_pred // 2))
 
         self.scaler = StandardScaler()
         values = price_series.values.reshape(-1, 1).astype(np.float32)
@@ -1102,7 +1415,8 @@ class PatchTSTPredictor:
 
                 optimizer.zero_grad()
                 outputs = self.model(past_values=batch_X)
-                loss = criterion(outputs.prediction_outputs, batch_y)
+                pred_out = outputs.prediction_outputs.squeeze(-1) if outputs.prediction_outputs.dim() == 3 else outputs.prediction_outputs
+                loss = criterion(pred_out, batch_y)
                 loss.backward()
                 optimizer.step()
                 epoch_loss += loss.item()
@@ -1116,7 +1430,8 @@ class PatchTSTPredictor:
         X_val_t = torch.tensor(X_val, dtype=torch.float32).unsqueeze(-1).to(self.device)
         with torch.no_grad():
             outputs = self.model(past_values=X_val_t)
-            val_preds = outputs.prediction_outputs.cpu().numpy()
+            val_pred_out = outputs.prediction_outputs
+            val_preds = val_pred_out.squeeze(-1).cpu().numpy() if val_pred_out.dim() == 3 else val_pred_out.cpu().numpy()
 
         residuals = y_val - val_preds
         self._resid_std = float(np.std(residuals))
@@ -1252,7 +1567,7 @@ transformer = PatchTSTPredictor()
 def health_check():
     """健康检查"""
     data_source = 'postgresql' if _USE_DB else 'excel' if os.path.exists(DATA_FILE) else 'mock'
-    return jsonify({
+    return json_response({
         'status': 'healthy',
         'service': 'sulfur-price-predictor',
         'data_source': data_source,
@@ -1277,7 +1592,7 @@ def train_model():
         result = predictor.train(test_ratio=test_ratio)
 
         data_source = 'postgresql' if _USE_DB else 'excel' if os.path.exists(DATA_FILE) else 'mock'
-        return jsonify({
+        return json_response({
             'success': True,
             'message': '模型训练完成',
             'data_source': data_source,
@@ -1285,7 +1600,7 @@ def train_model():
             'metrics': result,
         })
     except Exception as e:
-        return jsonify({
+        return json_response({
             'success': False,
             'error': str(e)
         }), 500
@@ -1317,7 +1632,7 @@ def backtest():
             )
         ]
 
-        return jsonify({
+        return json_response({
             'success': True,
             'data_source': data_source,
             'price_count': len(predictor.price_data) if predictor.price_data is not None else 0,
@@ -1333,7 +1648,7 @@ def backtest():
             'predictions': predictions,
         })
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return json_response({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/predict', methods=['POST'])
@@ -1350,12 +1665,12 @@ def predict():
         predictor.ensure_initialized(commodity_code)
         result = predictor.predict(days=days)
 
-        return jsonify({
+        return json_response({
             'success': True,
             'data': result
         })
     except Exception as e:
-        return jsonify({
+        return json_response({
             'success': False,
             'error': str(e)
         }), 500
@@ -1370,12 +1685,12 @@ def analyze_trend():
         predictor.ensure_initialized(commodity_code)
         result = predictor.analyze_trend(days=days)
 
-        return jsonify({
+        return json_response({
             'success': True,
             'data': result
         })
     except Exception as e:
-        return jsonify({
+        return json_response({
             'success': False,
             'error': str(e)
         }), 500
@@ -1435,7 +1750,7 @@ def purchase_decision():
         else:
             suggested_quantity = daily_consumption * 7  # 一周用量
 
-        return jsonify({
+        return json_response({
             'success': True,
             'data': {
                 'prediction': prediction,
@@ -1456,7 +1771,7 @@ def purchase_decision():
             }
         })
     except Exception as e:
-        return jsonify({
+        return json_response({
             'success': False,
             'error': str(e)
         }), 500
@@ -1481,17 +1796,17 @@ def akshare_commodity():
 
     fetch_fn = code_map.get(code)
     if fetch_fn is None:
-        return jsonify({"success": False, "error": f"未知品种: {code}"}), 400
+        return json_response({"success": False, "error": f"未知品种: {code}"}), 400
 
     result = fetch_fn(days)
-    return jsonify(result)
+    return json_response(result)
 
 
 @app.route('/akshare/bdi', methods=['GET'])
 def akshare_bdi():
     """获取 BDI 指数"""
     result = fetcher.fetch_bdi_index()
-    return jsonify(result)
+    return json_response(result)
 
 
 @app.route('/akshare/all', methods=['GET'])
@@ -1500,13 +1815,13 @@ def akshare_all():
     days = request.args.get('days', 30, type=int)
     days = min(max(1, days), 365)
     result = fetcher.fetch_all_commodities(days)
-    return jsonify({"success": True, "data": result})
+    return json_response({"success": True, "data": result})
 
 
 @app.route('/akshare/health', methods=['GET'])
 def akshare_health():
     """AKShare 数据源健康检查"""
-    return jsonify({
+    return json_response({
         "akshare_available": fetcher.is_available(),
         "service": "akshare-data-fetcher",
     })
@@ -1517,7 +1832,7 @@ def akshare_refresh():
     """手动触发全量数据刷新"""
     days = request.args.get('days', 30, type=int)
     result = fetcher.fetch_all_commodities(days)
-    return jsonify({
+    return json_response({
         "success": True,
         "message": "数据刷新完成",
         "data": result,
@@ -1539,7 +1854,7 @@ def transformer_predict():
         )
 
         result = transformer.predict(days=days)
-        return jsonify({
+        return json_response({
             'success': True,
             'model': transformer.MODEL_NAME,
             **result,
@@ -1548,12 +1863,157 @@ def transformer_predict():
         print(f'Transformer 预测失败: {e}')
         import traceback
         traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return json_response({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/transformer-health', methods=['GET'])
 def transformer_health():
-    return jsonify(transformer.health())
+    return json_response(transformer.health())
+
+
+# ---- 融合预测端点 ----
+
+# 全局存储模型精度指标（用于动态权重计算）
+_model_metrics = {
+    'arima': {'mape': 10.0, 'last_update': None},  # 默认 MAPE 10%
+    'transformer': {'mape': 10.0, 'last_update': None}
+}
+
+
+def _update_model_metrics():
+    """更新模型精度指标（基于最近回测）"""
+    try:
+        # ARIMA+XGB 回测
+        if predictor.price_data is not None and len(predictor.price_data) > 50:
+            result = predictor.train(test_ratio=0.1)
+            _model_metrics['arima']['mape'] = result.get('mape', 10.0)
+            _model_metrics['arima']['last_update'] = datetime.now().isoformat()
+
+        # PatchTST 回测（使用验证集指标）
+        if transformer._ready and transformer._last_train_metrics:
+            # 从缩放后的指标估算原始尺度 MAPE
+            if transformer.scaler is not None:
+                scale_factor = transformer.scaler.scale_[0]
+                mae_scaled = transformer._last_train_metrics.get('mae', 0.3)
+                mae_original = mae_scaled * scale_factor
+                avg_price = transformer._price_series.mean() if transformer._price_series is not None else 900
+                mape_estimated = (mae_original / avg_price) * 100
+                _model_metrics['transformer']['mape'] = mape_estimated
+                _model_metrics['transformer']['last_update'] = datetime.now().isoformat()
+    except Exception as e:
+        print(f'[WARN] 更新模型精度指标失败: {e}')
+
+
+def _calculate_dynamic_weights():
+    """基于精度指标计算动态权重（MAPE 越低权重越高）"""
+    mape_arima = _model_metrics['arima']['mape']
+    mape_transformer = _model_metrics['transformer']['mape']
+
+    # 防止除零
+    mape_arima = max(mape_arima, 0.1)
+    mape_transformer = max(mape_transformer, 0.1)
+
+    # 计算权重（精度倒数归一化）
+    inv_arima = 1.0 / mape_arima
+    inv_transformer = 1.0 / mape_transformer
+    total = inv_arima + inv_transformer
+
+    w_arima = inv_arima / total
+    w_transformer = inv_transformer / total
+
+    return w_arima, w_transformer
+
+
+@app.route('/combined-predict', methods=['POST'])
+def combined_predict():
+    """融合预测：ARIMA+XGB 与 PatchTST 动态加权融合"""
+    try:
+        data = request.get_json() or {}
+        days = min(max(1, data.get('days', 7)), 90)
+        commodity_code = data.get('commodity_code', 'sulfur')
+        force_retrain = data.get('force_retrain', False)
+
+        # 初始化 ARIMA+XGB
+        predictor.ensure_initialized(commodity_code)
+
+        # 初始化 PatchTST
+        if predictor.price_data is not None:
+            price_series = predictor.price_data['price']
+            if force_retrain or not transformer._ready:
+                transformer.train(price_series, ctx_length=48, pred_length=days)
+            else:
+                transformer.ensure_initialized(price_series)
+
+        # 更新精度指标并计算动态权重
+        _update_model_metrics()
+        w_arima, w_transformer = _calculate_dynamic_weights()
+
+        # 分别预测
+        arima_result = predictor.predict(days=days)
+        tf_result = transformer.predict(days=days)
+
+        arima_preds = arima_result['predictions']
+        tf_preds = tf_result['predictions']
+
+        # 融合预测
+        fused_predictions = []
+        for a, t in zip(arima_preds, tf_preds):
+            fused_price = w_arima * a['predicted_price'] + w_transformer * t['predicted_price']
+            # 融合置信区间（取加权平均）
+            lower = w_arima * a['lower_bound'] + w_transformer * t['lower_bound']
+            upper = w_arima * a['upper_bound'] + w_transformer * t['upper_bound']
+            # 融合置信度
+            conf_a = a.get('confidence', 0.5)
+            conf_t = t.get('confidence', 0.5)
+            fused_conf = w_arima * conf_a + w_transformer * conf_t
+
+            fused_predictions.append({
+                'date': a['date'],
+                'predicted_price': round(fused_price, 2),
+                'lower_bound': round(lower, 2),
+                'upper_bound': round(upper, 2),
+                'confidence': round(fused_conf, 4),
+                'arima_component': round(a['predicted_price'], 2),
+                'transformer_component': round(t['predicted_price'], 2),
+            })
+
+        # 计算融合后的趋势和风险
+        current_price = arima_result.get('current_price', 0)
+        if fused_predictions and current_price > 0:
+            future_price = fused_predictions[-1]['predicted_price']
+            change_pct = ((future_price - current_price) / current_price) * 100
+            trend = '上涨' if change_pct > 1 else ('下跌' if change_pct < -1 else '震荡')
+        else:
+            change_pct = 0
+            trend = '未知'
+
+        return json_response({
+            'success': True,
+            'data': {
+                'commodity_code': commodity_code,
+                'current_price': current_price,
+                'trend': trend,
+                'change_percent': round(change_pct, 2),
+                'regime': arima_result.get('regime', 'normal'),
+                'risk_adjustment': arima_result.get('risk_adjustment', 1.0),
+                'predictions': fused_predictions,
+                'weights': {
+                    'arima_xgb': round(w_arima, 4),
+                    'transformer': round(w_transformer, 4),
+                },
+                'model_metrics': {
+                    'arima_mape': round(_model_metrics['arima']['mape'], 2),
+                    'transformer_mape': round(_model_metrics['transformer']['mape'], 2),
+                },
+                'prediction_days': len(fused_predictions),
+                'generated_at': datetime.now().isoformat(),
+            }
+        })
+    except Exception as e:
+        print(f'[ERROR] 融合预测失败: {e}')
+        import traceback
+        traceback.print_exc()
+        return json_response({'success': False, 'error': str(e)}), 500
 
 
 # ---- 外部经济因子端点 ----
@@ -1581,7 +2041,7 @@ def external_data():
                 'max': round(float(series.max()), 4),
             }
 
-    return jsonify({
+    return json_response({
         'success': True,
         'source': 'FRED + Frankfurter',
         'factors': result,

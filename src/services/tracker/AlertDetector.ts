@@ -380,22 +380,32 @@ export class AlertDetector {
     // 1. 预测价格上涨超过 5%
     // 2. 置信度较低（低或中）
     // 3. 价格区间波动较大
+    // 4. regime 为 high 时降低阈值（更敏感）
 
     const priceRangeWidth = prediction.priceRange.max - prediction.priceRange.min
     const avgPrice = prediction.predictedPrice
     const rangePercent = avgPrice > 0 ? (priceRangeWidth / avgPrice) * 100 : 0
 
+    // 根据 regime 动态调整风险检测阈值
+    const isHighRegime = prediction.regime === "high"
+    const highThreshold = isHighRegime ? 3 : 5
+    const mediumThreshold = isHighRegime ? 2 : 3
+
     // 高风险判断
     const isHighRisk =
-      (prediction.trend === "上涨" && rangePercent > 5) ||
+      (prediction.trend === "上涨" && rangePercent > highThreshold) ||
       prediction.confidence === "低" ||
-      rangePercent > 10
+      rangePercent > (isHighRegime ? 8 : 10) ||
+      isHighRegime  // 高波动 regime 本身即为高风险
 
     // 中风险判断
     const isMediumRisk =
-      (prediction.trend === "上涨" && rangePercent > 3) ||
+      (prediction.trend === "上涨" && rangePercent > mediumThreshold) ||
       prediction.confidence === "中" ||
-      rangePercent > 5
+      rangePercent > (isHighRegime ? 5 : 5)
+
+    // 构建 regime 提示文本
+    const regimeHint = isHighRegime ? "当前市场处于高波动状态，风险系数 " + (prediction.riskAdjustment?.toFixed(2) || "1.0") + "。" : ""
 
     if (isHighRisk) {
       return {
@@ -403,7 +413,7 @@ export class AlertDetector {
         recordId: record.id,
         alertType: "prediction_risk",
         title: "价格预测高风险预警",
-        content: `AI预测显示硫磺价格存在较高不确定性。预测趋势：${prediction.trend}，价格区间：${prediction.priceRange.min}-${prediction.priceRange.max} 元/吨，置信度：${prediction.confidence}。建议提前做好采购规划。`,
+        content: `AI预测显示硫磺价格存在较高不确定性。${regimeHint}预测趋势：${prediction.trend}，价格区间：${prediction.priceRange.min}-${prediction.priceRange.max} 元/吨，置信度：${prediction.confidence}。建议提前做好采购规划。`,
         triggerValue: String(avgPrice),
         thresholdValue: "0",
         changePercent: String(rangePercent),
@@ -421,7 +431,7 @@ export class AlertDetector {
         recordId: record.id,
         alertType: "prediction_risk",
         title: "价格预测中等风险预警",
-        content: `AI预测显示硫磺价格存在一定波动可能。预测趋势：${prediction.trend}，价格区间：${prediction.priceRange.min}-${prediction.priceRange.max} 元/吨，置信度：${prediction.confidence}。建议关注市场变化。`,
+        content: `AI预测显示硫磺价格存在一定波动可能。${regimeHint}预测趋势：${prediction.trend}，价格区间：${prediction.priceRange.min}-${prediction.priceRange.max} 元/吨，置信度：${prediction.confidence}。建议关注市场变化。`,
         triggerValue: String(avgPrice),
         thresholdValue: "0",
         changePercent: String(rangePercent),

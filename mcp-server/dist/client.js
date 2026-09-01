@@ -52,8 +52,30 @@ export function createClient(config) {
                 params.set("category", category);
             return request(`/api/v1/data/news?${params.toString()}`);
         },
-        /** POST /api/prediction */
+        /** POST /api/prediction 或直接调用 Python */
         async predictPrices(days = 7) {
+            // 如果配置了 Python 服务地址，直接调用（绕过 Vercel）
+            if (config.PREDICTION_SERVICE_URL) {
+                try {
+                    const res = await fetch(`${config.PREDICTION_SERVICE_URL}/predict`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${config.API_KEY}`,
+                        },
+                        body: JSON.stringify({ days }),
+                    });
+                    const json = await res.json();
+                    return { success: true, data: json };
+                }
+                catch (error) {
+                    return {
+                        success: false,
+                        error: { code: "PREDICTION_ERROR", message: error instanceof Error ? error.message : "Unknown error" },
+                    };
+                }
+            }
+            // 否则走 Vercel API
             return request("/api/prediction", {
                 method: "POST",
                 body: { days },
@@ -129,15 +151,88 @@ export function createClient(config) {
             return request(`/api/success-cases${params}`);
         },
         // ========== Transformer 预测 ==========
-        /** POST /api/prediction/transformer */
+        /** POST /api/prediction/transformer 或直接调用 Python */
         async predictWithTransformer(days, commodityCode) {
+            // 如果配置了 Python 服务地址，直接调用（绕过 Vercel）
+            if (config.PREDICTION_SERVICE_URL) {
+                try {
+                    const res = await fetch(`${config.PREDICTION_SERVICE_URL}/transformer-predict`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${config.API_KEY}`,
+                        },
+                        body: JSON.stringify({ days, commodity_code: commodityCode }),
+                    });
+                    const json = await res.json();
+                    return { success: true, data: json };
+                }
+                catch (error) {
+                    return {
+                        success: false,
+                        error: { code: "TRANSFORMER_ERROR", message: error instanceof Error ? error.message : "Unknown error" },
+                    };
+                }
+            }
+            // 否则走 Vercel API
             return request("/api/prediction/transformer", {
                 method: "POST",
                 body: { days, commodity_code: commodityCode },
             });
         },
-        /** POST /api/prediction/combined */
+        /** POST /api/prediction/combined 或直接调用 Python */
         async getCombinedPrediction(days, commodityCode) {
+            // 如果配置了 Python 服务地址，直接调用（绕过 Vercel）
+            if (config.PREDICTION_SERVICE_URL) {
+                try {
+                    const baseUrl = config.PREDICTION_SERVICE_URL;
+                    const headers = {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${config.API_KEY}`,
+                    };
+                    const [arimaRes, transformerRes] = await Promise.all([
+                        fetch(`${baseUrl}/predict`, {
+                            method: "POST",
+                            headers,
+                            body: JSON.stringify({ days, commodity_code: commodityCode }),
+                        }).then(r => r.json()),
+                        fetch(`${baseUrl}/transformer-predict`, {
+                            method: "POST",
+                            headers,
+                            body: JSON.stringify({ days, commodity_code: commodityCode, model: "patchtst" }),
+                        }).then(r => r.json()),
+                    ]);
+                    // 融合两个模型
+                    const predictions = [];
+                    const arimaResults = arimaRes?.data?.predictions || [];
+                    const transformerResults = transformerRes?.predictions || [];
+                    const count = Math.max(arimaResults.length, transformerResults.length);
+                    const transformerWeight = 0.4;
+                    for (let i = 0; i < count; i++) {
+                        const arima = arimaResults[i];
+                        const transformer = transformerResults[i];
+                        const arimaPrice = arima?.predicted_price ?? arimaResults[0]?.predicted_price ?? 0;
+                        const transformerPrice = transformer?.predicted_price ?? transformerResults[0]?.predicted_price ?? 0;
+                        predictions.push({
+                            date: arima?.date || transformer?.date || "",
+                            arima_xgb_price: arimaPrice,
+                            transformer_price: transformerPrice,
+                            combined_price: Math.round((arimaPrice * 0.6 + transformerPrice * transformerWeight) * 100) / 100,
+                            confidence: 0.85,
+                            lower_bound: Math.min(arima?.lower_bound ?? arimaPrice - 30, transformer?.lower_bound ?? transformerPrice - 30),
+                            upper_bound: Math.max(arima?.upper_bound ?? arimaPrice + 30, transformer?.upper_bound ?? transformerPrice + 30),
+                        });
+                    }
+                    return { success: true, data: { predictions } };
+                }
+                catch (error) {
+                    return {
+                        success: false,
+                        error: { code: "COMBINED_ERROR", message: error instanceof Error ? error.message : "Unknown error" },
+                    };
+                }
+            }
+            // 否则走 Vercel API
             return request("/api/prediction/combined", {
                 method: "POST",
                 body: { days, commodity_code: commodityCode },

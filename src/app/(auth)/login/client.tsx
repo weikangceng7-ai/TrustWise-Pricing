@@ -15,12 +15,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Loader2 } from "lucide-react"
+import { Loader2, Smartphone } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
+import { PhoneLoginDialog } from "@/components/phone-login-dialog"
 
 export function LoginClient() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showPhoneLogin, setShowPhoneLogin] = useState(false)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -38,7 +42,7 @@ export function LoginClient() {
       })
 
       if (result.error) {
-        setError(result.error.message || "登录失败，请检查邮箱和密码")
+        setError(result.error.message || t("login.invalidCredentials"))
         setIsLoading(false)
         return
       }
@@ -46,7 +50,7 @@ export function LoginClient() {
       router.push("/dashboard")
       router.refresh()
     } catch {
-      setError("登录失败，请稍后重试")
+      setError(t("login.tryAgain"))
       setIsLoading(false)
     }
   }
@@ -55,8 +59,8 @@ export function LoginClient() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">硫磺督价与采购智能决策系统</CardTitle>
-          <CardDescription>登录您的账户以继续</CardDescription>
+          <CardTitle className="text-2xl">{t("login.title")}</CardTitle>
+          <CardDescription>{t("login.description")}</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
@@ -66,23 +70,23 @@ export function LoginClient() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">邮箱</Label>
+              <Label htmlFor="email">{t("login.email")}</Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
-                placeholder="请输入邮箱"
+                placeholder={t("login.emailPlaceholder")}
                 required
                 disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">密码</Label>
+              <Label htmlFor="password">{t("login.password")}</Label>
               <Input
                 id="password"
                 name="password"
                 type="password"
-                placeholder="请输入密码"
+                placeholder={t("login.passwordPlaceholder")}
                 required
                 disabled={isLoading}
               />
@@ -91,21 +95,38 @@ export function LoginClient() {
           <CardFooter className="flex-col gap-4">
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 size-4 animate-spin" />}
-              登录
+              {t("login.submit")}
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => setShowPhoneLogin(true)}
+              disabled={isLoading}
+            >
+              <Smartphone className="mr-2 size-4" />
+              {t("login.phoneLogin")}
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">
-              还没有账户？{" "}
+              {t("login.noAccount")}{" "}
               <Link
                 href="/register"
                 className="text-primary underline-offset-4 hover:underline"
               >
-                立即注册
+                {t("login.register")}
               </Link>
             </p>
           </CardFooter>
         </form>
       </Card>
+
+      <PhoneLoginDialog
+        open={showPhoneLogin}
+        onOpenChange={setShowPhoneLogin}
+        onSwitchToEmailLogin={() => setShowPhoneLogin(false)}
+      />
     </div>
   )
 }

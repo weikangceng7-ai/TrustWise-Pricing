@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 import remarkGfm from "remark-gfm"
 import { useChatContext } from "@/contexts/chat-context"
+import { useLanguage } from "@/contexts/language-context"
 import dynamic from "next/dynamic"
 
 const ReactMarkdown = dynamic(() => import("react-markdown"), { ssr: false })
@@ -69,6 +70,7 @@ export function FloatingChat() {
     hasUnreadMessage,
     markAsRead,
   } = useChatContext()
+  const { t } = useLanguage()
 
   const [inputValue, setInputValue] = useState("")
   const [isMinimized, setIsMinimized] = useState(false)
@@ -238,7 +240,7 @@ export function FloatingChat() {
         <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 p-3 flex items-center gap-3">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-cyan-500" />
-            <span className="text-sm font-medium">硫磺采购助手</span>
+            <span className="text-sm font-medium">{t("floatingChat.title")}</span>
             {isLoading && <Loader2 className="h-4 w-4 animate-spin text-cyan-500" />}
           </div>
           <div className="flex gap-1">
@@ -266,23 +268,23 @@ export function FloatingChat() {
 
   // 展开的聊天窗口
   return (
-    <div 
+    <div
       ref={chatRef}
       className="fixed z-50 w-96 h-[500px] flex flex-col bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden"
-      style={{ 
-        left: position.x, 
-        top: position.y 
+      style={{
+        left: position.x,
+        top: position.y
       }}
     >
       {/* 头部 - 可拖动区域 */}
-      <div 
+      <div
         className="flex items-center justify-between p-3 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-slate-800 dark:to-slate-800 cursor-move select-none"
         onMouseDown={handleMouseDown}
       >
         <div className="flex items-center gap-2">
           <GripVertical className="h-4 w-4 text-slate-400" />
           <Sparkles className="h-5 w-5 text-cyan-500" />
-          <span className="font-semibold text-sm">硫磺采购助手</span>
+          <span className="font-semibold text-sm">{t("floatingChat.title")}</span>
           {isLoading && <Loader2 className="h-4 w-4 animate-spin text-cyan-500" />}
         </div>
         <div className="flex gap-1">
@@ -374,7 +376,7 @@ export function FloatingChat() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="输入消息..."
+            placeholder={t("floatingChat.inputPlaceholder")}
             className="flex-1 text-sm"
             disabled={isLoading}
           />
@@ -392,25 +394,25 @@ export function FloatingChat() {
             variant="outline"
             size="sm"
             className="text-xs h-7"
-            onClick={() => setInputValue("预测未来一周硫磺价格走势")}
+            onClick={() => setInputValue(t("floatingChat.quickPricePrediction"))}
           >
-            价格预测
+            {t("floatingChat.pricePrediction")}
           </Button>
           <Button
             variant="outline"
             size="sm"
             className="text-xs h-7"
-            onClick={() => setInputValue("请给我采购决策建议")}
+            onClick={() => setInputValue(t("floatingChat.quickPurchaseAdvice"))}
           >
-            采购建议
+            {t("floatingChat.purchaseAdvice")}
           </Button>
           <Button
             variant="outline"
             size="sm"
             className="text-xs h-7"
-            onClick={() => setInputValue("分析当前市场趋势")}
+            onClick={() => setInputValue(t("floatingChat.quickMarketAnalysis"))}
           >
-            市场分析
+            {t("floatingChat.marketAnalysis")}
           </Button>
         </div>
       </div>

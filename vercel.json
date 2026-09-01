@@ -27,6 +27,10 @@
       "schedule": "0 */4 * * 1-5"
     },
     {
+      "path": "/api/cron/ingest-web-content",
+      "schedule": "0 8 * * *"
+    },
+    {
       "path": "/api/cron/backup",
       "schedule": "0 3 * * *"
     }

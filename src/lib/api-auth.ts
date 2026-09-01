@@ -16,16 +16,20 @@ export function generateApiKey(): string {
 
 /**
  * 创建新的 API Key 记录
+ * @param name Key 名称
+ * @param userId 用户 ID（可选，MCP 测试 Key 可为空）
  */
-export async function createApiKey(userId: string, name: string): Promise<ApiKey> {
+export async function createApiKey(name: string, userId?: string): Promise<ApiKey> {
   if (!db) {
     throw new Error("数据库不可用")
   }
 
-  // 检查用户已有的 API Key 数量（最多 5 个）
-  const existingKeys = await db.select().from(apiKeys).where(eq(apiKeys.userId, userId))
-  if (existingKeys.length >= 5) {
-    throw new Error("API Key 数量已达上限（最多 5 个）")
+  // 有 userId 时检查数量限制
+  if (userId) {
+    const existingKeys = await db.select().from(apiKeys).where(eq(apiKeys.userId, userId))
+    if (existingKeys.length >= 5) {
+      throw new Error("API Key 数量已达上限（最多 5 个）")
+    }
   }
 
   const key = generateApiKey()
@@ -33,15 +37,20 @@ export async function createApiKey(userId: string, name: string): Promise<ApiKey
 
   const [apiKey] = await db.insert(apiKeys).values({
     id,
-    userId,
+    userId: userId || null,
     key,
     name,
     isActive: true,
     createdAt: new Date(),
   }).returning()
 
-  // 确保用户有配额记录
-  await ensureUserQuota(userId)
+  // 有 userId 时确保配额记录
+  if (userId) {
+    await ensureUserQuota(userId)
+  } else {
+    // 无用户关联的 Key（MCP 测试用）创建独立配额
+    await ensurePublicApiKeyQuota(apiKey.id)
+  }
 
   return apiKey
 }
@@ -62,6 +71,29 @@ async function ensureUserQuota(userId: string): Promise<void> {
     await db.insert(apiQuotas).values({
       userId,
       freeLimit: 1000,
+      usedFree: 0,
+      paidLimit: 0,
+      usedPaid: 0,
+      resetAt,
+    })
+  }
+}
+
+/**
+ * 确保公开 API Key 有配额记录（按 apiKeyId 关联）
+ */
+async function ensurePublicApiKeyQuota(apiKeyId: string): Promise<void> {
+  if (!db) return
+
+  const existing = await db.select().from(apiQuotas).where(eq(apiQuotas.apiKeyId, apiKeyId)).limit(1)
+
+  if (existing.length === 0) {
+    const now = new Date()
+    const resetAt = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+
+    await db.insert(apiQuotas).values({
+      apiKeyId,
+      freeLimit: 10000,
       usedFree: 0,
       paidLimit: 0,
       usedPaid: 0,
@@ -103,8 +135,10 @@ export async function validateApiKey(key: string): Promise<{
     return { valid: false, error: "API_KEY_EXPIRED" }
   }
 
-  // 获取配额
-  const quotaRecord = await db.select().from(apiQuotas).where(eq(apiQuotas.userId, apiKey.userId)).limit(1)
+  // 获取配额（有 userId 按 userId 查，否则按 apiKeyId 查）
+  const quotaRecord = apiKey.userId
+    ? await db.select().from(apiQuotas).where(eq(apiQuotas.userId, apiKey.userId)).limit(1)
+    : await db.select().from(apiQuotas).where(eq(apiQuotas.apiKeyId, apiKey.id)).limit(1)
   const quota = quotaRecord[0]
 
   if (!quota) {
@@ -173,29 +207,48 @@ export async function getUserApiKeys(userId: string): Promise<ApiKey[]> {
 
 /**
  * 删除 API Key
+ * @param keyId Key ID
+ * @param userId 用户 ID（可选，用于权限校验）
  */
-export async function deleteApiKey(userId: string, keyId: string): Promise<boolean> {
+export async function deleteApiKey(keyId: string, userId?: string): Promise<boolean> {
   if (!db) return false
 
-  const result = await db.delete(apiKeys)
-    .where(and(eq(apiKeys.id, keyId), eq(apiKeys.userId, userId)))
-    .returning()
+  // 有 userId 时校验归属
+  if (userId) {
+    const result = await db.delete(apiKeys)
+      .where(and(eq(apiKeys.id, keyId), eq(apiKeys.userId, userId)))
+      .returning()
+    return result.length > 0
+  }
 
+  // 无 userId 时直接删除（公开 Key）
+  const result = await db.delete(apiKeys)
+    .where(eq(apiKeys.id, keyId))
+    .returning()
   return result.length > 0
 }
 
 /**
  * 重置 API Key（生成新 Key 值）
+ * @param keyId Key ID
+ * @param userId 用户 ID（可选，用于权限校验）
  */
-export async function resetApiKey(userId: string, keyId: string): Promise<ApiKey | null> {
+export async function resetApiKey(keyId: string, userId?: string): Promise<ApiKey | null> {
   if (!db) return null
 
   const newKey = generateApiKey()
 
+  if (userId) {
+    const [updated] = await db.update(apiKeys)
+      .set({ key: newKey })
+      .where(and(eq(apiKeys.id, keyId), eq(apiKeys.userId, userId)))
+      .returning()
+    return updated || null
+  }
+
   const [updated] = await db.update(apiKeys)
     .set({ key: newKey })
-    .where(and(eq(apiKeys.id, keyId), eq(apiKeys.userId, userId)))
+    .where(eq(apiKeys.id, keyId))
     .returning()
-
   return updated || null
 }

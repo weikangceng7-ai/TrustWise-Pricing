@@ -78,9 +78,9 @@ export default function EnterprisesPage() {
   const formatRevenue = (revenue?: number) => {
     if (!revenue) return '-'
     if (revenue >= 10000) {
-      return `${(revenue / 10000).toFixed(0)}亿`
+      return `${(revenue / 10000).toFixed(0)}${t("enterprises.unitHundredMillion")}`
     }
-    return `${revenue}百万`
+    return `${revenue}${t("enterprises.unitMillion")}`
   }
 
   if (loading) {

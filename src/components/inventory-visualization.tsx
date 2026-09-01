@@ -12,6 +12,7 @@ import {
   CheckCircle,
   Info
 } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 // 库存数据类型
 interface InventoryData {
@@ -33,7 +34,7 @@ interface InventoryVisualizationProps {
 }
 
 // 计算库存状态
-function getInventoryStatus(current: number, max: number, safetyDays: number, avgConsumption: number) {
+function getInventoryStatus(current: number, max: number, safetyDays: number, avgConsumption: number, t: (key: string) => string) {
   const remainingDays = Math.round(current / avgConsumption)
   const fillPercent = (current / max) * 100
 
@@ -43,19 +44,19 @@ function getInventoryStatus(current: number, max: number, safetyDays: number, av
 
   if (remainingDays < safetyDays * 0.6) {
     status = "critical"
-    statusText = "库存紧急"
+    statusText = t("inventory.statusCritical")
     statusColor = "text-red-500"
   } else if (remainingDays < safetyDays) {
     status = "warning"
-    statusText = "库存偏低"
+    statusText = t("inventory.statusWarning")
     statusColor = "text-amber-500"
   } else if (fillPercent > 80) {
     status = "high"
-    statusText = "库存充足"
+    statusText = t("inventory.statusHigh")
     statusColor = "text-blue-500"
   } else {
     status = "normal"
-    statusText = "库存正常"
+    statusText = t("inventory.statusNormal")
     statusColor = "text-emerald-500"
   }
 
@@ -63,48 +64,50 @@ function getInventoryStatus(current: number, max: number, safetyDays: number, av
 }
 
 // 策略配置（使用完整 Tailwind 类名，避免 JIT 动态类名失效）
-const STRATEGY_CONFIG = {
+const STRATEGY_CONFIG = (t: (key: string) => string) => ({
   aggressive: {
-    label: "激进型",
-    desc: "低库存高周转，资金效率优先",
+    label: t("inventory.strategyAggressive"),
+    desc: t("inventory.strategyAggressiveDesc"),
     color: "rose",
     icon: TrendingUp,
     iconClass: "text-rose-500",
     badgeClass: "border-rose-500 text-rose-500",
   },
   moderate: {
-    label: "稳健型",
-    desc: "平衡库存与周转，风险可控",
+    label: t("inventory.strategyModerate"),
+    desc: t("inventory.strategyModerateDesc"),
     color: "amber",
     icon: Activity,
     iconClass: "text-amber-500",
     badgeClass: "border-amber-500 text-amber-500",
   },
   conservative: {
-    label: "保守型",
-    desc: "高库存保供应，安全优先",
+    label: t("inventory.strategyConservative"),
+    desc: t("inventory.strategyConservativeDesc"),
     color: "emerald",
     icon: CheckCircle,
     iconClass: "text-emerald-500",
     badgeClass: "border-emerald-500 text-emerald-500",
   },
-}
+})
 
 export function InventoryVisualization({
   inventory,
   inventoryStrategy,
   enterpriseColor,
 }: InventoryVisualizationProps) {
+  const { t, lang } = useLanguage()
   const { currentStock, maxCapacity, safetyDays, avgConsumption, turnoverRate, lastPurchaseDate, nextPurchaseDate, supplierCount, portDistance } = inventory
 
   const { status, statusText, statusColor, remainingDays, fillPercent } = getInventoryStatus(
     currentStock,
     maxCapacity,
     safetyDays,
-    avgConsumption
+    avgConsumption,
+    t
   )
 
-  const strategyConfig = STRATEGY_CONFIG[inventoryStrategy]
+  const strategyConfig = STRATEGY_CONFIG(t)[inventoryStrategy]
   const StrategyIcon = strategyConfig.icon
 
   // 计算进度条颜色
@@ -118,7 +121,7 @@ export function InventoryVisualization({
   // 格式化日期
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
-    return date.toLocaleDateString("zh-CN", { month: "short", day: "numeric" })
+    return date.toLocaleDateString(lang === "zh" ? "zh-CN" : "en-US", { month: "short", day: "numeric" })
   }
 
   // 计算距下次采购天数
@@ -140,7 +143,7 @@ export function InventoryVisualization({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Warehouse className="h-5 w-5" style={{ color: enterpriseColor }} />
-              <CardTitle className="text-lg">库存状态监控</CardTitle>
+              <CardTitle className="text-lg">{t("inventory.title")}</CardTitle>
             </div>
             <div className="flex items-center gap-2">
               <StrategyIcon className={`h-4 w-4 ${strategyConfig.iconClass}`} />
@@ -155,12 +158,12 @@ export function InventoryVisualization({
           {/* 库存量可视化 - 大数字展示 */}
           <div className="grid grid-cols-2 gap-4">
             <div className="relative p-4 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-800/30">
-              <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">当前库存</div>
+              <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">{t("inventory.currentStock")}</div>
               <div className="flex items-end gap-2">
                 <span className="text-4xl font-bold text-slate-900 dark:text-white">
                   {(currentStock / 1000).toFixed(1)}
                 </span>
-                <span className="text-lg text-slate-500 dark:text-slate-400 mb-1">千吨</span>
+                <span className="text-lg text-slate-500 dark:text-slate-400 mb-1">{t("inventory.thousandTons")}</span>
               </div>
               <div className="mt-2 flex items-center gap-2">
                 <span className={`text-xs font-medium ${statusColor}`}>{statusText}</span>
@@ -170,14 +173,14 @@ export function InventoryVisualization({
             </div>
 
             <div className="relative p-4 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-800/30">
-              <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">可用天数</div>
+              <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">{t("inventory.availableDays")}</div>
               <div className="flex items-end gap-2">
                 <span className="text-4xl font-bold text-slate-900 dark:text-white">{remainingDays}</span>
-                <span className="text-lg text-slate-500 dark:text-slate-400 mb-1">天</span>
+                <span className="text-lg text-slate-500 dark:text-slate-400 mb-1">{t("inventory.days")}</span>
               </div>
               <div className="mt-2 flex items-center gap-2">
-                <span className="text-xs text-slate-500">安全库存</span>
-                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{safetyDays} 天</span>
+                <span className="text-xs text-slate-500">{t("inventory.safetyStock")}</span>
+                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{safetyDays} {t("inventory.days")}</span>
               </div>
             </div>
           </div>
@@ -185,7 +188,7 @@ export function InventoryVisualization({
           {/* 库存容量进度条 */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500 dark:text-slate-400">仓储容量使用率</span>
+              <span className="text-slate-500 dark:text-slate-400">{t("inventory.capacityUsage")}</span>
               <span className="font-medium text-slate-700 dark:text-slate-300">{fillPercent.toFixed(1)}%</span>
             </div>
             <div className="relative h-6 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
@@ -201,37 +204,37 @@ export function InventoryVisualization({
               />
               {/* 标注 */}
               <div className="absolute inset-0 flex items-center justify-between px-3 text-xs">
-                <span className="text-white font-medium drop-shadow">{currentStock.toLocaleString()} 吨</span>
-                <span className="text-slate-400">{maxCapacity.toLocaleString()} 吨</span>
+                <span className="text-white font-medium drop-shadow">{currentStock.toLocaleString()} {t("inventory.tons")}</span>
+                <span className="text-slate-400">{maxCapacity.toLocaleString()} {t("inventory.tons")}</span>
               </div>
             </div>
             <div className="flex items-center gap-1 text-xs text-amber-500">
               <Info className="h-3 w-3" />
-              <span>黄色线表示安全库存水平 ({(safetyDays * avgConsumption).toLocaleString()} 吨)</span>
+              <span>{t("inventory.safetyLineDesc")} ({(safetyDays * avgConsumption).toLocaleString()} {t("inventory.tons")})</span>
             </div>
           </div>
 
           {/* 库存关键指标网格 */}
           <div className="grid grid-cols-4 gap-3">
             <div className="p-3 rounded-lg bg-blue-50/50 dark:bg-blue-900/10 text-center">
-              <div className="text-xs text-slate-500 dark:text-slate-400">日均消耗</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">{t("inventory.dailyConsumption")}</div>
               <div className="text-lg font-semibold text-blue-600 dark:text-blue-400">{avgConsumption}</div>
-              <div className="text-xs text-slate-400">吨/天</div>
+              <div className="text-xs text-slate-400">{t("inventory.tonsPerDay")}</div>
             </div>
             <div className="p-3 rounded-lg bg-violet-50/50 dark:bg-violet-900/10 text-center">
-              <div className="text-xs text-slate-500 dark:text-slate-400">年周转</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">{t("inventory.yearlyTurnover")}</div>
               <div className="text-lg font-semibold text-violet-600 dark:text-violet-400">{turnoverRate}</div>
-              <div className="text-xs text-slate-400">次/年</div>
+              <div className="text-xs text-slate-400">{t("inventory.timesPerYear")}</div>
             </div>
             <div className="p-3 rounded-lg bg-emerald-50/50 dark:bg-emerald-900/10 text-center">
-              <div className="text-xs text-slate-500 dark:text-slate-400">供应商</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">{t("inventory.suppliers")}</div>
               <div className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">{supplierCount}</div>
-              <div className="text-xs text-slate-400">家</div>
+              <div className="text-xs text-slate-400">{t("inventory.unit")}</div>
             </div>
             <div className="p-3 rounded-lg bg-amber-50/50 dark:bg-amber-900/10 text-center">
-              <div className="text-xs text-slate-500 dark:text-slate-400">距港口</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">{t("inventory.portDistance")}</div>
               <div className="text-lg font-semibold text-amber-600 dark:text-amber-400">{portDistance}</div>
-              <div className="text-xs text-slate-400">公里</div>
+              <div className="text-xs text-slate-400">{t("inventory.kilometers")}</div>
             </div>
           </div>
         </CardContent>
@@ -242,7 +245,7 @@ export function InventoryVisualization({
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Calendar className="h-5 w-5" style={{ color: enterpriseColor }} />
-            <CardTitle className="text-lg">采购时间线</CardTitle>
+            <CardTitle className="text-lg">{t("inventory.purchaseTimeline")}</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -255,11 +258,11 @@ export function InventoryVisualization({
               <div className="relative flex items-start gap-4 pl-10">
                 <div className="absolute left-2.5 w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-white dark:ring-slate-900" />
                 <div className="flex-1">
-                  <div className="text-sm text-slate-500 dark:text-slate-400">上次采购</div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400">{t("inventory.lastPurchase")}</div>
                   <div className="font-medium text-slate-900 dark:text-white">{formatDate(lastPurchaseDate)}</div>
                 </div>
                 <Badge variant="outline" className="text-xs text-slate-500">
-                  已完成
+                  {t("inventory.completed")}
                 </Badge>
               </div>
 
@@ -270,9 +273,9 @@ export function InventoryVisualization({
                   style={{ backgroundColor: enterpriseColor }}
                 />
                 <div className="flex-1">
-                  <div className="text-sm text-slate-500 dark:text-slate-400">当前状态</div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400">{t("inventory.currentStatus")}</div>
                   <div className="font-medium text-slate-900 dark:text-white">
-                    库存可维持 {remainingDays} 天
+                    {t("inventory.stockCanLastPrefix")}{remainingDays}{t("inventory.stockCanLastSuffix")}
                   </div>
                 </div>
                 <Badge
@@ -293,7 +296,7 @@ export function InventoryVisualization({
               <div className="relative flex items-start gap-4 pl-10">
                 <div className="absolute left-2.5 w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-white dark:ring-slate-900 border-2 border-dashed border-slate-400" />
                 <div className="flex-1">
-                  <div className="text-sm text-slate-500 dark:text-slate-400">计划采购</div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400">{t("inventory.plannedPurchase")}</div>
                   <div className="font-medium text-slate-900 dark:text-white">{formatDate(nextPurchaseDate)}</div>
                 </div>
                 <Badge
@@ -306,7 +309,7 @@ export function InventoryVisualization({
                       : "border-blue-500 text-blue-500"
                   }`}
                 >
-                  {daysToNextPurchase > 0 ? `${daysToNextPurchase} 天后` : "已到期"}
+                  {daysToNextPurchase > 0 ? `${daysToNextPurchase} ${t("inventory.daysLater")}` : t("inventory.overdue")}
                 </Badge>
               </div>
             </div>
@@ -319,9 +322,9 @@ export function InventoryVisualization({
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Package className="h-5 w-5" style={{ color: enterpriseColor }} />
-            <CardTitle className="text-lg">库存消耗预测</CardTitle>
+            <CardTitle className="text-lg">{t("inventory.consumptionForecast")}</CardTitle>
           </div>
-          <CardDescription>基于历史消耗量的预测分析</CardDescription>
+          <CardDescription>{t("inventory.forecastDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           {/* 简化的消耗趋势图 */}
@@ -347,7 +350,7 @@ export function InventoryVisualization({
                 className="absolute left-0 right-0 border-t-2 border-dashed border-amber-400"
                 style={{ bottom: `${(safetyDays * avgConsumption / maxCapacity) * 100}%` }}
               >
-                <span className="absolute right-0 -top-5 text-xs text-amber-500">安全库存</span>
+                <span className="absolute right-0 -top-5 text-xs text-amber-500">{t("inventory.safetyStock")}</span>
               </div>
 
               {/* 当前库存点 */}
@@ -381,10 +384,10 @@ export function InventoryVisualization({
 
               {/* 时间轴标签 */}
               <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-slate-400 pt-2">
-                <span>今天</span>
-                <span>+7天</span>
-                <span>+14天</span>
-                <span>+21天</span>
+                <span>{t("inventory.today")}</span>
+                <span>{t("inventory.days7")}</span>
+                <span>{t("inventory.days14")}</span>
+                <span>{t("inventory.days21")}</span>
               </div>
             </div>
           </div>
@@ -393,15 +396,15 @@ export function InventoryVisualization({
           <div className="flex items-center justify-center gap-6 mt-4 text-xs">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: enterpriseColor }} />
-              <span className="text-slate-500">当前库存</span>
+              <span className="text-slate-500">{t("inventory.legendCurrentStock")}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-6 border-t-2 border-dashed border-amber-400" />
-              <span className="text-slate-500">安全库存</span>
+              <span className="text-slate-500">{t("inventory.legendSafetyStock")}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-6 border-t border-dashed" style={{ borderColor: enterpriseColor }} />
-              <span className="text-slate-500">预测消耗</span>
+              <span className="text-slate-500">{t("inventory.legendForecast")}</span>
             </div>
           </div>
         </CardContent>

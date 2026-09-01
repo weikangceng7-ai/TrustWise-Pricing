@@ -4,6 +4,7 @@ import { useState, useMemo } from "react"
 import { TrendingUp, TrendingDown, Minus, Activity, Scale, Loader2 } from "lucide-react"
 import { COMMODITY_INFO, COMMODITY_CODES, type CommodityCode } from "@/db/schema-commodity"
 import { usePriceSummary, useInventorySummary } from "@/hooks/use-prices"
+import { useLanguage } from "@/contexts/language-context"
 
 const CARD_COLORS: Record<CommodityCode, { gradient: string; border: string; badge: string; badgeText: string }> = {
   sulfur: {
@@ -65,6 +66,7 @@ function CommodityOverviewCards({
   onSelect: (code: CommodityCode) => void
 }) {
   const codes = Object.values(COMMODITY_CODES)
+  const { t } = useLanguage()
   const queries = codes.map((code) => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const summary = usePriceSummary(code)
@@ -107,18 +109,18 @@ function CommodityOverviewCards({
               ) : currentPrice ? (
                 `¥${Number(currentPrice).toLocaleString()}`
               ) : (
-                <span className="text-sm text-slate-400">暂无数据</span>
+                <span className="text-sm text-slate-400">{t("commodities.noData")}</span>
               )}
             </div>
             <div className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
-              <span>{market || "现货均价"}</span>
+              <span>{market || t("commodities.spotAvg")}</span>
               {source && (
                 <span className={`px-1 py-0.5 rounded text-[10px] font-medium ${
                   source.includes("模拟") ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" :
                   source.includes("推算") ? "bg-sky-500/10 text-sky-600 dark:text-sky-400" :
                   "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                 }`}>
-                  {source.includes("模拟") ? "模拟" : source.includes("推算") ? "推算" : "真实"}
+                  {source.includes("模拟") ? t("commodities.sourceSimulated") : source.includes("推算") ? t("commodities.sourceDerived") : t("commodities.sourceReal")}
                 </span>
               )}
             </div>
@@ -126,13 +128,13 @@ function CommodityOverviewCards({
               <div className="flex items-center gap-1">
                 <Activity className="h-3 w-3 text-slate-400" />
                 <span className="text-xs text-slate-500 dark:text-slate-400">
-                  {Math.abs(changePercent) > 2 ? "活跃" : "正常"}
+                  {Math.abs(changePercent) > 2 ? t("commodities.activityHigh") : t("commodities.activityNormal")}
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 <Scale className="h-3 w-3 text-slate-400" />
                 <span className="text-xs text-slate-500 dark:text-slate-400">
-                  {Math.abs(changePercent) > 3 ? "高风险" : Math.abs(changePercent) > 1 ? "中等风险" : "低风险"}
+                  {Math.abs(changePercent) > 3 ? t("commodities.riskHigh") : Math.abs(changePercent) > 1 ? t("commodities.riskMedium") : t("commodities.riskLow")}
                 </span>
               </div>
             </div>
@@ -145,6 +147,7 @@ function CommodityOverviewCards({
 
 function ComparisonBar() {
   const codes = Object.values(COMMODITY_CODES)
+  const { t } = useLanguage()
   // 并行获取所有品种的价格摘要
   const queries = codes.map((code) => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -169,8 +172,8 @@ function ComparisonBar() {
   if (items.length === 0) {
     return (
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">价格对比</h3>
-        <p className="text-xs text-slate-400">加载中...</p>
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{t("commodities.priceComparison")}</h3>
+        <p className="text-xs text-slate-400">{t("commodities.loading")}</p>
       </div>
     )
   }
@@ -179,7 +182,7 @@ function ComparisonBar() {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-slate-900 dark:text-white">价格对比</h3>
+      <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{t("commodities.priceComparison")}</h3>
       {items.map(({ code, name, price, market }) => {
         const width = maxPrice > 0 ? (price / maxPrice) * 100 : 0
         return (
@@ -187,7 +190,7 @@ function ComparisonBar() {
             <div className="flex items-center justify-between text-xs">
               <span className="font-medium text-slate-700 dark:text-slate-300">{name}</span>
               <span className="text-slate-600 dark:text-slate-400">
-                ¥{price.toLocaleString()} <span className="text-slate-400">{market || "现货均价"}</span>
+                ¥{price.toLocaleString()} <span className="text-slate-400">{market || t("commodities.spotAvg")}</span>
               </span>
             </div>
             <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
@@ -209,6 +212,7 @@ function ComparisonBar() {
 
 export function CommoditiesPanel() {
   const [selectedCommodity, setSelectedCommodity] = useState<CommodityCode>("sulfur")
+  const { t } = useLanguage()
 
   // 从 API 获取选中品种的真实数据
   const priceSummary = usePriceSummary(selectedCommodity)
@@ -225,42 +229,42 @@ export function CommoditiesPanel() {
 
       // 根据真实数据生成关键驱动因素和展望
       const drivers: string[] = []
-      if (Math.abs(changePercent) > 2) drivers.push(changePercent > 0 ? "价格上涨趋势" : "价格下跌趋势")
+      if (Math.abs(changePercent) > 2) drivers.push(changePercent > 0 ? t("commodities.driver.priceUp") : t("commodities.driver.priceDown"))
       if (invData?.currentInventory) {
         const inv = Number(invData.currentInventory)
-        if (inv > 500000) drivers.push("港口库存偏高")
-        else if (inv < 200000) drivers.push("港口库存偏低")
-        else drivers.push("库存水平正常")
+        if (inv > 500000) drivers.push(t("commodities.driver.inventoryHigh"))
+        else if (inv < 200000) drivers.push(t("commodities.driver.inventoryLow"))
+        else drivers.push(t("commodities.driver.inventoryNormal"))
       }
-      drivers.push("关注国际市场动态")
+      drivers.push(t("commodities.driver.watchInternational"))
 
       const outlook = changePercent > 2
-        ? `短期价格走强，变动${changePercent.toFixed(1)}%，建议关注下游需求变化。`
+        ? t("commodities.outlook.strong")
         : changePercent < -2
-        ? `短期价格承压，变动${Math.abs(changePercent).toFixed(1)}%，可关注采购时机。`
-        : "价格相对平稳，按需采购为主。"
+        ? t("commodities.outlook.weak")
+        : t("commodities.outlook.stable")
 
       return {
         price: `¥${currentPrice.toLocaleString()}`,
-        priceLabel: priceData.market ? `${priceData.market}现货价` : "现货均价",
+        priceLabel: priceData.market ? `${priceData.market}${t("commodities.spotPrice")}` : t("commodities.spotAvg"),
         change: `${changePercent >= 0 ? "+" : ""}${changePercent.toFixed(1)}%`,
         trend: (changePercent > 1 ? "up" : changePercent < -1 ? "down" : "flat") as "up" | "down" | "flat",
-        volatility: changePercent > 3 ? "高" : changePercent > 1 ? "中等" : "低",
-        marketHeat: invData?.currentInventory ? (Number(invData.currentInventory) > 500000 ? "旺盛" : Number(invData.currentInventory) > 200000 ? "活跃" : "温和") : "正常",
-        riskLevel: changePercent > 3 ? "高" : changePercent > 1 ? "中等" : "低",
+        volatility: changePercent > 3 ? t("commodities.volHigh") : changePercent > 1 ? t("commodities.volMedium") : t("commodities.volLow"),
+        marketHeat: invData?.currentInventory ? (Number(invData.currentInventory) > 500000 ? t("commodities.heatHigh") : Number(invData.currentInventory) > 200000 ? t("commodities.heatActive") : t("commodities.heatMild")) : t("commodities.heatNormal"),
+        riskLevel: changePercent > 3 ? t("commodities.volHigh") : changePercent > 1 ? t("commodities.volMedium") : t("commodities.volLow"),
         keyDrivers: drivers,
         outlook,
       }
     }
     return null
-  }, [priceSummary.data, inventorySummary.data])
+  }, [priceSummary.data, inventorySummary.data, t])
 
   const colors = CARD_COLORS[selectedCommodity]
 
   return (
     <div>
       {/* 品种概览卡片 */}
-      <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">点击卡片查看品种详细分析</p>
+      <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">{t("commodities.clickToAnalyze")}</p>
       <CommodityOverviewCards selected={selectedCommodity} onSelect={setSelectedCommodity} />
 
       <div className="grid grid-cols-2 gap-4">
@@ -268,33 +272,33 @@ export function CommoditiesPanel() {
         {metrics ? (
           <div className={`rounded-xl border backdrop-blur-sm p-5 bg-gradient-to-br ${colors.gradient} ${colors.border}`}>
             <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4">
-              {COMMODITY_INFO[selectedCommodity].name} 详细分析
+              {COMMODITY_INFO[selectedCommodity].name} {t("commodities.detailedAnalysis")}
             </h2>
 
             {/* 关键指标 */}
             <div className="grid grid-cols-3 gap-3 mb-4">
               <div className="p-3 rounded-lg bg-white/60 dark:bg-white/10 border border-slate-200/50 dark:border-white/5">
-                <div className="text-xs text-slate-500 mb-1">价格</div>
+                <div className="text-xs text-slate-500 mb-1">{t("commodities.price")}</div>
                 <div className="text-lg font-bold text-slate-900 dark:text-white">{metrics.price}</div>
                 <TrendBadge trend={metrics.trend} change={metrics.change} />
               </div>
               <div className="p-3 rounded-lg bg-white/60 dark:bg-white/10 border border-slate-200/50 dark:border-white/5">
-                <div className="text-xs text-slate-500 mb-1">波动性</div>
+                <div className="text-xs text-slate-500 mb-1">{t("commodities.volatility")}</div>
                 <div className="text-lg font-bold text-slate-900 dark:text-white">{metrics.volatility}</div>
-                <div className="text-xs text-slate-400">价格波动率</div>
+                <div className="text-xs text-slate-400">{t("commodities.volatilityRate")}</div>
               </div>
               <div className="p-3 rounded-lg bg-white/60 dark:bg-white/10 border border-slate-200/50 dark:border-white/5">
-                <div className="text-xs text-slate-500 mb-1">风险等级</div>
-                <div className={`text-lg font-bold ${metrics.riskLevel === "高" ? "text-rose-600 dark:text-rose-400" : metrics.riskLevel === "中等" ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                <div className="text-xs text-slate-500 mb-1">{t("commodities.riskLevel")}</div>
+                <div className={`text-lg font-bold ${metrics.riskLevel === t("commodities.volHigh") ? "text-rose-600 dark:text-rose-400" : metrics.riskLevel === t("commodities.volMedium") ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`}>
                   {metrics.riskLevel}
                 </div>
-                <div className="text-xs text-slate-400">综合评估</div>
+                <div className="text-xs text-slate-400">{t("commodities.overallAssessment")}</div>
               </div>
             </div>
 
             {/* 关键驱动因素 */}
             <div className="mb-4">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2">关键驱动因素</h3>
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2">{t("commodities.keyDrivers")}</h3>
               <div className="flex flex-wrap gap-2">
                 {metrics.keyDrivers.map((d) => (
                   <span key={d} className="text-xs px-2.5 py-1 rounded-full bg-white/60 dark:bg-white/10 border border-slate-200/50 dark:border-white/10 text-slate-700 dark:text-slate-300">
@@ -306,7 +310,7 @@ export function CommoditiesPanel() {
 
             {/* 展望 */}
             <div>
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2">市场展望</h3>
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2">{t("commodities.outlook")}</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{metrics.outlook}</p>
             </div>
           </div>
@@ -319,7 +323,7 @@ export function CommoditiesPanel() {
                 <Activity className="h-8 w-8 text-slate-300 mx-auto mb-3" />
               )}
               <p className="text-sm text-slate-500">
-                {isLoading ? "加载中..." : "暂无数据，请稍后重试"}
+                {isLoading ? t("commodities.loading") : t("commodities.noDataRetry")}
               </p>
             </div>
           </div>
@@ -333,13 +337,13 @@ export function CommoditiesPanel() {
 
           {/* 品种相关性 */}
           <div className="rounded-xl border backdrop-blur-sm p-5 bg-white/80 dark:bg-white/5 border-slate-200 dark:border-white/10">
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">品种相关性</h3>
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">{t("commodities.correlation")}</h3>
             <div className="space-y-2">
               {[
-                { pair: "硫磺 → 磷矿", correlation: "强正相关", value: 0.82, desc: "磷肥生产拉动硫磺需求" },
-                { pair: "硫磺 → 钾肥", correlation: "弱正相关", value: 0.35, desc: "化肥板块整体联动" },
-                { pair: "尿素 → 钾肥", correlation: "弱负相关", value: -0.28, desc: "替代效应与季节性差异" },
-                { pair: "磷矿 → 尿素", correlation: "不相关", value: 0.05, desc: "产业链上下游不同步" },
+                { pair: t("commodities.correlation.pair.sulfurPhosphate"), correlation: t("commodities.correlation.strongPositive"), value: 0.82, desc: t("commodities.correlation.desc.sulfurPhosphate") },
+                { pair: t("commodities.correlation.pair.sulfurPotash"), correlation: t("commodities.correlation.weakPositive"), value: 0.35, desc: t("commodities.correlation.desc.sulfurPotash") },
+                { pair: t("commodities.correlation.pair.ureaPotash"), correlation: t("commodities.correlation.weakNegative"), value: -0.28, desc: t("commodities.correlation.desc.ureaPotash") },
+                { pair: t("commodities.correlation.pair.phosphateUrea"), correlation: t("commodities.correlation.none"), value: 0.05, desc: t("commodities.correlation.desc.phosphateUrea") },
               ].map((item) => (
                 <div key={item.pair} className="flex items-center justify-between p-2 rounded-lg bg-slate-50/50 dark:bg-slate-800/20 border border-slate-100 dark:border-slate-700/20">
                   <div>

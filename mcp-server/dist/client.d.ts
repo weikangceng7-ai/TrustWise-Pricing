@@ -27,8 +27,8 @@ export declare function createClient(config: McpConfig): {
     getInventory(limit?: number): Promise<ApiResponse<unknown>>;
     /** GET /api/v1/data/news */
     getNews(limit?: number, category?: string): Promise<ApiResponse<unknown>>;
-    /** POST /api/prediction */
-    predictPrices(days?: number): Promise<ApiResponse<unknown>>;
+    /** POST /api/prediction 或直接调用 Python */
+    predictPrices(days?: number): Promise<ApiResponse>;
     /** POST /api/tracker/subscriptions */
     createSubscription(body: {
         name: string;
@@ -69,9 +69,9 @@ export declare function createClient(config: McpConfig): {
     getAccuracyMetrics(enterpriseCode?: string): Promise<ApiResponse<unknown>>;
     /** GET /api/success-cases */
     getSuccessCases(industry?: string): Promise<ApiResponse<unknown>>;
-    /** POST /api/prediction/transformer */
-    predictWithTransformer(days: number, commodityCode: string): Promise<ApiResponse<unknown>>;
-    /** POST /api/prediction/combined */
-    getCombinedPrediction(days: number, commodityCode: string): Promise<ApiResponse<unknown>>;
+    /** POST /api/prediction/transformer 或直接调用 Python */
+    predictWithTransformer(days: number, commodityCode: string): Promise<ApiResponse>;
+    /** POST /api/prediction/combined 或直接调用 Python */
+    getCombinedPrediction(days: number, commodityCode: string): Promise<ApiResponse>;
 };
 export {};

@@ -303,3 +303,6 @@ export * from "./schema-commodity"
 
 // 支付相关表 - 从 schema-payment 导入
 export * from "./schema-payment"
+
+// 库存分析相关表 - 从 schema-inventory 导入
+export * from "./schema-inventory"

@@ -143,6 +143,23 @@ export function useTrackerSubscriptions(options?: {
     },
   })
 
+  // 手动执行订阅
+  const runMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch("/api/tracker/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscriptionId: id }),
+      })
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tracker-subscriptions"] })
+      queryClient.invalidateQueries({ queryKey: ["tracker-alerts"] })
+      queryClient.invalidateQueries({ queryKey: ["tracker-status"] })
+    },
+  })
+
   // 封装操作方法
   const createSubscription = useCallback(
     (input: CreateSubscriptionInput) => {
@@ -172,6 +189,13 @@ export function useTrackerSubscriptions(options?: {
     [toggleMutation]
   )
 
+  const runSubscription = useCallback(
+    (id: number) => {
+      return runMutation.mutateAsync(id)
+    },
+    [runMutation]
+  )
+
   return {
     subscriptions: (data?.data?.subscriptions || []) as TrackerSubscription[],
     total: data?.data?.total || 0,
@@ -184,10 +208,12 @@ export function useTrackerSubscriptions(options?: {
     updateSubscription,
     deleteSubscription,
     toggleSubscription,
+    runSubscription,
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
     isToggling: toggleMutation.isPending,
+    isRunning: runMutation.isPending,
   }
 }
 

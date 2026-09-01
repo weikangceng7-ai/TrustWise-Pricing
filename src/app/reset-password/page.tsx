@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2, Eye, EyeOff, Check, X } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 // 密码强度检测
 function getPasswordStrength(password: string): {

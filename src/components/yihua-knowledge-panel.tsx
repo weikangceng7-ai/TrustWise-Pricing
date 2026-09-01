@@ -12,9 +12,11 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useYihuaKnowledge } from "@/hooks/use-yihua-knowledge"
+import { useLanguage } from "@/contexts/language-context"
 
 export function YihuaKnowledgePanel() {
   const { data, isLoading, error } = useYihuaKnowledge()
+  const { t } = useLanguage()
 
   if (isLoading) {
     return (
@@ -38,8 +40,8 @@ export function YihuaKnowledgePanel() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>知识库</CardTitle>
-          <CardDescription>无法加载知识库统计，请稍后重试。</CardDescription>
+          <CardTitle>{t("yihuaKnowledge.title")}</CardTitle>
+          <CardDescription>{t("yihuaKnowledge.loadError")}</CardDescription>
         </CardHeader>
       </Card>
     )
@@ -53,43 +55,43 @@ export function YihuaKnowledgePanel() {
     <Card>
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <CardTitle className="text-lg">知识库</CardTitle>
+          <CardTitle className="text-lg">{t("yihuaKnowledge.title")}</CardTitle>
           <span className="text-xs text-muted-foreground">
-            来源：{source === "database" ? "数据库" : "本地清单"}
+            {t("yihuaKnowledge.sourceLabel")}{source === "database" ? t("yihuaKnowledge.sourceDatabase") : t("yihuaKnowledge.sourceLocal")}
             {data.generatedAt ? ` · ${new Date(data.generatedAt).toLocaleDateString("zh-CN")}` : ""}
           </span>
         </div>
         <CardDescription>
-          资料、图表与文献已预处理（年份/语言）；将静态文件放到{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs">public/yihua/</code>{" "}
-          下即可通过链接访问。
+          {t("yihuaKnowledge.description")}
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">public/yihua/</code>
+          {t("yihuaKnowledge.descriptionSuffix")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatTile
             icon={FileText}
-            label="方案/文档"
+            label={t("yihuaKnowledge.documents")}
             value={totals.documents}
             sub="docx"
           />
           <StatTile
             icon={FileSpreadsheet}
-            label="数据表"
+            label={t("yihuaKnowledge.spreadsheets")}
             value={totals.spreadsheets}
             sub="xlsx"
           />
           <StatTile
             icon={ImageIcon}
-            label="图表"
+            label={t("yihuaKnowledge.imagesDiagrams")}
             value={totals.images + totals.diagrams}
-            sub={`${totals.images} 图 · ${totals.diagrams} 图示`}
+            sub={`${totals.images} ${t("yihuaKnowledge.imagesCount")} · ${totals.diagrams} ${t("yihuaKnowledge.diagramsCount")}`}
           />
           <StatTile
             icon={BookMarked}
-            label="文献 PDF"
+            label={t("yihuaKnowledge.literaturePdfs")}
             value={totals.pdfs}
-            sub={`中文 ${literatureLang.zh} · 外文 ${literatureLang.en}`}
+            sub={`${t("yihuaKnowledge.chineseCount")} ${literatureLang.zh} · ${t("yihuaKnowledge.foreignCount")} ${literatureLang.en}`}
           />
         </div>
 
@@ -97,10 +99,10 @@ export function YihuaKnowledgePanel() {
           <div className="rounded-lg border bg-muted/30 p-4">
             <div className="mb-3 flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <Database className="h-4 w-4" />
-              文献年份分布（近若干年有标注的样本）
+              {t("yihuaKnowledge.literatureYearDist")}
             </div>
             {yearBars.length === 0 ? (
-              <p className="text-sm text-muted-foreground">暂无解析到年份的文献条目。</p>
+              <p className="text-sm text-muted-foreground">{t("yihuaKnowledge.noYearData")}</p>
             ) : (
               <ul className="space-y-2">
                 {yearBars.map(({ year, count }) => (
@@ -120,7 +122,7 @@ export function YihuaKnowledgePanel() {
           </div>
 
           <div className="rounded-lg border bg-muted/30 p-4">
-            <div className="mb-3 text-sm font-medium text-muted-foreground">近年文献（示例）</div>
+            <div className="mb-3 text-sm font-medium text-muted-foreground">{t("yihuaKnowledge.recentLiterature")}</div>
             <ul className="max-h-[220px] space-y-2 overflow-y-auto pr-1 text-sm">
               {recentLiteratureSamples.map((item) => (
                 <li key={item.publicPath} className="truncate">

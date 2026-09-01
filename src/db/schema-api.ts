@@ -6,7 +6,6 @@ import { user } from "./schema"
 export const apiKeys = pgTable("api_keys", {
   id: text("id").primaryKey(),
   userId: text("user_id")
-    .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   key: text("key").notNull().unique(),
   name: text("name").notNull(),
@@ -22,8 +21,10 @@ export const apiKeys = pgTable("api_keys", {
 export const apiQuotas = pgTable("api_quotas", {
   id: serial("id").primaryKey(),
   userId: text("user_id")
-    .notNull()
     .references(() => user.id, { onDelete: "cascade" })
+    .unique(),
+  apiKeyId: text("api_key_id")
+    .references(() => apiKeys.id, { onDelete: "cascade" })
     .unique(),
   freeLimit: integer("free_limit").notNull().default(1000),
   usedFree: integer("used_free").notNull().default(0),

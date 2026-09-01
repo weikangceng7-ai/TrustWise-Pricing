@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { RefreshCw, Database, CheckCircle, Network } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 // 太阳系动画样式
 const solarSystemStyles = `
@@ -144,6 +145,7 @@ export function Neo4jKnowledgeGraph({ enterpriseCode }: { enterpriseCode: string
   const [isLoading, setIsLoading] = useState(true)
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const { t } = useLanguage()
 
   const enterpriseColor = ENTERPRISE_COLORS[enterpriseCode] || ENTERPRISE_COLORS.yihua
 
@@ -221,7 +223,7 @@ export function Neo4jKnowledgeGraph({ enterpriseCode }: { enterpriseCode: string
                 <Network className="h-5 w-5" style={{ color: enterpriseColor.primary }} />
                 <div className="absolute inset-0 blur-md" style={{ backgroundColor: enterpriseColor.glow }} />
               </div>
-              <CardTitle className="text-lg">知识图谱</CardTitle>
+              <CardTitle className="text-lg">{t("knowledgeGraph.title")}</CardTitle>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-emerald-500 border-emerald-500/30 bg-emerald-500/10">
@@ -236,11 +238,11 @@ export function Neo4jKnowledgeGraph({ enterpriseCode }: { enterpriseCode: string
                 className="border-slate-200 hover:bg-slate-100"
               >
                 <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
-                更新数据
+                {t("knowledgeGraph.updateData")}
               </Button>
             </div>
           </div>
-          <CardDescription>供应链影响因子关系网络</CardDescription>
+          <CardDescription>{t("knowledgeGraph.description")}</CardDescription>
         </CardHeader>
       </Card>
 
@@ -256,7 +258,7 @@ export function Neo4jKnowledgeGraph({ enterpriseCode }: { enterpriseCode: string
                   <RefreshCw className="h-8 w-8 animate-spin text-cyan-500" />
                   <div className="absolute inset-0 blur-xl bg-cyan-500/30" />
                 </div>
-                <span className="text-slate-400 text-sm">加载知识图谱...</span>
+                <span className="text-slate-400 text-sm">{t("knowledgeGraph.loading")}</span>
               </div>
             </div>
           ) : graph && graph.nodes.length > 0 ? (
@@ -486,7 +488,7 @@ export function Neo4jKnowledgeGraph({ enterpriseCode }: { enterpriseCode: string
                             opacity={0.6}
                             className="pointer-events-none"
                           >
-                            {String(node.properties?.capacity || 100)}万吨
+                            {String(node.properties?.capacity || 100)}{t("knowledgeGraph.tenThousandTons")}
                           </text>
                         )}
 
@@ -540,11 +542,11 @@ export function Neo4jKnowledgeGraph({ enterpriseCode }: { enterpriseCode: string
                           })()}
                           <div className="flex items-center gap-2 mt-1.5">
                             <Badge variant="outline" className="text-xs border-slate-600">
-                              {node.type === "Enterprise" ? "企业节点" : `${category}因素`}
+                              {node.type === "Enterprise" ? t("knowledgeGraph.enterpriseNode") : `${t(`knowledgeGraph.${category}`)}${t("knowledgeGraph.factorSuffix")}`}
                             </Badge>
                             {link && (
                               <Badge variant="outline" className="text-xs border-slate-600">
-                                权重 {link.weight}%
+                                {t("knowledgeGraph.weightPrefix")}{link.weight}%
                               </Badge>
                             )}
                           </div>
@@ -561,9 +563,9 @@ export function Neo4jKnowledgeGraph({ enterpriseCode }: { enterpriseCode: string
                 <Database className="h-12 w-12" />
                 <div className="absolute inset-0 blur-xl bg-slate-500/30" />
               </div>
-              <p className="text-sm mt-3">暂无知识图谱数据</p>
+              <p className="text-sm mt-3">{t("knowledgeGraph.noData")}</p>
               <Button size="sm" variant="outline" className="mt-3 border-slate-600 hover:bg-slate-800" onClick={handleSeed}>
-                导入企业数据
+                {t("knowledgeGraph.importData")}
               </Button>
             </div>
           )}
@@ -576,17 +578,17 @@ export function Neo4jKnowledgeGraph({ enterpriseCode }: { enterpriseCode: string
           {/* 图例 */}
           <Card className="bg-white/80 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">图例说明</CardTitle>
+              <CardTitle className="text-sm">{t("knowledgeGraph.legend")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(FACTOR_COLORS).map(([key, color]) => {
                   const labels: Record<string, string> = {
-                    supply: "供应端",
-                    demand: "需求端",
-                    inventory: "库存",
-                    external: "外部因素",
-                    internal: "内部因素",
+                    supply: t("knowledgeGraph.supply"),
+                    demand: t("knowledgeGraph.demand"),
+                    inventory: t("knowledgeGraph.inventory"),
+                    external: t("knowledgeGraph.externalFactor"),
+                    internal: t("knowledgeGraph.internalFactor"),
                   }
                   return (
                     <div key={key} className="flex items-center gap-2">
@@ -603,11 +605,11 @@ export function Neo4jKnowledgeGraph({ enterpriseCode }: { enterpriseCode: string
                 <div className="flex items-center gap-4 text-xs text-slate-500">
                   <div className="flex items-center gap-1">
                     <div className="w-6 border-t-2 border-dashed border-violet-400" />
-                    <span>影响关系</span>
+                    <span>{t("knowledgeGraph.influenceRelation")}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-6 border-t-2 border-slate-400" />
-                    <span>拥有关系</span>
+                    <span>{t("knowledgeGraph.ownershipRelation")}</span>
                   </div>
                 </div>
               </div>
@@ -617,23 +619,23 @@ export function Neo4jKnowledgeGraph({ enterpriseCode }: { enterpriseCode: string
           {/* 统计 */}
           <Card className="bg-white/80 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">图谱统计</CardTitle>
+              <CardTitle className="text-sm">{t("knowledgeGraph.statistics")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-3">
                 <div className="text-center p-3 rounded-lg bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-900/20 dark:to-cyan-800/20">
                   <div className="text-2xl font-bold" style={{ color: enterpriseColor.primary }}>{graph.nodes.length}</div>
-                  <div className="text-xs text-slate-500 mt-1">节点总数</div>
+                  <div className="text-xs text-slate-500 mt-1">{t("knowledgeGraph.totalNodes")}</div>
                 </div>
                 <div className="text-center p-3 rounded-lg bg-gradient-to-br from-violet-50 to-violet-100 dark:from-violet-900/20 dark:to-violet-800/20">
                   <div className="text-2xl font-bold text-violet-600">{graph.links.length}</div>
-                  <div className="text-xs text-slate-500 mt-1">关系数量</div>
+                  <div className="text-xs text-slate-500 mt-1">{t("knowledgeGraph.totalRelations")}</div>
                 </div>
                 <div className="text-center p-3 rounded-lg bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20">
                   <div className="text-2xl font-bold text-amber-600">
                     {graph.nodes.filter(n => n.type === "Factor").length}
                   </div>
-                  <div className="text-xs text-slate-500 mt-1">影响因子</div>
+                  <div className="text-xs text-slate-500 mt-1">{t("knowledgeGraph.influenceFactors")}</div>
                 </div>
               </div>
             </CardContent>

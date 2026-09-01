@@ -18,6 +18,8 @@ export interface McpConfig {
     MCP_PORT: number;
     /** DEMO 模式：跳过 API_KEY 校验，返回示例数据 */
     DEMO_MODE: boolean;
+    /** Python 预测服务地址（可选，直接调用绕过 Vercel） */
+    PREDICTION_SERVICE_URL?: string;
 }
 /**
  * 从环境变量加载配置

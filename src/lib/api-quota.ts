@@ -6,8 +6,10 @@ import { eq, sql } from "drizzle-orm"
 /**
  * 扣减配额
  * 优先扣减免费额度，不足时扣减付费额度
+ * @param userId 用户 ID（可选）
+ * @param apiKeyId API Key ID（可选，当 userId 为空时使用）
  */
-export async function decrementQuota(userId: string): Promise<{
+export async function decrementQuota(userId?: string, apiKeyId?: string): Promise<{
   success: boolean
   quota?: ApiQuota
   error?: string
@@ -16,7 +18,12 @@ export async function decrementQuota(userId: string): Promise<{
     return { success: false, error: "数据库不可用" }
   }
 
-  const quotaRecord = await db.select().from(apiQuotas).where(eq(apiQuotas.userId, userId)).limit(1)
+  // 根据 userId 或 apiKeyId 查询配额
+  const quotaRecord = userId
+    ? await db.select().from(apiQuotas).where(eq(apiQuotas.userId, userId)).limit(1)
+    : apiKeyId
+    ? await db.select().from(apiQuotas).where(eq(apiQuotas.apiKeyId, apiKeyId)).limit(1)
+    : []
 
   if (quotaRecord.length === 0) {
     return { success: false, error: "配额记录不存在" }

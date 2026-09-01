@@ -46,6 +46,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { useTrackerAlerts, useTrackerAlert } from "@/hooks/use-tracker"
 import type { TrackerAlert } from "@/db/schema-tracker"
+import { useLanguage } from "@/contexts/language-context"
 
 // ==================== 异动紧急程度颜色 ====================
 

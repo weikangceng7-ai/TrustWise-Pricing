@@ -52,6 +52,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { useTrackerSubscriptions, useTrackerSubscription } from "@/hooks/use-tracker-subscriptions"
 import type { UpdateSubscriptionInput } from "@/hooks/use-tracker-subscriptions"
 import type { TrackerSubscription, AlertRuleConfig } from "@/db/schema-tracker"
+import { useLanguage } from "@/contexts/language-context"
+import { toast } from "sonner"
 
 // ==================== 频率映射 ====================
 
@@ -73,10 +75,20 @@ const TARGET_TYPE_MAP = {
 // ==================== 订阅列表组件 ====================
 
 function SubscriptionList() {
-  const { subscriptions, isLoading, toggleSubscription, deleteSubscription } = useTrackerSubscriptions({
+  const { subscriptions, isLoading, toggleSubscription, deleteSubscription, runSubscription, isRunning } = useTrackerSubscriptions({
     activeOnly: false,
   })
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [runningId, setRunningId] = useState<number | null>(null)
+
+  const handleRun = async (id: number) => {
+    setRunningId(id)
+    try {
+      await runSubscription(id)
+    } finally {
+      setRunningId(null)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -114,6 +126,8 @@ function SubscriptionList() {
           subscription={subscription}
           onToggle={() => toggleSubscription(subscription.id, !subscription.isActive)}
           onDelete={() => deleteSubscription(subscription.id)}
+          onRun={() => handleRun(subscription.id)}
+          isRunning={runningId === subscription.id}
           isEditing={editingId === subscription.id}
           onEditStart={() => setEditingId(subscription.id)}
           onEditEnd={() => setEditingId(null)}
@@ -129,6 +143,8 @@ function SubscriptionCard({
   subscription,
   onToggle,
   onDelete,
+  onRun,
+  isRunning,
   isEditing,
   onEditStart,
   onEditEnd,
@@ -136,6 +152,8 @@ function SubscriptionCard({
   subscription: TrackerSubscription
   onToggle: () => void
   onDelete: () => void
+  onRun: () => void
+  isRunning: boolean
   isEditing: boolean
   onEditStart: () => void
   onEditEnd: () => void
@@ -182,6 +200,9 @@ function SubscriptionCard({
 
           <div className="flex items-center gap-2">
             <Switch checked={subscription.isActive} onCheckedChange={onToggle} />
+            <Button variant="ghost" size="sm" onClick={onRun} disabled={isRunning || !subscription.isActive} title="立即执行">
+              {isRunning ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+            </Button>
             <Button variant="ghost" size="sm" onClick={onEditStart}>
               <Edit className="h-4 w-4" />
             </Button>
@@ -232,6 +253,15 @@ function SubscriptionCard({
             </div>
           </div>
 
+          {/* 执行状态提示 */}
+          {!subscription.lastRunAt && (
+            <div className="mt-3 p-2 rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
+              <p className="text-xs text-amber-700 dark:text-amber-400">
+                💡 点击 ▶ 按钮立即执行首次追踪，之后将按设定频率自动执行
+              </p>
+            </div>
+          )}
+
           {/* 阈值规则 */}
           {subscription.alertRules && subscription.alertRules.length > 0 && (
             <div className="mt-4">
@@ -258,7 +288,7 @@ function SubscriptionCard({
 // ==================== 创建订阅对话框组件 ====================
 
 function CreateSubscriptionDialog() {
-  const { createSubscription } = useTrackerSubscriptions({ activeOnly: false })
+  const { createSubscription, isCreating } = useTrackerSubscriptions({ activeOnly: false })
   const [open, setOpen] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
@@ -304,49 +334,61 @@ function CreateSubscriptionDialog() {
   }
 
   const handleSubmit = async () => {
-    await createSubscription({
-      name: formData.name,
-      description: formData.description,
-      targetType: formData.targetType as "price" | "inventory" | "news" | "all",
-      targetRegion: formData.targetRegion || undefined,
-      targetMarket: formData.targetMarket || undefined,
-      frequency: formData.frequency as "hourly" | "daily" | "weekly",
-      scheduleTime: formData.scheduleTime,
-      alertRules: formData.alertRules.map((r) => {
-        const base = { type: r.type as AlertRuleConfig["type"], urgency: r.urgency as AlertRuleConfig["urgency"] }
-        switch (r.type) {
-          case "price_change":
-            return { ...base, priceChangeThreshold: Number(r.priceChangeThreshold) || undefined }
-          case "price_threshold":
-            return { ...base, priceUpperThreshold: Number(r.priceUpperThreshold) || undefined, priceLowerThreshold: Number(r.priceLowerThreshold) || undefined }
-          case "inventory_change":
-            return { ...base, inventoryChangeThreshold: Number(r.inventoryChangeThreshold) || undefined }
-          case "inventory_threshold":
-            return { ...base, inventoryUpperThreshold: Number(r.inventoryUpperThreshold) || undefined, inventoryLowerThreshold: Number(r.inventoryLowerThreshold) || undefined }
-          case "news_keyword":
-            return { ...base, newsKeywords: r.newsKeywords ? r.newsKeywords.split(",").map((s) => s.trim()).filter(Boolean) : undefined }
-          default:
-            return base
-        }
-      }) as AlertRuleConfig[],
-      reportEnabled: formData.reportEnabled,
-      reportType: formData.reportType as "daily" | "weekly" | "monthly",
-      notificationChannels: { email: true, inApp: true, sms: false },
-    })
-    setOpen(false)
-    // 重置表单
-    setFormData({
-      name: "",
-      description: "",
-      targetType: "all",
-      targetRegion: "",
-      targetMarket: "",
-      frequency: "daily",
-      scheduleTime: "09:00",
-      reportEnabled: true,
-      reportType: "daily",
-      alertRules: [],
-    })
+    try {
+      const result = await createSubscription({
+        name: formData.name,
+        description: formData.description,
+        targetType: formData.targetType as "price" | "inventory" | "news" | "all",
+        targetRegion: formData.targetRegion || undefined,
+        targetMarket: formData.targetMarket || undefined,
+        frequency: formData.frequency as "hourly" | "daily" | "weekly",
+        scheduleTime: formData.scheduleTime,
+        alertRules: formData.alertRules.map((r) => {
+          const base = { type: r.type as AlertRuleConfig["type"], urgency: r.urgency as AlertRuleConfig["urgency"] }
+          switch (r.type) {
+            case "price_change":
+              return { ...base, priceChangeThreshold: Number(r.priceChangeThreshold) || undefined }
+            case "price_threshold":
+              return { ...base, priceUpperThreshold: Number(r.priceUpperThreshold) || undefined, priceLowerThreshold: Number(r.priceLowerThreshold) || undefined }
+            case "inventory_change":
+              return { ...base, inventoryChangeThreshold: Number(r.inventoryChangeThreshold) || undefined }
+            case "inventory_threshold":
+              return { ...base, inventoryUpperThreshold: Number(r.inventoryUpperThreshold) || undefined, inventoryLowerThreshold: Number(r.inventoryLowerThreshold) || undefined }
+            case "news_keyword":
+              return { ...base, newsKeywords: r.newsKeywords ? r.newsKeywords.split(",").map((s) => s.trim()).filter(Boolean) : undefined }
+            default:
+              return base
+          }
+        }) as AlertRuleConfig[],
+        reportEnabled: formData.reportEnabled,
+        reportType: formData.reportType as "daily" | "weekly" | "monthly",
+        notificationChannels: { email: true, inApp: true, sms: false },
+      })
+
+      if (result?.success === false) {
+        toast.error(result?.error || "创建订阅失败")
+        return
+      }
+
+      toast.success("订阅创建成功" + (result?.data?.execution?.status === "success" ? "，首次追踪已完成" : ""))
+      setOpen(false)
+      // 重置表单
+      setFormData({
+        name: "",
+        description: "",
+        targetType: "all",
+        targetRegion: "",
+        targetMarket: "",
+        frequency: "daily",
+        scheduleTime: "09:00",
+        reportEnabled: true,
+        reportType: "daily",
+        alertRules: [],
+      })
+    } catch (err: any) {
+      console.error("创建订阅异常:", err)
+      toast.error(err?.message || "创建订阅失败，请检查网络")
+    }
   }
 
   return (
@@ -566,8 +608,8 @@ function CreateSubscriptionDialog() {
           <Button variant="outline" onClick={() => setOpen(false)}>
             取消
           </Button>
-          <Button onClick={handleSubmit} disabled={!formData.name}>
-            创建
+          <Button onClick={handleSubmit} disabled={!formData.name || isCreating}>
+            {isCreating ? "创建中..." : "创建"}
           </Button>
         </DialogFooter>
       </DialogContent>

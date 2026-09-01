@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useMemo } from "react"
+import { useQuery } from "@tanstack/react-query"
 import {
   Line,
   XAxis,
@@ -17,6 +18,7 @@ import { Badge } from "@/components/ui/badge"
 import { TrendingUp, TrendingDown, Minus, Brain, Target, BarChart3 } from "lucide-react"
 import { ENTERPRISE_CONFIGS, ENTERPRISE_COLORS } from "@/services/enterprise-knowledge-config"
 import { getEnterpriseByCode, getEnterpriseColor } from "@/services/enterprise-storage"
+import { useLanguage } from "@/contexts/language-context"
 
 interface PredictionData {
   id: number
@@ -38,9 +40,21 @@ interface EnterprisePredictionChartProps {
 
 export function EnterprisePredictionChart({ enterpriseCode, days = 60 }: EnterprisePredictionChartProps) {
   const { resolvedTheme, mounted } = useTheme()
-  const [data, setData] = useState<PredictionData[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
+  const { t } = useLanguage()
+
+  const { data: predictionData, isLoading, error } = useQuery({
+    queryKey: ["enterprise-predictions", enterpriseCode, days],
+    queryFn: async () => {
+      const res = await fetch(`/api/enterprise-predictions?enterprise=${enterpriseCode}&days=${days}`)
+      if (!res.ok) throw new Error(t("predictionChart.fetchFailed"))
+      const result = await res.json()
+      return (result.data || []) as PredictionData[]
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: mounted,
+  })
+
+  const data = useMemo(() => predictionData || [], [predictionData])
 
   // 动态获取企业配置（静态或 localStorage）
   const staticConfig = ENTERPRISE_CONFIGS.find(e => e.code === enterpriseCode)
@@ -53,25 +67,6 @@ export function EnterprisePredictionChart({ enterpriseCode, days = 60 }: Enterpr
   // 企业颜色
   const enterpriseColor = ENTERPRISE_COLORS[enterpriseCode as keyof typeof ENTERPRISE_COLORS]
     || getEnterpriseColor(enterpriseCode)
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch(`/api/enterprise-predictions?enterprise=${enterpriseCode}&days=${days}`)
-        if (!res.ok) throw new Error("获取数据失败")
-        const result = await res.json()
-        setData(result.data || [])
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error("未知错误"))
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    if (mounted) {
-      fetchData()
-    }
-  }, [enterpriseCode, days, mounted])
 
   // 处理图表数据
   const chartData = useMemo(() => {
@@ -122,7 +117,7 @@ export function EnterprisePredictionChart({ enterpriseCode, days = 60 }: Enterpr
           </div>
         </CardHeader>
         <CardContent className="h-[250px] flex items-center justify-center">
-          <div className="text-slate-400 text-sm">加载中...</div>
+          <div className="text-slate-400 text-sm">{t("predictionChart.loading")}</div>
         </CardContent>
       </Card>
     )
@@ -140,7 +135,7 @@ export function EnterprisePredictionChart({ enterpriseCode, days = 60 }: Enterpr
           </div>
         </CardHeader>
         <CardContent className="h-[250px] flex items-center justify-center">
-          <div className="text-slate-400 text-sm">暂无数据</div>
+          <div className="text-slate-400 text-sm">{t("predictionChart.noData")}</div>
         </CardContent>
       </Card>
     )
@@ -182,7 +177,7 @@ export function EnterprisePredictionChart({ enterpriseCode, days = 60 }: Enterpr
           <div className="flex items-center gap-4 mt-3">
             <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
               ¥{stats.lastPrice.toFixed(0)}
-              <span className="text-sm font-normal text-slate-500 dark:text-slate-400 ml-1">元/吨</span>
+              <span className="text-sm font-normal text-slate-500 dark:text-slate-400 ml-1">{t("predictionChart.yuanPerTon")}</span>
             </div>
             <div className={`flex items-center gap-1 text-sm ${
               stats.trend === "up" ? "text-green-500 dark:text-green-400" : stats.trend === "down" ? "text-red-500 dark:text-red-400" : "text-slate-500 dark:text-slate-400"
@@ -223,17 +218,27 @@ export function EnterprisePredictionChart({ enterpriseCode, days = 60 }: Enterpr
               itemStyle={{ color: "#cbd5e1" }}
               formatter={(value, name) => {
                 if (value === null || value === undefined) return ["-", String(name)]
-                if (name === "confidence") return [`${Number(value).toFixed(1)}%`, "置信度"]
-                return [`${Number(value).toFixed(0)} 元/吨`, String(name)]
+                if (name === "confidence") return [`${Number(value).toFixed(1)}%`, t("predictionChart.confidence")]
+                if (name === "upperBound" || name === "lowerBound") return [`${Number(value).toFixed(0)} ${t("predictionChart.yuanPerTon")}`, name === "upperBound" ? "置信上界" : "置信下界"]
+                return [`${Number(value).toFixed(0)} ${t("predictionChart.yuanPerTon")}`, String(name)]
               }}
             />
-            {/* 预测区间 */}
+            {/* 预测区间（置信带） */}
             <Area
               type="monotone"
               dataKey="upperBound"
               stroke="none"
               fill={enterpriseColor}
               fillOpacity={0.1}
+              name="置信上界"
+            />
+            <Area
+              type="monotone"
+              dataKey="lowerBound"
+              stroke="none"
+              fill="#ffffff"
+              fillOpacity={0}
+              name="置信下界"
             />
             {/* 实际价格线 */}
             <Line
@@ -243,7 +248,7 @@ export function EnterprisePredictionChart({ enterpriseCode, days = 60 }: Enterpr
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 4, fill: enterpriseColor }}
-              name="实际价格"
+              name={t("predictionChart.actualPrice")}
             />
             {/* 预测价格线 */}
             <Line
@@ -253,7 +258,7 @@ export function EnterprisePredictionChart({ enterpriseCode, days = 60 }: Enterpr
               strokeWidth={2}
               strokeDasharray="5 5"
               dot={false}
-              name="预测价格"
+              name={t("predictionChart.predictedPrice")}
             />
           </ComposedChart>
         </ResponsiveContainer>
@@ -265,6 +270,7 @@ export function EnterprisePredictionChart({ enterpriseCode, days = 60 }: Enterpr
 // 企业预测概览组件
 export function EnterprisePredictionOverview({ className }: { className?: string }) {
   const { mounted } = useTheme()
+  const { t } = useLanguage()
 
   if (!mounted) {
     return (
@@ -273,7 +279,7 @@ export function EnterprisePredictionOverview({ className }: { className?: string
           {[1, 2].map((i) => (
             <Card key={i} className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
               <CardContent className="h-[300px] flex items-center justify-center">
-                <div className="text-slate-400 text-sm">加载中...</div>
+                <div className="text-slate-400 text-sm">{t("predictionChart.loading")}</div>
               </CardContent>
             </Card>
           ))}
@@ -286,7 +292,7 @@ export function EnterprisePredictionOverview({ className }: { className?: string
     <div className={`space-y-4 ${className || ""}`}>
       <div className="flex items-center gap-2 mb-4">
         <BarChart3 className="h-5 w-5 text-cyan-500 dark:text-cyan-400" />
-        <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">企业硫磺价格预测</h2>
+        <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{t("predictionChart.overview")}</h2>
         <Badge variant="outline" className="bg-cyan-100 dark:bg-cyan-900/30 border-cyan-300 dark:border-cyan-700 text-cyan-700 dark:text-cyan-300">
           Hybrid ARIMA + XGBoost 模型
         </Badge>

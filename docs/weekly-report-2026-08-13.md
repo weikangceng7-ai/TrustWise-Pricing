@@ -178,16 +178,16 @@ npx tsc --noEmit — PASSED（0 errors）
 
 ## 十、待办事项
 
-| 优先级 | 事项 | 说明 |
-|---|---|---|
-| P0 | **提交代码** | 33 文件改动尚未 commit，建议分模块提交 |
-| P0 | **Python 服务部署** | Railway Trial 过期（需绑卡），或换其他平台；部署后 `/api/accuracy` 自动升级到 ARIMA+XGBoost 回测 |
-| P1 | **Vercel cron 停摆** | Hobby 计划限 2 个 cron，项目配了 6 个，`ingest-commodity-data` 从 07-20 后停止执行（已手动补数） |
-| P1 | **数据库索引同步** | schema 新增索引需 `npm run db:push` 同步 |
-| P1 | **配置 `CRYPTO_SECRET`** | 加密工具依赖该环境变量（或复用 `BETTER_AUTH_SECRET`） |
-| P2 | **提升 R²** | 当前 0.356（Naive forecast 基准模型），部署 Python 服务后回测预计 R² > 0.8 |
+| 优先级 | 事项 | 说明 | 当前状态 |
+|---|---|---|---|
+| ~~P0~~ | ~~提交代码~~ | 代码已提交至 `4e11219`，无未提交改动 | ✅ 已完成 |
+| P0 | **Python 服务部署** | Railway Trial 过期（需绑卡），或换其他平台；部署后 `/api/accuracy` 自动升级到 ARIMA+XGBoost 回测 | ⚠️ 仍待解决，当前使用朴素回测 |
+| P0 | **Vercel cron 超限** | Hobby 计划限 2 个 cron，`vercel.json` 配了 6 个，仅前 2 个生效（`global-news` + `hourly`），其余 4 个均不执行 | 🔴 仍待解决，需升级计划或裁剪 cron |
+| ~~P1~~ | ~~数据库索引同步~~ | `drizzle-kit push` 测试通过，schema 与数据库已同步 | ✅ 已完成 |
+| ~~P1~~ | ~~配置 `CRYPTO_SECRET`~~ | `.env.local` 已配置 `CRYPTO_SECRET`，与 `BETTER_AUTH_SECRET` 同值 | ✅ 已完成 |
+| P2 | **提升 R²** | 当前 0.356（Naive forecast 基准模型），部署 Python 服务后回测预计 R² > 0.8 | ⚠️ 依赖 Python 服务部署 |
 
----
+ ---
 
 ## 十一、问题与解决方法汇总
 
@@ -197,10 +197,10 @@ npx tsc --noEmit — PASSED（0 errors）
 | 2 | Python 服务 `train()` 不返回逐点预测，无 `/backtest` 端点 | 08-13 | `train()` 加 `test_dates/actual/pred` 字段；新增 `/backtest` 端点 | ✅ |
 | 3 | 无调用 Python 回测的 TypeScript 客户端 | 08-13 | 新增 `backtestModel()` 函数 | ✅ |
 | 4 | 无数据时精度面板仍显示假数字 | 08-13 | 新增 `insufficientData` 空态 + `dataSource` 徽章 | ✅ |
-| 5 | 生意社数据 07-20 后断更 | 08-19 | Vercel cron 限 2 个导致 `ingest-commodity-data` 未执行；手动补数至 08-14 | ⚠️ cron 待修 |
+| 5 | 生意社数据 07-20 后断更 | 08-19 | Vercel Hobby 限 2 个 cron，`vercel.json` 配了 6 个，仅 `global-news` + `hourly` 生效；`ingest-commodity-data` 等 4 个均不执行；手动补数至 08-14 | 🔴 cron 待修，Hobby 计划上限 |
 | 6 | Frankfurter API 域名失效（.app → .dev） | 08-13 | Python + TS 端域名同步更新 | ✅ |
 | 7 | 外部数据超时一刀切（3s），无重试 | 08-13 | 各数据源独立超时 + `fetchWithRetry` 重试 + Redis 缓存 | ✅ |
-| 8 | Railway Trial 过期，Python 服务无法部署 | 08-19 | 降级为 Next.js 原生朴素回测，不依赖外部服务 | ✅（临时） |
+| 8 | Railway Trial 过期，Python 服务无法部署 | 08-19 | 降级为 Next.js 原生朴素回测，不依赖外部服务；`localhost:5001` 本地未启动 | 🔴 仍待部署 |
 | 9 | 全站硬编码中文，无法 i18n | 08-13 | 600+ 词条 + 全页面接入 `useLanguage()` | ✅ |
 
 ---

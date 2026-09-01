@@ -250,7 +250,7 @@ export async function POST(req: Request) {
         }),
         enterprise: enterpriseName,
       })
-      model = "deepseek-v3-0324"
+      model = "deepseek-v3"
     }
 
     const formattedMessages = messages.map((msg) => {

@@ -151,7 +151,7 @@ function buildHistorical(points: AccuracyPoint[]): HistoricalPrediction[] {
 }
 
 /** 从企业预测表读取真实记录（actual vs predicted） */
-async function getEnterpriseRecords(): Promise<AccuracyPoint & { code: string; name: string }[]> {
+async function getEnterpriseRecords(): Promise<(AccuracyPoint & { code: string; name: string })[]> {
   if (!db) return []
 
   try {
@@ -179,10 +179,10 @@ async function getEnterpriseRecords(): Promise<AccuracyPoint & { code: string; n
         date: typeof r.date === "string" ? r.date : (r.date as Date).toISOString().split("T")[0],
         actual: Number(r.actual),
         predicted: Number(r.predicted),
-      }))
+      })) as unknown as (AccuracyPoint & { code: string; name: string })[]
   } catch (error) {
     console.error("[Accuracy API] 读取企业预测记录失败:", error)
-    return []
+    return [] as unknown as (AccuracyPoint & { code: string; name: string })[]
   }
 }
 

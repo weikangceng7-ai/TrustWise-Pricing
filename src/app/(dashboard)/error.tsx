@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { AlertTriangle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useLanguage } from "@/contexts/language-context"
 
 export default function DashboardError({
   error,
@@ -11,6 +12,8 @@ export default function DashboardError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const { t } = useLanguage()
+
   useEffect(() => {
     console.error("[Dashboard] 页面异常:", error)
   }, [error])
@@ -21,14 +24,14 @@ export default function DashboardError({
         <AlertTriangle className="h-8 w-8 text-destructive" />
       </div>
       <div className="space-y-2">
-        <h2 className="text-xl font-semibold text-foreground">页面加载异常</h2>
+        <h2 className="text-xl font-semibold text-foreground">{t("errorPage.title")}</h2>
         <p className="text-sm text-muted-foreground max-w-md">
-          页面在渲染时遇到了问题，请尝试刷新页面。如果问题持续存在，请联系管理员。
+          {t("errorPage.description")}
         </p>
       </div>
       <Button onClick={reset} variant="outline" className="gap-2">
         <RefreshCw className="h-4 w-4" />
-        重试加载
+        {t("errorPage.retry")}
       </Button>
     </div>
   )

@@ -15,6 +15,7 @@ import {
   CheckCircle2,
 } from "lucide-react"
 import Link from "next/link"
+import { useLanguage } from "@/contexts/language-context"
 
 // 自定义 hook: 检测元素是否在视口内
 function useInView(options = {}) {

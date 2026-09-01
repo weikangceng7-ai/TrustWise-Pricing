@@ -98,12 +98,15 @@ export function TopNav() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setLang(lang === "zh" ? "en" : "zh")}
+          onClick={() => {
+            console.log("Language toggle clicked, current:", lang, "-> switching to:", lang === "zh" ? "en" : "zh")
+            setLang(lang === "zh" ? "en" : "zh")
+          }}
           className="h-9 px-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all duration-300"
-          title={lang === "zh" ? "Switch to English" : "切换到中文"}
+          title={t("topnav.switchLanguage")}
         >
           <Globe className="h-4 w-4" />
-          <span className="text-xs font-medium ml-1">{lang === "zh" ? "EN" : "中"}</span>
+          <span className="text-xs font-medium ml-1">{t("topnav.switchLangLabel")}</span>
         </Button>
 
         {/* Theme toggle */}

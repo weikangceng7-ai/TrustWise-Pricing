@@ -15,6 +15,10 @@ import {
   Plus,
   Key,
   Activity,
+  Truck,
+  Target,
+  Bell,
+  ShieldCheck,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { ENTERPRISE_CONFIGS } from "@/services/enterprise-knowledge-config"
@@ -136,11 +140,32 @@ const subNavItems = [
     color: "emerald",
   },
   {
-    title: "sidebar.apiConsole",
-    url: "/api-console",
+    title: "sidebar.apiKeys",
+    url: "/api-keys",
     icon: Key,
-    description: "sidebar.apiConsoleDesc",
+    description: "sidebar.apiKeysDesc",
     color: "rose",
+  },
+  {
+    title: "sidebar.enterprises",
+    url: "/enterprises",
+    icon: Building2,
+    description: "sidebar.enterprisesDesc",
+    color: "cyan",
+  },
+  {
+    title: "sidebar.trackerAlerts",
+    url: "/tracker/alerts",
+    icon: Bell,
+    description: "sidebar.trackerAlertsDesc",
+    color: "amber",
+  },
+  {
+    title: "sidebar.document",
+    url: "/document",
+    icon: ShieldCheck,
+    description: "sidebar.documentDesc",
+    color: "blue",
   },
 ]
 
@@ -402,7 +427,7 @@ export function AppSidebar() {
             <SidebarMenuButton size="sm" className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all duration-300">
               <div className="flex items-center gap-2">
                 <Sparkles className="size-3" />
-                <span>© 2026 Sulfur Agent</span>
+                <span suppressHydrationWarning>{t("sidebar.copyright")}</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>

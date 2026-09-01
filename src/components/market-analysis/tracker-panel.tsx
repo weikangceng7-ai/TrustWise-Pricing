@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useTrackerStatus, useTrackerAlerts, useTrackerControl } from "@/hooks/use-tracker"
 import { useTrackerSubscriptions } from "@/hooks/use-tracker-subscriptions"
 import type { TrackerAlert } from "@/db/schema-tracker"
+import { useLanguage } from "@/contexts/language-context"
 
 // ==================== 异动紧急程度颜色 ====================
 
@@ -53,6 +54,7 @@ function getAlertTypeIcon(type: string) {
 function StatusCards() {
   const { status, isLoading, refetch } = useTrackerStatus()
   const { startTracking, isStarting } = useTrackerControl()
+  const { t } = useLanguage()
 
   if (isLoading) {
     return (
@@ -83,7 +85,7 @@ function StatusCards() {
               <Activity className="h-5 w-5 text-cyan-500" />
               <div>
                 <p className="text-2xl font-bold">{status?.activeSubscriptions || 0}</p>
-                <p className="text-xs text-muted-foreground">活跃订阅</p>
+                <p className="text-xs text-muted-foreground">{t("tracker.activeSubscriptions")}</p>
               </div>
             </div>
           </CardContent>
@@ -95,7 +97,7 @@ function StatusCards() {
               <Bell className="h-5 w-5 text-amber-500" />
               <div>
                 <p className="text-2xl font-bold">{status?.unreadAlerts || 0}</p>
-                <p className="text-xs text-muted-foreground">未读异动</p>
+                <p className="text-xs text-muted-foreground">{t("tracker.unreadAlerts")}</p>
               </div>
             </div>
           </CardContent>
@@ -114,9 +116,9 @@ function StatusCards() {
                         hour: "2-digit",
                         minute: "2-digit",
                       })
-                    : "未执行"}
+                    : t("tracker.notExecuted")}
                 </p>
-                <p className="text-xs text-muted-foreground">最近执行</p>
+                <p className="text-xs text-muted-foreground">{t("tracker.lastRun")}</p>
               </div>
             </div>
           </CardContent>
@@ -135,9 +137,9 @@ function StatusCards() {
                         hour: "2-digit",
                         minute: "2-digit",
                       })
-                    : "无调度"}
+                    : t("tracker.noSchedule")}
                 </p>
-                <p className="text-xs text-muted-foreground">下次执行</p>
+                <p className="text-xs text-muted-foreground">{t("tracker.nextRun")}</p>
               </div>
             </div>
           </CardContent>
@@ -152,13 +154,13 @@ function StatusCards() {
           className="gap-2"
         >
           <RefreshCw className={`h-4 w-4 ${isStarting ? "animate-spin" : ""}`} />
-          {isStarting ? "正在执行..." : "立即执行所有追踪"}
+          {isStarting ? t("tracker.executing") : t("tracker.executeAll")}
         </Button>
 
         <Link href="/tracker/subscriptions">
           <Button variant="outline" className="gap-2">
             <Plus className="h-4 w-4" />
-            新建订阅
+            {t("tracker.newSubscription")}
           </Button>
         </Link>
       </div>
@@ -172,6 +174,7 @@ function AlertList() {
   const { alerts, total, unreadCount, isLoading, markAsRead } = useTrackerAlerts({
     limit: 10,
   })
+  const { t } = useLanguage()
 
   if (isLoading) {
     return (
@@ -194,15 +197,15 @@ function AlertList() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            最近异动事件
+            {t("tracker.recentAlerts")}
           </CardTitle>
-          <CardDescription>暂无异动事件</CardDescription>
+          <CardDescription>{t("tracker.noAlerts")}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
             <Bell className="h-12 w-12 mx-auto mb-2 opacity-30" />
-            <p>还没有检测到异动事件</p>
-            <p className="text-sm">创建订阅并执行追踪后，将自动检测异动</p>
+            <p>{t("tracker.noAlertsDetected")}</p>
+            <p className="text-sm">{t("tracker.noAlertsHint")}</p>
           </div>
         </CardContent>
       </Card>
@@ -215,15 +218,15 @@ function AlertList() {
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            最近异动事件
+            {t("tracker.recentAlerts")}
           </div>
           {unreadCount > 0 && (
             <Badge variant="secondary" className="gap-1">
-              {unreadCount} 未读
+              {unreadCount} {t("tracker.unread")}
             </Badge>
           )}
         </CardTitle>
-        <CardDescription>共 {total} 条异动事件</CardDescription>
+        <CardDescription>{t("tracker.totalAlertsPrefix")}{total}{t("tracker.totalAlertsSuffix")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         {alerts.slice(0, 5).map((alert) => (
@@ -233,7 +236,7 @@ function AlertList() {
         {alerts.length > 5 && (
           <Link href="/tracker/alerts">
             <Button variant="ghost" className="w-full gap-2">
-              查看全部 {total} 条异动
+              {t("tracker.viewAllAlertsPrefix")}{total}{t("tracker.viewAllAlertsSuffix")}
               <Activity className="h-4 w-4" />
             </Button>
           </Link>
@@ -249,6 +252,7 @@ function AlertItem({ alert, onMarkAsRead }: { alert: TrackerAlert; onMarkAsRead:
   const handleRead = async () => {
     await onMarkAsRead()
   }
+  const { t } = useLanguage()
 
   return (
     <div
@@ -279,7 +283,7 @@ function AlertItem({ alert, onMarkAsRead }: { alert: TrackerAlert; onMarkAsRead:
 
         <div className="flex items-center gap-2">
           <Badge variant="outline" className={getUrgencyColor(alert.urgency)}>
-            {alert.urgency === "high" ? "高" : alert.urgency === "normal" ? "中" : "低"}
+            {alert.urgency === "high" ? t("tracker.urgencyHigh") : alert.urgency === "normal" ? t("tracker.urgencyMedium") : t("tracker.urgencyLow")}
           </Badge>
           {!alert.isRead && (
             <Button variant="ghost" size="sm" onClick={handleRead} className="h-6 px-2">
@@ -296,6 +300,7 @@ function AlertItem({ alert, onMarkAsRead }: { alert: TrackerAlert; onMarkAsRead:
 
 function SubscriptionPreview() {
   const { subscriptions, isLoading } = useTrackerSubscriptions({ activeOnly: true })
+  const { t } = useLanguage()
 
   if (isLoading) {
     return (
@@ -316,15 +321,15 @@ function SubscriptionPreview() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>活跃订阅</CardTitle>
-          <CardDescription>暂无活跃订阅</CardDescription>
+          <CardTitle>{t("tracker.activeSubscriptionsTitle")}</CardTitle>
+          <CardDescription>{t("tracker.noActiveSubscriptions")}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
             <Link href="/tracker/subscriptions">
               <Button variant="outline" className="gap-2">
                 <Plus className="h-4 w-4" />
-                创建第一个订阅
+                {t("tracker.createFirstSubscription")}
               </Button>
             </Link>
           </div>
@@ -337,7 +342,7 @@ function SubscriptionPreview() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>活跃订阅</span>
+          <span>{t("tracker.activeSubscriptionsTitle")}</span>
           <Badge variant="secondary">{subscriptions.length}</Badge>
         </CardTitle>
       </CardHeader>
@@ -350,17 +355,17 @@ function SubscriptionPreview() {
             <div>
               <p className="font-medium text-sm">{sub.name}</p>
               <p className="text-xs text-muted-foreground">
-                {sub.targetType === "all" ? "全部" : sub.targetType} · {sub.frequency}
+                {sub.targetType === "all" ? t("tracker.targetAll") : sub.targetType} · {sub.frequency}
               </p>
             </div>
-            <Badge variant="outline">{sub.isActive ? "运行中" : "已停用"}</Badge>
+            <Badge variant="outline">{sub.isActive ? t("tracker.statusRunning") : t("tracker.statusStopped")}</Badge>
           </div>
         ))}
 
         {subscriptions.length > 3 && (
           <Link href="/tracker/subscriptions">
             <Button variant="ghost" className="w-full">
-              查看全部 {subscriptions.length} 个订阅
+              {t("tracker.viewAllSubscriptionsPrefix")}{subscriptions.length}{t("tracker.viewAllSubscriptionsSuffix")}
             </Button>
           </Link>
         )}
@@ -372,15 +377,17 @@ function SubscriptionPreview() {
 // ==================== 面板主组件 ====================
 
 export function TrackerPanel() {
+  const { t } = useLanguage()
+
   return (
     <div className="space-y-6">
       {/* 面板标题行 */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500 dark:text-slate-400">硫磺价格追踪与异动预警</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">{t("tracker.panelDescription")}</p>
         <Link href="/tracker/subscriptions">
           <Button size="sm" className="gap-2">
             <Plus className="h-4 w-4" />
-            管理订阅
+            {t("tracker.manageSubscriptions")}
           </Button>
         </Link>
       </div>

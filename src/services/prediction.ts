@@ -4,6 +4,7 @@
  */
 
 const DEFAULT_PREDICTION_SERVICE_URL = process.env.PREDICTION_SERVICE_URL || 'http://localhost:5001'
+const PREDICTION_CACHE_TTL = 30 * 60 // 30 minutes
 
 /**
  * 获取预测服务 URL
@@ -30,11 +31,44 @@ function buildHeaders(apiKey?: string): Record<string, string> {
   return headers
 }
 
+/**
+ * 从 Redis 获取缓存的预测结果
+ */
+async function getCachedPrediction(days: number): Promise<PredictionResponse | null> {
+  try {
+    const { getRedis } = await import('@/lib/redis')
+    const redis = getRedis()
+    if (!redis) return null
+    const cached = await redis.get(`prediction:${days}`)
+    if (cached) return JSON.parse(cached) as PredictionResponse
+  } catch {
+    // Redis 不可用时跳过缓存
+  }
+  return null
+}
+
+/**
+ * 将预测结果写入 Redis 缓存
+ */
+async function setCachedPrediction(days: number, result: PredictionResponse): Promise<void> {
+  try {
+    const { getRedis } = await import('@/lib/redis')
+    const redis = getRedis()
+    if (redis) {
+      await redis.set(`prediction:${days}`, JSON.stringify(result), 'EX', PREDICTION_CACHE_TTL)
+    }
+  } catch {
+    // Redis 写入失败不影响主流程
+  }
+}
+
 export interface PredictionResult {
   date: string
   predicted_price: number
   arima_component: number
   xgb_residual: number
+  lower_bound?: number
+  upper_bound?: number
 }
 
 export interface PredictionResponse {
@@ -47,6 +81,8 @@ export interface PredictionResponse {
     change_percent: number
     model_type: string
     confidence: string
+    regime?: string
+    risk_adjustment?: number
     generated_at: string
   }
   error?: string
@@ -61,6 +97,8 @@ export interface TrendAnalysis {
   trend_30d: string
   change_7d_percent: number
   change_30d_percent: number
+  regime?: string
+  risk_adjustment?: number
   analysis: string
 }
 
@@ -99,15 +137,27 @@ export interface DecisionResponse {
  * @param apiKey 可选的 API 密钥
  */
 export async function predictPrices(days: number = 7, serviceUrl?: string, apiKey?: string): Promise<PredictionResponse> {
+  // 先检查缓存
+  const cached = await getCachedPrediction(days)
+  if (cached) return cached
+
   const url = getServiceUrl(serviceUrl)
   try {
     const response = await fetch(`${url}/predict`, {
       method: 'POST',
       headers: buildHeaders(apiKey),
       body: JSON.stringify({ days }),
+      signal: AbortSignal.timeout(30000), // 30秒超时
     })
 
-    return await response.json()
+    if (!response.ok) {
+      throw new Error(`预测服务返回 ${response.status}`)
+    }
+
+    const result = await response.json()
+    // 写入缓存
+    await setCachedPrediction(days, result)
+    return result
   } catch (error) {
     console.error('预测服务调用失败:', error)
     return {
@@ -143,6 +193,7 @@ export async function getTrendAnalysis(days: number = 30, serviceUrl?: string, a
     const response = await fetch(`${url}/trend?days=${days}`, {
       method: 'GET',
       headers: buildHeaders(apiKey),
+      signal: AbortSignal.timeout(30000), // 30秒超时
     })
     return await response.json()
   } catch (error) {
@@ -172,6 +223,7 @@ export async function getPurchaseDecision(params: {
       method: 'POST',
       headers: buildHeaders(apiKey),
       body: JSON.stringify(params),
+      signal: AbortSignal.timeout(30000), // 30秒超时
     })
 
     return await response.json()
@@ -235,6 +287,7 @@ export async function trainModel(testRatio: number = 0.1, serviceUrl?: string, a
       method: 'POST',
       headers: buildHeaders(apiKey),
       body: JSON.stringify({ test_ratio: testRatio }),
+      signal: AbortSignal.timeout(60000), // 60秒超时，训练需要更长时间
     })
 
     return await response.json()
@@ -332,15 +385,42 @@ export function formatPredictionAsText(prediction: PredictionResponse['data']): 
     `**预测趋势**: ${prediction.trend} (${prediction.change_percent > 0 ? '+' : ''}${prediction.change_percent}%)`,
     `**预测置信度**: ${prediction.confidence}`,
     `**预测模型**: ${prediction.model_type}`,
-    ``,
-    `### 未来 ${prediction.prediction_days} 天价格预测`,
-    ``,
-    `| 日期 | 预测价格(元/吨) | ARIMA预测 | XGBoost残差修正 |`,
-    `|------|----------------|-----------|----------------|`,
   ]
 
-  for (const p of prediction.predictions) {
-    lines.push(`| ${p.date} | ${p.predicted_price} | ${p.arima_component} | ${p.xgb_residual} |`)
+  // 新增：波动率状态和风险调整
+  if (prediction.regime) {
+    const regimeText = {
+      'low': '低波动（适合稳定采购）',
+      'normal': '正常波动',
+      'high': '高波动（建议谨慎操作）'
+    }[prediction.regime] || prediction.regime
+    lines.push(`**市场状态**: ${regimeText}`)
+  }
+  if (prediction.risk_adjustment) {
+    lines.push(`**风险系数**: ${prediction.risk_adjustment}`)
+  }
+
+  lines.push(``)
+  lines.push(`### 未来 ${prediction.prediction_days} 天价格预测`)
+  lines.push(``)
+
+  // 检查是否有置信区间
+  const hasConfidenceInterval = prediction.predictions.some(p => p.lower_bound && p.upper_bound)
+
+  if (hasConfidenceInterval) {
+    lines.push(`| 日期 | 预测价格(元/吨) | 置信下界 | 置信上界 | ARIMA预测 | XGBoost残差 |`)
+    lines.push(`|------|----------------|----------|----------|-----------|-------------|`)
+    for (const p of prediction.predictions) {
+      const lower = p.lower_bound !== undefined ? p.lower_bound.toFixed(2) : '-'
+      const upper = p.upper_bound !== undefined ? p.upper_bound.toFixed(2) : '-'
+      lines.push(`| ${p.date} | ${p.predicted_price} | ${lower} | ${upper} | ${p.arima_component} | ${p.xgb_residual} |`)
+    }
+  } else {
+    lines.push(`| 日期 | 预测价格(元/吨) | ARIMA预测 | XGBoost残差 |`)
+    lines.push(`|------|----------------|-----------|-------------|`)
+    for (const p of prediction.predictions) {
+      lines.push(`| ${p.date} | ${p.predicted_price} | ${p.arima_component} | ${p.xgb_residual} |`)
+    }
   }
 
   lines.push(``)
@@ -361,8 +441,21 @@ export function formatDecisionAsText(decision: DecisionResponse['data']): string
     `- **预测趋势**: ${decision.prediction.trend}`,
     `- **预测变化**: ${decision.prediction.change_percent > 0 ? '+' : ''}${decision.prediction.change_percent}%`,
     `- **置信度**: ${decision.prediction.confidence}`,
-    ``,
   ]
+
+  // 新增：波动率状态和风险调整
+  if (decision.prediction.regime) {
+    const regimeText = {
+      'low': '低波动（适合稳定采购）',
+      'normal': '正常波动',
+      'high': '高波动（建议谨慎操作）'
+    }[decision.prediction.regime] || decision.prediction.regime
+    lines.push(`- **市场状态**: ${regimeText}`)
+  }
+  if (decision.prediction.risk_adjustment) {
+    lines.push(`- **风险系数**: ${decision.prediction.risk_adjustment}`)
+  }
+  lines.push(``)
 
   if (decision.inventory_analysis) {
     lines.push(`### 库存分析`)

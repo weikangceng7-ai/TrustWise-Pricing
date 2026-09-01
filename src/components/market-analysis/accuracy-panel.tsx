@@ -8,6 +8,8 @@ import {
   BarChart3,
   DollarSign,
   TrendingDown,
+  Zap,
+  Shield,
 } from "lucide-react"
 import {
   Line,
@@ -20,6 +22,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts"
+import { useLanguage } from "@/contexts/language-context"
 
 interface AccuracyData {
   overview: {
@@ -49,12 +52,42 @@ interface AccuracyData {
   message?: string
 }
 
-const DATA_SOURCE_LABEL: Record<string, string> = {
-  backtest: "真实回测（Hybrid ARIMA + XGBoost）",
-  naive_backtest: "朴素基准模型（Naive forecast）",
-  db_records: "企业预测记录",
-  none: "无数据",
+interface CombinedPrediction {
+  date: string
+  predicted_price: number
+  lower_bound: number
+  upper_bound: number
+  confidence: number
+  arima_component: number
+  transformer_component: number
 }
+
+interface CombinedPredictionData {
+  commodity_code: string
+  current_price: number
+  trend: string
+  change_percent: number
+  regime: string
+  risk_adjustment: number
+  predictions: CombinedPrediction[]
+  weights: {
+    arima_xgb: number
+    transformer: number
+  }
+  model_metrics: {
+    arima_mape: number
+    transformer_mape: number
+  }
+  prediction_days: number
+  generated_at: string
+}
+
+const DATA_SOURCE_LABEL = (t: (key: string) => string): Record<string, string> => ({
+  backtest: t("accuracy.sourceLabel.backtest"),
+  naive_backtest: t("accuracy.sourceLabel.naiveBacktest"),
+  db_records: t("accuracy.sourceLabel.dbRecords"),
+  none: t("accuracy.sourceLabel.none"),
+})
 
 function EnterpriseAccuracyCard({
   enterprise,
@@ -63,6 +96,7 @@ function EnterpriseAccuracyCard({
   enterprise: AccuracyData["byEnterprise"][0]
   index: number
 }) {
+  const { t } = useLanguage()
   const colors = [
     { bg: "bg-cyan-50/50 dark:bg-cyan-500/10", border: "border-cyan-200/50 dark:border-cyan-500/20", text: "text-cyan-700 dark:text-cyan-300", bar: "bg-cyan-500" },
     { bg: "bg-violet-50/50 dark:bg-violet-500/10", border: "border-violet-200/50 dark:border-violet-500/20", text: "text-violet-700 dark:text-violet-300", bar: "bg-violet-500" },
@@ -75,7 +109,7 @@ function EnterpriseAccuracyCard({
       <div className="flex items-center justify-between mb-3">
         <span className={`text-sm font-semibold ${c.text}`}>{enterprise.name}</span>
         <span className="text-xs text-slate-500 dark:text-slate-400">
-          {enterprise.predictionCount} 次预测
+          {enterprise.predictionCount}{t("accuracy.predictionCountSuffix")}
         </span>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -93,7 +127,7 @@ function EnterpriseAccuracyCard({
         </div>
       </div>
       <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-white/5">
-        <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">精度评级</div>
+        <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t("accuracy.accuracyRating")}</div>
         <div className="flex items-center gap-2">
           <div className="flex-1 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
             <div
@@ -102,7 +136,7 @@ function EnterpriseAccuracyCard({
             />
           </div>
           <span className={`text-xs font-medium ${c.text}`}>
-            {enterprise.mape < 3.5 ? "优秀" : enterprise.mape < 4 ? "良好" : "合格"}
+            {enterprise.mape < 3.5 ? t("accuracy.grade.excellent") : enterprise.mape < 4 ? t("accuracy.grade.good") : t("accuracy.grade.pass")}
           </span>
         </div>
       </div>
@@ -111,6 +145,9 @@ function EnterpriseAccuracyCard({
 }
 
 export function AccuracyPanel() {
+  const { t } = useLanguage()
+
+  // 查询精度数据
   const { data, isLoading, error } = useQuery({
     queryKey: ["accuracy"],
     queryFn: async () => {
@@ -120,10 +157,25 @@ export function AccuracyPanel() {
     },
   })
 
+  // 查询融合预测数据
+  const { data: combinedData } = useQuery({
+    queryKey: ["combined-prediction"],
+    queryFn: async () => {
+      const res = await fetch("/api/combined-prediction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ days: 7 }),
+      })
+      const json = await res.json()
+      return json.data as CombinedPredictionData
+    },
+    refetchInterval: 1000 * 60 * 30, // 30分钟刷新
+  })
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="text-slate-400 text-sm animate-pulse">加载模型精度数据...</div>
+        <div className="text-slate-400 text-sm animate-pulse">{t("accuracy.loading")}</div>
       </div>
     )
   }
@@ -131,7 +183,7 @@ export function AccuracyPanel() {
   if (error || !data) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="text-slate-400 text-sm">数据加载失败，请稍后重试</div>
+        <div className="text-slate-400 text-sm">{t("accuracy.loadFailed")}</div>
       </div>
     )
   }
@@ -143,10 +195,10 @@ export function AccuracyPanel() {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-2">
         <div className="text-slate-500 dark:text-slate-400 text-sm">
-          {data.message || "暂无足够的历史预测与实价对比数据，无法计算模型精度"}
+          {data.message || t("accuracy.insufficientData")}
         </div>
         <div className="text-xs text-slate-400 dark:text-slate-500">
-          模型精度需基于真实预测 vs 实价的对比记录计算
+          {t("accuracy.insufficientDataHint")}
         </div>
       </div>
     )
@@ -157,61 +209,293 @@ export function AccuracyPanel() {
       {/* 面板说明 */}
       <div className="flex items-center gap-2 mb-4">
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          基于 {overview.totalPredictions} 次历史预测的模型性能评估
+          {t("accuracy.panelDescPrefix")}{overview.totalPredictions}{t("accuracy.panelDescSuffix")}
         </p>
         {data.dataSource && (
           <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400">
-            {DATA_SOURCE_LABEL[data.dataSource] || data.dataSource}
+            {DATA_SOURCE_LABEL(t)[data.dataSource] || data.dataSource}
           </span>
         )}
       </div>
 
       {/* 四个指标卡片 */}
       <div className="grid grid-cols-4 gap-3 mb-4">
-        <div className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-500/10 dark:to-green-500/10 backdrop-blur-sm rounded-lg p-3 border border-emerald-200/50 dark:border-emerald-500/20">
-          <div className="flex items-center justify-between mb-0.5">
-            <span className="text-sm text-slate-500 dark:text-slate-400">MAPE</span>
-            <Target className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-          </div>
-          <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
-            {overview.mape}%
-          </span>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">平均绝对百分比误差</p>
-        </div>
+        {/* MAPE: 平均绝对百分比误差，越小越好。<3%优秀(绿)，3-5%良好(黄)，>5%需关注(红) */}
+        {(() => {
+          const mapeVal = overview.mape
+          const mapeColor = mapeVal < 3 ? "emerald" : mapeVal < 5 ? "amber" : "red"
+          const mapeBg = mapeColor === "emerald" ? "from-emerald-50 to-green-50 dark:from-emerald-500/10 dark:to-green-500/10" : mapeColor === "amber" ? "from-amber-50 to-yellow-50 dark:from-amber-500/10 dark:to-yellow-500/10" : "from-red-50 to-rose-50 dark:from-red-500/10 dark:to-rose-500/10"
+          const mapeBorder = mapeColor === "emerald" ? "border-emerald-200/50 dark:border-emerald-500/20" : mapeColor === "amber" ? "border-amber-200/50 dark:border-amber-500/20" : "border-red-200/50 dark:border-red-500/20"
+          const mapeText = mapeColor === "emerald" ? "text-emerald-600 dark:text-emerald-400" : mapeColor === "amber" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
+          const mapeIcon = mapeColor === "emerald" ? "text-emerald-600 dark:text-emerald-400" : mapeColor === "amber" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
+          const mapeLabel = mapeColor === "emerald" ? "优秀" : mapeColor === "amber" ? "良好" : "需关注"
+          return (
+            <div className={`bg-gradient-to-br ${mapeBg} backdrop-blur-sm rounded-lg p-3 border ${mapeBorder}`}>
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-sm text-slate-500 dark:text-slate-400">MAPE <span className="text-xs text-slate-400">(平均误差率)</span></span>
+                <Target className={`h-4 w-4 ${mapeIcon}`} />
+              </div>
+              <span className={`text-lg font-bold ${mapeText}`}>
+                {mapeVal}%
+              </span>
+              <div className="flex items-center gap-1 mt-1">
+                <span className={`text-xs px-1.5 py-0.5 rounded ${mapeColor === "emerald" ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : mapeColor === "amber" ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300" : "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
+                  {mapeLabel}
+                </span>
+                <span className="text-xs text-slate-400">误差率，越低越好</span>
+              </div>
+            </div>
+          )
+        })()}
 
-        <div className="bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-500/10 dark:to-blue-500/10 backdrop-blur-sm rounded-lg p-3 border border-cyan-200/50 dark:border-cyan-500/20">
-          <div className="flex items-center justify-between mb-0.5">
-            <span className="text-sm text-slate-500 dark:text-slate-400">MAE</span>
-            <Activity className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-          </div>
-          <span className="text-lg font-bold text-slate-900 dark:text-white">
-            ¥{overview.mae}
-          </span>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">平均绝对误差（元/吨）</p>
-        </div>
+        {/* MAE: 平均绝对误差，单位元。<20优秀(绿)，20-40良好(黄)，>40需关注(红) */}
+        {(() => {
+          const maeVal = overview.mae
+          const maeColor = maeVal < 20 ? "emerald" : maeVal < 40 ? "amber" : "red"
+          const maeBg = maeColor === "emerald" ? "from-emerald-50 to-green-50 dark:from-emerald-500/10 dark:to-green-500/10" : maeColor === "amber" ? "from-amber-50 to-yellow-50 dark:from-amber-500/10 dark:to-yellow-500/10" : "from-red-50 to-rose-50 dark:from-red-500/10 dark:to-rose-500/10"
+          const maeBorder = maeColor === "emerald" ? "border-emerald-200/50 dark:border-emerald-500/20" : maeColor === "amber" ? "border-amber-200/50 dark:border-amber-500/20" : "border-red-200/50 dark:border-red-500/20"
+          const maeText = maeColor === "emerald" ? "text-emerald-600 dark:text-emerald-400" : maeColor === "amber" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
+          const maeIcon = maeColor === "emerald" ? "text-emerald-600 dark:text-emerald-400" : maeColor === "amber" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
+          const maeLabel = maeColor === "emerald" ? "优秀" : maeColor === "amber" ? "良好" : "需关注"
+          return (
+            <div className={`bg-gradient-to-br ${maeBg} backdrop-blur-sm rounded-lg p-3 border ${maeBorder}`}>
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-sm text-slate-500 dark:text-slate-400">MAE <span className="text-xs text-slate-400">(平均偏差)</span></span>
+                <Activity className={`h-4 w-4 ${maeIcon}`} />
+              </div>
+              <span className={`text-lg font-bold ${maeText}`}>
+                ¥{maeVal}
+              </span>
+              <div className="flex items-center gap-1 mt-1">
+                <span className={`text-xs px-1.5 py-0.5 rounded ${maeColor === "emerald" ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : maeColor === "amber" ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300" : "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
+                  {maeLabel}
+                </span>
+                <span className="text-xs text-slate-400">元，偏差越小越好</span>
+              </div>
+            </div>
+          )
+        })()}
 
-        <div className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-500/10 dark:to-purple-500/10 backdrop-blur-sm rounded-lg p-3 border border-violet-200/50 dark:border-violet-500/20">
-          <div className="flex items-center justify-between mb-0.5">
-            <span className="text-sm text-slate-500 dark:text-slate-400">RMSE</span>
-            <BarChart3 className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-          </div>
-          <span className="text-lg font-bold text-slate-900 dark:text-white">
-            ¥{overview.rmse}
-          </span>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">均方根误差</p>
-        </div>
+        {/* RMSE: 均方根误差，对大误差更敏感。<30优秀(绿)，30-50良好(黄)，>50需关注(红) */}
+        {(() => {
+          const rmseVal = overview.rmse
+          const rmseColor = rmseVal < 30 ? "emerald" : rmseVal < 50 ? "amber" : "red"
+          const rmseBg = rmseColor === "emerald" ? "from-emerald-50 to-green-50 dark:from-emerald-500/10 dark:to-green-500/10" : rmseColor === "amber" ? "from-amber-50 to-yellow-50 dark:from-amber-500/10 dark:to-yellow-500/10" : "from-red-50 to-rose-50 dark:from-red-500/10 dark:to-rose-500/10"
+          const rmseBorder = rmseColor === "emerald" ? "border-emerald-200/50 dark:border-emerald-500/20" : rmseColor === "amber" ? "border-amber-200/50 dark:border-amber-500/20" : "border-red-200/50 dark:border-red-500/20"
+          const rmseText = rmseColor === "emerald" ? "text-emerald-600 dark:text-emerald-400" : rmseColor === "amber" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
+          const rmseIcon = rmseColor === "emerald" ? "text-emerald-600 dark:text-emerald-400" : rmseColor === "amber" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
+          const rmseLabel = rmseColor === "emerald" ? "优秀" : rmseColor === "amber" ? "良好" : "需关注"
+          return (
+            <div className={`bg-gradient-to-br ${rmseBg} backdrop-blur-sm rounded-lg p-3 border ${rmseBorder}`}>
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-sm text-slate-500 dark:text-slate-400">RMSE <span className="text-xs text-slate-400">(大误差敏感度)</span></span>
+                <BarChart3 className={`h-4 w-4 ${rmseIcon}`} />
+              </div>
+              <span className={`text-lg font-bold ${rmseText}`}>
+                ¥{rmseVal}
+              </span>
+              <div className="flex items-center gap-1 mt-1">
+                <span className={`text-xs px-1.5 py-0.5 rounded ${rmseColor === "emerald" ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : rmseColor === "amber" ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300" : "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
+                  {rmseLabel}
+                </span>
+                <span className="text-xs text-slate-400">元，对大误差更敏感</span>
+              </div>
+            </div>
+          )
+        })()}
 
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10 backdrop-blur-sm rounded-lg p-3 border border-amber-200/50 dark:border-amber-500/20">
-          <div className="flex items-center justify-between mb-0.5">
-            <span className="text-sm text-slate-500 dark:text-slate-400">R²</span>
-            <TrendingUp className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-          </div>
-          <span className="text-lg font-bold text-slate-900 dark:text-white">
-            {overview.r2}
-          </span>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">决定系数</p>
-        </div>
+        {/* R²: 决定系数，越接近1越好。>0.9优秀(绿)，0.8-0.9良好(黄)，<0.8需关注(红) */}
+        {(() => {
+          const r2Val = overview.r2
+          const r2Color = r2Val > 0.9 ? "emerald" : r2Val > 0.8 ? "amber" : "red"
+          const r2Bg = r2Color === "emerald" ? "from-emerald-50 to-green-50 dark:from-emerald-500/10 dark:to-green-500/10" : r2Color === "amber" ? "from-amber-50 to-yellow-50 dark:from-amber-500/10 dark:to-yellow-500/10" : "from-red-50 to-rose-50 dark:from-red-500/10 dark:to-rose-500/10"
+          const r2Border = r2Color === "emerald" ? "border-emerald-200/50 dark:border-emerald-500/20" : r2Color === "amber" ? "border-amber-200/50 dark:border-amber-500/20" : "border-red-200/50 dark:border-red-500/20"
+          const r2Text = r2Color === "emerald" ? "text-emerald-600 dark:text-emerald-400" : r2Color === "amber" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
+          const r2Icon = r2Color === "emerald" ? "text-emerald-600 dark:text-emerald-400" : r2Color === "amber" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
+          const r2Label = r2Color === "emerald" ? "优秀" : r2Color === "amber" ? "良好" : "需关注"
+          return (
+            <div className={`bg-gradient-to-br ${r2Bg} backdrop-blur-sm rounded-lg p-3 border ${r2Border}`}>
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-sm text-slate-500 dark:text-slate-400">R² <span className="text-xs text-slate-400">(拟合度)</span></span>
+                <TrendingUp className={`h-4 w-4 ${r2Icon}`} />
+              </div>
+              <span className={`text-lg font-bold ${r2Text}`}>
+                {r2Val}
+              </span>
+              <div className="flex items-center gap-1 mt-1">
+                <span className={`text-xs px-1.5 py-0.5 rounded ${r2Color === "emerald" ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : r2Color === "amber" ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300" : "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
+                  {r2Label}
+                </span>
+                <span className="text-xs text-slate-400">越接近1越好</span>
+              </div>
+            </div>
+          )
+        })()}
       </div>
+
+      {/* 融合预测展示 */}
+      {combinedData && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Zap className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+              融合预测（ARIMA+XGBoost + PatchTST）
+            </h3>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300">
+              动态权重
+            </span>
+          </div>
+
+          {/* 权重和 Regime 状态 */}
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-500/10 dark:to-purple-500/10 rounded-lg p-3 border border-violet-200/50 dark:border-violet-500/20">
+              <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">ARIMA+XGBoost 权重</div>
+              <div className="text-lg font-bold text-violet-600 dark:text-violet-400">
+                {(combinedData.weights.arima_xgb * 100).toFixed(1)}%
+              </div>
+              <div className="text-xs text-slate-400 mt-1">MAPE: {combinedData.model_metrics.arima_mape}%</div>
+            </div>
+
+            <div className="bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-500/10 dark:to-blue-500/10 rounded-lg p-3 border border-cyan-200/50 dark:border-cyan-500/20">
+              <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">PatchTST 权重</div>
+              <div className="text-lg font-bold text-cyan-600 dark:text-cyan-400">
+                {(combinedData.weights.transformer * 100).toFixed(1)}%
+              </div>
+              <div className="text-xs text-slate-400 mt-1">MAPE: {combinedData.model_metrics.transformer_mape}%</div>
+            </div>
+
+            <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10 rounded-lg p-3 border border-amber-200/50 dark:border-amber-500/20">
+              <div className="flex items-center gap-1 mb-1">
+                <Shield className="h-3 w-3" />
+                <span className="text-xs text-slate-500 dark:text-slate-400">市场状态</span>
+              </div>
+              <div className="text-lg font-bold text-amber-600 dark:text-amber-400">
+                {combinedData.regime === "low" ? "低波动" : combinedData.regime === "high" ? "高波动" : "正常"}
+              </div>
+              <div className="text-xs text-slate-400 mt-1">风险系数: {combinedData.risk_adjustment}</div>
+            </div>
+          </div>
+
+          {/* 融合预测图表 */}
+          <div className="bg-white/80 dark:bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-slate-200 dark:border-white/10 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                <h4 className="text-sm font-semibold text-slate-900 dark:text-white">
+                  未来 7 天价格预测对比
+                </h4>
+              </div>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                combinedData.weights.transformer > combinedData.weights.arima_xgb
+                  ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                  : "bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300"
+              }`}>
+                主导模型: {combinedData.weights.transformer > combinedData.weights.arima_xgb ? "PatchTST (Transformer)" : "ARIMA+XGBoost"}
+              </span>
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={combinedData.predictions}>
+                <defs>
+                  <linearGradient id="combinedConfidenceBand" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" strokeOpacity={0.5} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 11, fill: "#94a3b8" }}
+                  tickFormatter={(v: string) => v.slice(5)}
+                />
+                <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} domain={["auto", "auto"]} />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: "8px",
+                    border: "1px solid #e2e8f0",
+                    fontSize: "12px",
+                  }}
+                  formatter={(value, name) => {
+                    const numValue = Number(value)
+                    const label = String(name)
+                    if (label === "置信区间上界" || label === "置信区间下界") return [numValue.toFixed(2), label]
+                    return [`¥${numValue.toFixed(2)}`, label]
+                  }}
+                />
+                <Legend />
+                <Area
+                  type="monotone"
+                  dataKey="upper_bound"
+                  stroke="none"
+                  fill="url(#combinedConfidenceBand)"
+                  name="置信区间上界"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="lower_bound"
+                  stroke="none"
+                  fill="url(#combinedConfidenceBand)"
+                  name="置信区间下界"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="arima_component"
+                  stroke="#06b6d4"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  dot={{ r: 3, fill: "#06b6d4" }}
+                  name="ARIMA+XGBoost"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="transformer_component"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  strokeDasharray="3 3"
+                  dot={{ r: 3, fill: "#10b981" }}
+                  name="PatchTST (Transformer)"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="predicted_price"
+                  stroke="#8b5cf6"
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: "#8b5cf6" }}
+                  name="融合预测"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+            <div className="mt-3 text-xs text-slate-500 dark:text-slate-400 text-center">
+              当前价格: ¥{combinedData.current_price.toFixed(2)} | 预测趋势: {combinedData.trend} ({combinedData.change_percent > 0 ? "+" : ""}{combinedData.change_percent.toFixed(2)}%)
+            </div>
+
+            {/* 逐日预测明细表 */}
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-white/10">
+                    <th className="text-left py-2 px-2 text-slate-500 dark:text-slate-400 font-medium">日期</th>
+                    <th className="text-right py-2 px-2 text-cyan-600 dark:text-cyan-400 font-medium">ARIMA+XGBoost</th>
+                    <th className="text-right py-2 px-2 text-emerald-600 dark:text-emerald-400 font-medium">PatchTST (Transformer)</th>
+                    <th className="text-right py-2 px-2 text-violet-600 dark:text-violet-400 font-medium">融合预测</th>
+                    <th className="text-right py-2 px-2 text-slate-500 dark:text-slate-400 font-medium">置信区间</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {combinedData.predictions.map((p, i) => (
+                    <tr key={i} className="border-b border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5">
+                      <td className="py-1.5 px-2 text-slate-700 dark:text-slate-300">{p.date.slice(5)}</td>
+                      <td className="py-1.5 px-2 text-right text-cyan-700 dark:text-cyan-300">¥{p.arima_component.toFixed(2)}</td>
+                      <td className="py-1.5 px-2 text-right text-emerald-700 dark:text-emerald-300">¥{p.transformer_component.toFixed(2)}</td>
+                      <td className="py-1.5 px-2 text-right font-semibold text-violet-700 dark:text-violet-300">¥{p.predicted_price.toFixed(2)}</td>
+                      <td className="py-1.5 px-2 text-right text-slate-400">¥{p.lower_bound.toFixed(0)} ~ ¥{p.upper_bound.toFixed(0)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 主图表区域 */}
       <div className="grid grid-cols-2 gap-4 mb-4">
@@ -220,7 +504,7 @@ export function AccuracyPanel() {
           <div className="flex items-center gap-2 mb-3">
             <DollarSign className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-              预测 vs 实际价格对比
+              {t("accuracy.chartTitle.predictedVsActual")}
             </h3>
           </div>
           <ResponsiveContainer width="100%" height={280}>
@@ -251,7 +535,7 @@ export function AccuracyPanel() {
                 dataKey="upperBound"
                 stroke="none"
                 fill="url(#confidenceBand)"
-                name="置信区间"
+                name={t("accuracy.chart.confidenceInterval")}
               />
               <Area
                 type="monotone"
@@ -266,7 +550,7 @@ export function AccuracyPanel() {
                 stroke="#06b6d4"
                 strokeWidth={2}
                 dot={false}
-                name="实际价格"
+                name={t("accuracy.chart.actualPrice")}
               />
               <Line
                 type="monotone"
@@ -275,7 +559,7 @@ export function AccuracyPanel() {
                 strokeWidth={2}
                 strokeDasharray="5 5"
                 dot={false}
-                name="预测价格"
+                name={t("accuracy.chart.predictedPrice")}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -286,7 +570,7 @@ export function AccuracyPanel() {
           <div className="flex items-center gap-2 mb-3">
             <TrendingDown className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-              MAPE 趋势（近12周，数值越低越好）
+              {t("accuracy.chartTitle.mapeTrend")}
             </h3>
           </div>
           <ResponsiveContainer width="100%" height={280}>
@@ -334,7 +618,7 @@ export function AccuracyPanel() {
           <div className="flex items-center gap-2 mb-3">
             <Target className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-              按企业精度分布
+              {t("accuracy.byEnterprise")}
             </h3>
           </div>
           <div className="grid grid-cols-3 gap-4">

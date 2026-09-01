@@ -5,12 +5,14 @@ import type { NextRequest } from "next/server"
 const PUBLIC_PATHS = [
   "/",
   "/api/auth",
+  "/api/public",
   "/api/stripe/webhook",
   "/pricing",
   "/privacy",
   "/terms",
   "/api/health",
   "/reset-password",
+  "/api-console",
 ]
 
 // 仅管理员路径

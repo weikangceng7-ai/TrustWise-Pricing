@@ -4,162 +4,164 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react"
 import { KNOWLEDGE_DATA, NODE_REALTIME_DATA_CONFIG } from "./knowledge-data"
 import type { useMarketDataOverview } from "@/hooks/use-external-data"
+import { useLanguage } from "@/contexts/language-context"
 
 // 获取静态节点的详细信息
 function getStaticNodeInfo(
   nodeId: string,
-  weights: typeof KNOWLEDGE_DATA.factorWeights
+  weights: typeof KNOWLEDGE_DATA.factorWeights,
+  t: (key: string) => string,
 ): { label: string; value: string; highlight?: boolean }[] {
   switch (nodeId) {
     case 'supply-factor':
       return [
-        { label: '国内产量', value: '月均约 80-100 万吨' },
-        { label: '进口量', value: '月均约 60-80 万吨' },
-        { label: '主要来源', value: '中东(沙特、阿联酋)、加拿大' },
-        { label: '供应趋势', value: '当前供应平稳，中东出货正常', highlight: true },
+        { label: t('nodeDetail.supply.domesticOutput'), value: t('nodeDetail.supply.domesticOutputVal') },
+        { label: t('nodeDetail.supply.importVol'), value: t('nodeDetail.supply.importVolVal') },
+        { label: t('nodeDetail.supply.mainSources'), value: t('nodeDetail.supply.mainSourcesVal') },
+        { label: t('nodeDetail.supply.supplyTrend'), value: t('nodeDetail.supply.supplyTrendVal'), highlight: true },
       ]
     case 'demand-factor':
       return [
-        { label: '磷肥需求', value: '春耕备肥期需求旺盛' },
-        { label: '硫酸需求', value: '化工行业需求稳定' },
-        { label: '下游开工率', value: '约 75-80%' },
-        { label: '需求趋势', value: '短期需求偏强，关注春耕进度', highlight: true },
+        { label: t('nodeDetail.demand.phosphateFert'), value: t('nodeDetail.demand.phosphateFertVal') },
+        { label: t('nodeDetail.demand.sulfuricAcid'), value: t('nodeDetail.demand.sulfuricAcidVal') },
+        { label: t('nodeDetail.demand.operatingRate'), value: t('nodeDetail.demand.operatingRateVal') },
+        { label: t('nodeDetail.demand.demandTrend'), value: t('nodeDetail.demand.demandTrendVal'), highlight: true },
       ]
     case 'inventory':
       return [
-        { label: '主要港口库存', value: '约 45-55 万吨' },
-        { label: '库存消费比', value: '约 3-4 周' },
-        { label: '库存预警线', value: '低于 40 万吨为紧张' },
-        { label: '库存状态', value: '当前库存处于合理区间', highlight: true },
+        { label: t('nodeDetail.inventory.majorPort'), value: t('nodeDetail.inventory.majorPortVal') },
+        { label: t('nodeDetail.inventory.stockRatio'), value: t('nodeDetail.inventory.stockRatioVal') },
+        { label: t('nodeDetail.inventory.warningLine'), value: t('nodeDetail.inventory.warningLineVal') },
+        { label: t('nodeDetail.inventory.inventoryStatus'), value: t('nodeDetail.inventory.inventoryStatusVal'), highlight: true },
       ]
     case 'seasonal':
       return [
-        { label: '春耕备肥', value: '2-4月，需求高峰期' },
-        { label: '秋季备肥', value: '8-10月，次高峰期' },
-        { label: '淡季', value: '5-7月、11-1月' },
-        { label: '当前阶段', value: '春耕备肥期，价格易涨难跌', highlight: true },
+        { label: t('nodeDetail.seasonal.springPrep'), value: t('nodeDetail.seasonal.springPrepVal') },
+        { label: t('nodeDetail.seasonal.autumnPrep'), value: t('nodeDetail.seasonal.autumnPrepVal') },
+        { label: t('nodeDetail.seasonal.offSeason'), value: t('nodeDetail.seasonal.offSeasonVal') },
+        { label: t('nodeDetail.seasonal.currentPhase'), value: t('nodeDetail.seasonal.currentPhaseVal'), highlight: true },
       ]
     case 'fertilizer':
       return [
-        { label: '磷酸一铵', value: '约 3200-3500 元/吨' },
-        { label: '磷酸二铵', value: '约 3600-4000 元/吨' },
-        { label: '开工率', value: '约 70-75%' },
-        { label: '市场状态', value: '价格稳中有升，企业利润改善', highlight: true },
+        { label: t('nodeDetail.fertilizer.map'), value: t('nodeDetail.fertilizer.mapVal') },
+        { label: t('nodeDetail.fertilizer.dap'), value: t('nodeDetail.fertilizer.dapVal') },
+        { label: t('nodeDetail.fertilizer.operatingRate'), value: t('nodeDetail.fertilizer.operatingRateVal') },
+        { label: t('nodeDetail.fertilizer.marketStatus'), value: t('nodeDetail.fertilizer.marketStatusVal'), highlight: true },
       ]
     case 'sulfuric-acid':
       return [
-        { label: '硫酸价格', value: '约 150-250 元/吨' },
-        { label: '主要用途', value: '磷肥生产(约 70%)' },
-        { label: '供应来源', value: '冶炼酸、硫磺制酸' },
-        { label: '市场状态', value: '供应充足，价格稳定', highlight: true },
+        { label: t('nodeDetail.sulfuricAcid.price'), value: t('nodeDetail.sulfuricAcid.priceVal') },
+        { label: t('nodeDetail.sulfuricAcid.mainUse'), value: t('nodeDetail.sulfuricAcid.mainUseVal') },
+        { label: t('nodeDetail.sulfuricAcid.supplySource'), value: t('nodeDetail.sulfuricAcid.supplySourceVal') },
+        { label: t('nodeDetail.sulfuricAcid.marketStatus'), value: t('nodeDetail.sulfuricAcid.marketStatusVal'), highlight: true },
       ]
     case 'purchase-record':
       return [
-        { label: '最近采购', value: '2024年1月，均价 950 元/吨' },
-        { label: '采购量', value: '月均约 5000 吨' },
-        { label: '主要供应商', value: '华能化工、恒盛贸易' },
-        { label: '采购策略', value: '分批采购，控制库存风险', highlight: true },
+        { label: t('nodeDetail.purchaseRecord.recentPurchase'), value: t('nodeDetail.purchaseRecord.recentPurchaseVal') },
+        { label: t('nodeDetail.purchaseRecord.purchaseVol'), value: t('nodeDetail.purchaseRecord.purchaseVolVal') },
+        { label: t('nodeDetail.purchaseRecord.mainSuppliers'), value: t('nodeDetail.purchaseRecord.mainSuppliersVal') },
+        { label: t('nodeDetail.purchaseRecord.purchaseStrategy'), value: t('nodeDetail.purchaseRecord.purchaseStrategyVal'), highlight: true },
       ]
     case 'price-judgment':
       return [
-        { label: '价格区间', value: '近期 900-1000 元/吨' },
-        { label: '趋势判断', value: '短期偏强震荡' },
-        { label: '关键点位', value: '支撑 900，压力 1050' },
-        { label: '专家观点', value: '建议逢低分批采购', highlight: true },
+        { label: t('nodeDetail.priceJudgment.priceRange'), value: t('nodeDetail.priceJudgment.priceRangeVal') },
+        { label: t('nodeDetail.priceJudgment.trendJudgment'), value: t('nodeDetail.priceJudgment.trendJudgmentVal') },
+        { label: t('nodeDetail.priceJudgment.keyLevels'), value: t('nodeDetail.priceJudgment.keyLevelsVal') },
+        { label: t('nodeDetail.priceJudgment.expertView'), value: t('nodeDetail.priceJudgment.expertViewVal'), highlight: true },
       ]
     case 'inventory-strategy':
       return [
-        { label: '安全库存', value: '10-15 天用量' },
-        { label: '备货周期', value: '进口周期约 30-45 天' },
-        { label: '库存预警', value: '低于 7 天用量需紧急补库' },
-        { label: '策略建议', value: '春耕前适当增加库存', highlight: true },
+        { label: t('nodeDetail.inventoryStrategy.safetyStock'), value: t('nodeDetail.inventoryStrategy.safetyStockVal') },
+        { label: t('nodeDetail.inventoryStrategy.stockingCycle'), value: t('nodeDetail.inventoryStrategy.stockingCycleVal') },
+        { label: t('nodeDetail.inventoryStrategy.inventoryWarning'), value: t('nodeDetail.inventoryStrategy.inventoryWarningVal') },
+        { label: t('nodeDetail.inventoryStrategy.strategyAdvice'), value: t('nodeDetail.inventoryStrategy.strategyAdviceVal'), highlight: true },
       ]
     case 'supplier-relation':
       return [
-        { label: '主要供应商', value: '华能化工、恒盛贸易、天源国际' },
-        { label: '合作年限', value: '5-10 年长期合作' },
-        { label: '付款条件', value: '信用证 30-60 天' },
-        { label: '合作状态', value: '关系稳定，优先供货保障', highlight: true },
+        { label: t('nodeDetail.supplierRelation.mainSuppliers'), value: t('nodeDetail.supplierRelation.mainSuppliersVal') },
+        { label: t('nodeDetail.supplierRelation.cooperationYears'), value: t('nodeDetail.supplierRelation.cooperationYearsVal') },
+        { label: t('nodeDetail.supplierRelation.paymentTerms'), value: t('nodeDetail.supplierRelation.paymentTermsVal') },
+        { label: t('nodeDetail.supplierRelation.cooperationStatus'), value: t('nodeDetail.supplierRelation.cooperationStatusVal'), highlight: true },
       ]
     case 'risk-case':
       return [
-        { label: '2023年案例', value: '价格从 800 涨至 1200 元/吨' },
-        { label: '原因分析', value: '国际原油上涨 + 春耕需求' },
-        { label: '应对措施', value: '提前锁定部分长单' },
-        { label: '经验教训', value: '关注原油走势，提前布局', highlight: true },
+        { label: t('nodeDetail.riskCase.case2023'), value: t('nodeDetail.riskCase.case2023Val') },
+        { label: t('nodeDetail.riskCase.causeAnalysis'), value: t('nodeDetail.riskCase.causeAnalysisVal') },
+        { label: t('nodeDetail.riskCase.responseMeasures'), value: t('nodeDetail.riskCase.responseMeasuresVal') },
+        { label: t('nodeDetail.riskCase.lessonsLearned'), value: t('nodeDetail.riskCase.lessonsLearnedVal'), highlight: true },
       ]
     case 'procurement-rule':
       return [
-        { label: '审批流程', value: '采购申请 → 审批 → 合同签订' },
-        { label: '审批权限', value: '10万以下经理审批，以上需副总' },
-        { label: '采购周期', value: '月度计划，周度执行' },
-        { label: '合规要求', value: '需三家比价或长期协议', highlight: true },
+        { label: t('nodeDetail.procurementRule.approvalProcess'), value: t('nodeDetail.procurementRule.approvalProcessVal') },
+        { label: t('nodeDetail.procurementRule.approvalAuth'), value: t('nodeDetail.procurementRule.approvalAuthVal') },
+        { label: t('nodeDetail.procurementRule.procurementCycle'), value: t('nodeDetail.procurementRule.procurementCycleVal') },
+        { label: t('nodeDetail.procurementRule.complianceReq'), value: t('nodeDetail.procurementRule.complianceReqVal'), highlight: true },
       ]
     case 'quality-standard':
       return [
-        { label: '纯度要求', value: '≥ 99.5%' },
-        { label: '水分', value: '≤ 0.5%' },
-        { label: '灰分', value: '≤ 0.1%' },
-        { label: '检验标准', value: 'GB/T 2449-2014', highlight: true },
+        { label: t('nodeDetail.qualityStandard.purityReq'), value: t('nodeDetail.qualityStandard.purityReqVal') },
+        { label: t('nodeDetail.qualityStandard.moisture'), value: t('nodeDetail.qualityStandard.moistureVal') },
+        { label: t('nodeDetail.qualityStandard.ashContent'), value: t('nodeDetail.qualityStandard.ashContentVal') },
+        { label: t('nodeDetail.qualityStandard.inspectionStd'), value: 'GB/T 2449-2014', highlight: true },
       ]
     case 'contract-rule':
       return [
-        { label: '定价机制', value: '公式定价(基准价+升贴水)' },
-        { label: '结算方式', value: '信用证结算' },
-        { label: '交货方式', value: 'CFR 中国港口' },
-        { label: '违约条款', value: '延迟交货每日罚 0.5%', highlight: true },
+        { label: t('nodeDetail.contractRule.pricingMech'), value: t('nodeDetail.contractRule.pricingMechVal') },
+        { label: t('nodeDetail.contractRule.settlementMethod'), value: t('nodeDetail.contractRule.settlementMethodVal') },
+        { label: t('nodeDetail.contractRule.deliveryMethod'), value: 'CFR ' + t('nodeDetail.contractRule.chinaPorts') },
+        { label: t('nodeDetail.contractRule.breachTerms'), value: t('nodeDetail.contractRule.breachTermsVal'), highlight: true },
       ]
     case 'risk-policy':
       return [
-        { label: '价格预警', value: '单周涨跌超 5% 触发预警' },
-        { label: '库存预警', value: '库存低于 7 天用量预警' },
-        { label: '应对预案', value: '启动备选供应商、调整采购计划' },
-        { label: '止损机制', value: '设置采购价格上限', highlight: true },
+        { label: t('nodeDetail.riskPolicy.priceWarning'), value: t('nodeDetail.riskPolicy.priceWarningVal') },
+        { label: t('nodeDetail.riskPolicy.inventoryWarning'), value: t('nodeDetail.riskPolicy.inventoryWarningVal') },
+        { label: t('nodeDetail.riskPolicy.contingencyPlan'), value: t('nodeDetail.riskPolicy.contingencyPlanVal') },
+        { label: t('nodeDetail.riskPolicy.stopLossMech'), value: t('nodeDetail.riskPolicy.stopLossMechVal'), highlight: true },
       ]
     case 'storage-rule':
       return [
-        { label: '存储条件', value: '干燥通风，远离火源' },
-        { label: '堆放要求', value: '不超过 3 层，离地 10cm' },
-        { label: '损耗标准', value: '≤ 0.5%/月' },
-        { label: '安全要求', value: '配备消防设施，定期检查', highlight: true },
+        { label: t('nodeDetail.storageRule.storageConditions'), value: t('nodeDetail.storageRule.storageConditionsVal') },
+        { label: t('nodeDetail.storageRule.stackingReq'), value: t('nodeDetail.storageRule.stackingReqVal') },
+        { label: t('nodeDetail.storageRule.lossStandard'), value: t('nodeDetail.storageRule.lossStandardVal') },
+        { label: t('nodeDetail.storageRule.safetyReq'), value: t('nodeDetail.storageRule.safetyReqVal'), highlight: true },
       ]
     case 'short-forecast': {
       const oilTrend = weights.find(w => w.factor === '原油价格')?.trend || 'stable'
-      const shortTermTrend = oilTrend === 'up' ? '偏强震荡' : oilTrend === 'down' ? '偏弱运行' : '平稳运行'
+      const shortTermTrend = oilTrend === 'up' ? t('nodeDetail.shortForecast.trendUp') : oilTrend === 'down' ? t('nodeDetail.shortForecast.trendDown') : t('nodeDetail.shortForecast.trendStable')
       return [
-        { label: '预测周期', value: '1-4 周' },
-        { label: '价格区间', value: '920-980 元/吨' },
-        { label: '趋势判断', value: shortTermTrend, highlight: true },
-        { label: '置信度', value: '中等 (65%)' },
+        { label: t('nodeDetail.shortForecast.forecastCycle'), value: t('nodeDetail.shortForecast.forecastCycleVal') },
+        { label: t('nodeDetail.shortForecast.priceRange'), value: t('nodeDetail.shortForecast.priceRangeVal') },
+        { label: t('nodeDetail.shortForecast.trendJudgment'), value: shortTermTrend, highlight: true },
+        { label: t('nodeDetail.shortForecast.confidence'), value: t('nodeDetail.shortForecast.confidenceVal') },
       ]
     }
     case 'medium-forecast':
       return [
-        { label: '预测周期', value: '1-3 个月' },
-        { label: '价格区间', value: '900-1050 元/吨' },
-        { label: '趋势判断', value: '震荡偏强，关注春耕需求', highlight: true },
-        { label: '关键变量', value: '原油价格、港口库存、下游开工' },
+        { label: t('nodeDetail.mediumForecast.forecastCycle'), value: t('nodeDetail.mediumForecast.forecastCycleVal') },
+        { label: t('nodeDetail.mediumForecast.priceRange'), value: t('nodeDetail.mediumForecast.priceRangeVal') },
+        { label: t('nodeDetail.mediumForecast.trendJudgment'), value: t('nodeDetail.mediumForecast.trendJudgmentVal'), highlight: true },
+        { label: t('nodeDetail.mediumForecast.keyVariables'), value: t('nodeDetail.mediumForecast.keyVariablesVal') },
       ]
     case 'decision-support':
       return [
-        { label: '采购建议', value: '分批采购，控制节奏' },
-        { label: '建议采购量', value: '满足 15-20 天用量' },
-        { label: '价格参考', value: '低于 950 可适当增加采购' },
-        { label: '执行建议', value: '关注原油走势，择机锁定长单', highlight: true },
+        { label: t('nodeDetail.decisionSupport.purchaseAdvice'), value: t('nodeDetail.decisionSupport.purchaseAdviceVal') },
+        { label: t('nodeDetail.decisionSupport.suggestedQty'), value: t('nodeDetail.decisionSupport.suggestedQtyVal') },
+        { label: t('nodeDetail.decisionSupport.priceRef'), value: t('nodeDetail.decisionSupport.priceRefVal') },
+        { label: t('nodeDetail.decisionSupport.executionAdvice'), value: t('nodeDetail.decisionSupport.executionAdviceVal'), highlight: true },
       ]
     case 'risk-warning': {
       const riskLevel = weights.find(w => w.factor === '供应端因素')?.weight || 0.5
-      const riskStatus = riskLevel > 0.85 ? '偏高' : riskLevel > 0.7 ? '中等' : '较低'
+      const riskStatus = riskLevel > 0.85 ? t('nodeDetail.riskWarning.levelHigh') : riskLevel > 0.7 ? t('nodeDetail.riskWarning.levelMedium') : t('nodeDetail.riskWarning.levelLow')
       return [
-        { label: '风险等级', value: riskStatus, highlight: true },
-        { label: '主要风险', value: '原油价格波动、汇率风险' },
-        { label: '监测指标', value: '原油、汇率、港口库存' },
-        { label: '建议措施', value: '保持安全库存，关注市场动态' },
+        { label: t('nodeDetail.riskWarning.riskLevel'), value: riskStatus, highlight: true },
+        { label: t('nodeDetail.riskWarning.mainRisks'), value: t('nodeDetail.riskWarning.mainRisksVal') },
+        { label: t('nodeDetail.riskWarning.monitoringIndicators'), value: t('nodeDetail.riskWarning.monitoringIndicatorsVal') },
+        { label: t('nodeDetail.riskWarning.recommendedMeasures'), value: t('nodeDetail.riskWarning.recommendedMeasuresVal') },
       ]
     }
     default:
       return [
-        { label: '状态', value: '正常' },
+        { label: t('nodeDetail.defaultStatus'), value: t('nodeDetail.defaultStatusVal') },
       ]
   }
 }
@@ -176,6 +178,7 @@ export function NodeRealtimeDataSection({
   liveWeights: typeof KNOWLEDGE_DATA.factorWeights
   loading: boolean
 }) {
+  const { t } = useLanguage()
   const config = NODE_REALTIME_DATA_CONFIG[nodeId]
 
   if (!config) return null
@@ -188,7 +191,7 @@ export function NodeRealtimeDataSection({
       return (
         <div className="pt-3 border-t">
           <div className="text-xs text-muted-foreground mb-2">{config.title}</div>
-          <div className="text-sm text-muted-foreground">加载中...</div>
+          <div className="text-sm text-muted-foreground">{t("nodeDetail.loading")}</div>
         </div>
       )
     }
@@ -239,7 +242,7 @@ export function NodeRealtimeDataSection({
       return (
         <div className="pt-3 border-t">
           <div className="text-xs text-muted-foreground mb-2">{config.title}</div>
-          <div className="text-sm text-muted-foreground">加载中...</div>
+          <div className="text-sm text-muted-foreground">{t("nodeDetail.loading")}</div>
         </div>
       )
     }
@@ -251,7 +254,7 @@ export function NodeRealtimeDataSection({
       <div className="pt-3 border-t">
         <div className="text-xs text-muted-foreground mb-2">
           {config.title}
-          <Badge variant="outline" className="ml-2">{newsContent.totalArticles} 篇</Badge>
+          <Badge variant="outline" className="ml-2">{newsContent.totalArticles} {t("nodeDetail.articlesCount")}</Badge>
         </div>
         <div className="space-y-2">
           {newsContent.topics.slice(0, 2).map((topic, i) => (
@@ -306,29 +309,29 @@ export function NodeRealtimeDataSection({
 
     return (
       <div className="pt-3 border-t space-y-2">
-        <div className="text-xs text-muted-foreground">数据源信息</div>
+        <div className="text-xs text-muted-foreground">{t("nodeDetail.dataSourceInfo")}</div>
         <div className="text-xs space-y-1.5">
           <div className="flex items-start gap-1">
-            <span className="text-muted-foreground shrink-0">描述：</span>
+            <span className="text-muted-foreground shrink-0">{t("nodeDetail.descriptionLabel")}</span>
             <span>{sourceInfo.description}</span>
           </div>
           <div className="flex items-start gap-1">
-            <span className="text-muted-foreground shrink-0">API：</span>
+            <span className="text-muted-foreground shrink-0">API{t("nodeDetail.colonSuffix")}</span>
             <span className={sourceInfo.apiKey.includes('无需') ? 'text-green-600' : 'text-amber-600'}>
               {sourceInfo.apiKey}
             </span>
           </div>
           <div className="flex items-start gap-1">
-            <span className="text-muted-foreground shrink-0">数据：</span>
+            <span className="text-muted-foreground shrink-0">{t("nodeDetail.dataLabel")}</span>
             <span className="flex flex-wrap gap-1">
-              {sourceInfo.dataTypes.slice(0, 4).map((t, i) => (
-                <Badge key={i} variant="outline" className="text-[10px] px-1 py-0">{t}</Badge>
+              {sourceInfo.dataTypes.slice(0, 4).map((item, i) => (
+                <Badge key={i} variant="outline" className="text-[10px] px-1 py-0">{item}</Badge>
               ))}
             </span>
           </div>
           {'endpoints' in sourceInfo && sourceInfo.endpoints && (
             <div className="flex items-start gap-1">
-              <span className="text-muted-foreground shrink-0">接口：</span>
+              <span className="text-muted-foreground shrink-0">{t("nodeDetail.endpointsLabel")}</span>
               <code className="text-[10px] bg-muted px-1 rounded break-all">
                 {sourceInfo.endpoints[0]}
               </code>
@@ -336,7 +339,7 @@ export function NodeRealtimeDataSection({
           )}
           {'status' in sourceInfo && sourceInfo.status && (
             <div className="flex items-start gap-1">
-              <span className="text-muted-foreground shrink-0">状态：</span>
+              <span className="text-muted-foreground shrink-0">{t("nodeDetail.statusLabel")}</span>
               <span className="text-muted-foreground">{sourceInfo.status}</span>
             </div>
           )}
@@ -347,14 +350,14 @@ export function NodeRealtimeDataSection({
 
   // 静态信息类型 - 显示节点相关的详细分析信息
   if (config.dataType === 'static') {
-    const staticInfo = getStaticNodeInfo(nodeId, liveWeights)
+    const staticInfo = getStaticNodeInfo(nodeId, liveWeights, t)
     return (
       <div className="pt-3 border-t space-y-2">
         <div className="text-xs text-muted-foreground">{config.title}</div>
         <div className="text-xs space-y-1.5">
           {staticInfo.map((item, i) => (
             <div key={i} className="flex items-start gap-1">
-              <span className="text-muted-foreground shrink-0">{item.label}：</span>
+              <span className="text-muted-foreground shrink-0">{item.label}{t("nodeDetail.colonSuffix")}</span>
               <span className={item.highlight ? 'text-primary font-medium' : ''}>{item.value}</span>
             </div>
           ))}

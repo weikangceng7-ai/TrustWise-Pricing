@@ -54,6 +54,8 @@ export interface McpConfig {
   MCP_PORT: number
   /** DEMO 模式：跳过 API_KEY 校验，返回示例数据 */
   DEMO_MODE: boolean
+  /** Python 预测服务地址（可选，直接调用绕过 Vercel） */
+  PREDICTION_SERVICE_URL?: string
 }
 
 /**
@@ -66,6 +68,7 @@ export function loadConfig(): McpConfig {
   const INDUSTRY_CODE = process.env.INDUSTRY_CODE?.trim() || "sulfur"
   const MCP_TRANSPORT = process.env.MCP_TRANSPORT?.trim() || "stdio"
   const MCP_PORT = Number(process.env.MCP_PORT) || 3100
+  const PREDICTION_SERVICE_URL = process.env.PREDICTION_SERVICE_URL?.trim()
 
   if (!DEMO_MODE && !API_KEY) {
     throw new Error("缺少环境变量 API_KEY（或设置 DEMO_MODE=true 使用演示模式）")
@@ -81,5 +84,6 @@ export function loadConfig(): McpConfig {
     MCP_TRANSPORT,
     MCP_PORT,
     DEMO_MODE,
+    PREDICTION_SERVICE_URL,
   }
 }

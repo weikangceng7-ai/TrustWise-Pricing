@@ -4,24 +4,18 @@ import { deleteApiKey } from "@/lib/api-auth"
 
 /**
  * DELETE /api/api-keys/[id]
- * 删除 API Key
+ * 删除 API Key（无需登录）
  */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers })
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: "未登录" },
-        { status: 401 }
-      )
-    }
-
     const { id } = await params
-    const success = await deleteApiKey(session.user.id, id)
+    const session = await auth.api.getSession({ headers: request.headers })
+    const userId = session?.user?.id
+
+    const success = await deleteApiKey(id, userId || undefined)
 
     if (!success) {
       return NextResponse.json(

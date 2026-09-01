@@ -259,6 +259,33 @@ function EnterprisePredictionOverviewCompact({
   )
 }
 
+function DashboardQuickStats() {
+  const { t } = useLanguage()
+
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <div className="bg-white/80 dark:bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-slate-200 dark:border-white/10 shadow-sm">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-6 h-6 rounded bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
+            <Package className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <span className="text-xs font-medium text-slate-900 dark:text-white">{t("sidebar.supplyChain")}</span>
+        </div>
+        <div className="text-xs text-slate-500 dark:text-slate-400">{t("sidebar.supplyChainDesc")}</div>
+      </div>
+      <div className="bg-white/80 dark:bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-slate-200 dark:border-white/10 shadow-sm">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-6 h-6 rounded bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center">
+            <Target className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
+          </div>
+          <span className="text-xs font-medium text-slate-900 dark:text-white">{t("sidebar.decisions")}</span>
+        </div>
+        <div className="text-xs text-slate-500 dark:text-slate-400">{t("sidebar.decisionsDesc")}</div>
+      </div>
+    </div>
+  )
+}
+
 export function DashboardContent({ initialData }: { initialData: DashboardData | null }) {
   const { t, lang } = useLanguage()
   const [commodity, setCommodity] = useState<CommodityCode>("sulfur")
@@ -373,7 +400,7 @@ export function DashboardContent({ initialData }: { initialData: DashboardData |
         <div className="absolute bottom-40 left-0 w-[250px] h-[250px] bg-cyan-200/30 dark:bg-cyan-500/10 blur-[80px] rounded-full" />
       </div>
 
-      <div className="relative px-3 pt-3 pb-3 max-w-full h-[calc(100vh-60px)] flex flex-col" suppressHydrationWarning>
+      <div className="relative px-3 pt-3 pb-3 max-w-full" suppressHydrationWarning>
         {/* 品种选择栏 */}
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-base font-bold text-slate-900 dark:text-white">{t("dashboard.title")}</h2>
@@ -549,7 +576,7 @@ export function DashboardContent({ initialData }: { initialData: DashboardData |
           </Link>
 
           {/* MCP 工具 */}
-          <Link href="/api-console" className="rounded-lg border border-slate-200/60 dark:border-white/10 bg-white/60 dark:bg-white/5 p-2.5 hover:border-amber-300/50 dark:hover:border-amber-500/30 transition-all group cursor-pointer">
+          <Link href="/api-keys" className="rounded-lg border border-slate-200/60 dark:border-white/10 bg-white/60 dark:bg-white/5 p-2.5 hover:border-amber-300/50 dark:hover:border-amber-500/30 transition-all group cursor-pointer">
             <div className="flex items-center gap-1.5 mb-1">
               <Wand2 className="h-3.5 w-3.5 text-amber-500" />
               <span className="text-xs text-slate-500">{t("dashboard.mcpTools")}</span>
@@ -568,7 +595,7 @@ export function DashboardContent({ initialData }: { initialData: DashboardData |
             </div>
             <div className="text-lg font-bold text-slate-900 dark:text-white">3<span className="text-sm font-normal text-slate-400 ml-1">{t("dashboard.householdsUnit")}</span></div>
             <div className="flex items-center gap-1 mt-0.5">
-              <span className="text-[10px] text-slate-400">宜化·HY·TC</span>
+              <span className="text-[10px] text-slate-400">{t("dashboardPage.enterpriseNames")}</span>
             </div>
           </Link>
         </div>
@@ -576,7 +603,7 @@ export function DashboardContent({ initialData }: { initialData: DashboardData |
         {/* 主内容区域：左列、右列各占一半，占满页面 */}
         <div className={`grid grid-cols-1 xl:grid-cols-2 gap-3 flex-1 min-h-0 transition-opacity duration-200 ${isTransitioning ? "opacity-60" : ""}`}>
           {/* 左列 - 功能模块入口、市场洞察和价格知识图谱 */}
-          <div className="space-y-3 flex flex-col flex-1 min-h-0 overflow-y-auto pr-1">
+          <div className="space-y-3 flex flex-col min-h-0">
             {/* 多品种扩展预览 */}
             <div className="rounded-lg p-2.5 bg-white/50 dark:bg-white/3 border border-slate-200/50 dark:border-white/5">
               <div className="flex items-center gap-2 mb-2 px-1">
@@ -755,24 +782,25 @@ export function DashboardContent({ initialData }: { initialData: DashboardData |
           </div>
 
           {/* 右列 - 采购周报和企业价格预测 */}
-          <div className="space-y-3 flex flex-col flex-1 min-h-0 overflow-y-auto">
-            {/* 采购周报 */}
-            <div className="bg-gradient-to-r from-cyan-500/10 via-violet-500/10 to-cyan-500/10 dark:from-cyan-500/5 dark:via-violet-500/5 dark:to-cyan-500/5 backdrop-blur-sm rounded-lg p-3 border border-cyan-200/50 dark:border-cyan-500/20 flex-1 flex flex-col min-h-0">
+          <div className="space-y-3 flex flex-col min-h-0">
+            {/* 采购周报 - 内容自适应高度 */}
+            <div className="bg-gradient-to-r from-cyan-500/10 via-violet-500/10 to-cyan-500/10 dark:from-cyan-500/5 dark:via-violet-500/5 dark:to-cyan-500/5 backdrop-blur-sm rounded-lg p-3 border border-cyan-200/50 dark:border-cyan-500/20">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-cyan-100 dark:bg-cyan-500/20 flex items-center justify-center">
                   <FileText className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
                 </div>
                 <h3 className="text-base font-semibold text-slate-900 dark:text-white">{t("dashboard.weeklyReport")}</h3>
               </div>
-              <div className="flex-1 min-h-0">
-                <ReportCarouselInline />
-              </div>
+              <ReportCarouselInline />
             </div>
 
-            {/* 企业价格预测 - flex-1 占满剩余空间 */}
-            <div className="bg-white/80 dark:bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-slate-200 dark:border-white/10 shadow-sm flex-1 flex flex-col min-h-0">
+            {/* 企业价格预测 - 固定最小高度 */}
+            <div className="bg-white/80 dark:bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-slate-200 dark:border-white/10 shadow-sm min-h-[280px]">
               <EnterprisePredictionOverviewCompact enterprises={displayData.enterprisePrices} />
             </div>
+
+            {/* 系统能力概览卡片 — 实时统计 */}
+            <DashboardQuickStats />
           </div>
         </div>
         </>

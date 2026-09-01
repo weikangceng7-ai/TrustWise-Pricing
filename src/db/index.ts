@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/postgres-js"
 import postgres from "postgres"
 import * as schema from "./schema"
+import * as schemaRag from "./schema-rag"
 
 // 数据库连接配置
 const connectionString = process.env.DATABASE_URL || ""
@@ -18,7 +19,7 @@ if (useRealDb) {
     connect_timeout: 5,
     max_lifetime: 60 * 30,
   })
-  db = drizzle(client, { schema })
+  db = drizzle(client, { schema: { ...schema, ...schemaRag } })
 }
 
 export { db, schema }

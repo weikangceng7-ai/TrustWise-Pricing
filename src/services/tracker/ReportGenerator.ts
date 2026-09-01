@@ -268,7 +268,12 @@ export class ReportGenerator {
 
     const latest = predictionDataList[0]
 
-    return `未来${latest.predictionDays}天预测均价：${latest.predictedPrice.toFixed(2)}元/吨，趋势判断：${latest.trend}，置信度：${latest.confidence}。预测价格区间：${latest.priceRange.min.toFixed(2)}-${latest.priceRange.max.toFixed(2)}元/吨。`
+    // 构建 regime 描述
+    const regimeDesc = latest.regime
+      ? `市场波动状态：${latest.regime === "high" ? "高波动（风险较高）" : latest.regime === "low" ? "低波动（相对稳定）" : "正常"}${latest.riskAdjustment && latest.riskAdjustment !== 1.0 ? `，风险系数 ${latest.riskAdjustment.toFixed(2)}` : ""}。`
+      : ""
+
+    return `未来${latest.predictionDays}天预测均价：${latest.predictedPrice.toFixed(2)}元/吨，趋势判断：${latest.trend}，置信度：${latest.confidence}。预测价格区间：${latest.priceRange.min.toFixed(2)}-${latest.priceRange.max.toFixed(2)}元/吨。${regimeDesc}`
   }
 
   // ==================== 汇总和建议 ====================

@@ -1,0 +1,1 @@
+{"commodity_code": "potash", "arima_order": [1, 1, 1], "residual_features": ["resid_lag_1", "resid_lag_2", "resid_lag_3", "resid_ma_3", "resid_ma_7", "resid_momentum_3", "resid_momentum_7", "resid_vol_3", "resid_vol_7"]}

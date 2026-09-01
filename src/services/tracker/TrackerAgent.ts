@@ -285,6 +285,8 @@ export class TrackerAgent {
           min: minPrice,
           max: maxPrice,
         },
+        regime: prediction.regime,
+        riskAdjustment: prediction.risk_adjustment,
         generatedAt: prediction.generated_at,
       }
     } catch (error) {

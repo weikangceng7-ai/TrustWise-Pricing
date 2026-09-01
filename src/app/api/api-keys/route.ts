@@ -1,28 +1,36 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { createApiKey, getUserApiKeys } from "@/lib/api-auth"
+import { db } from "@/db"
+import { apiKeys as apiKeysTable } from "@/db/schema"
 import { getUserQuota, calculateRemainingQuota } from "@/lib/api-quota"
+import { isNull } from "drizzle-orm"
 
 /**
  * GET /api/api-keys
- * 获取用户的 API Key 列表
+ * 获取 API Key 列表
+ * 已登录：返回当前用户的 Keys
+ * 未登录：返回无用户关联的公开 Keys（MCP 测试用）
  */
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: request.headers })
 
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: "未登录" },
-        { status: 401 }
-      )
+    let keysList: typeof apiKeysTable.$inferSelect[] = []
+    let quota = null
+
+    if (session?.user) {
+      keysList = await getUserApiKeys(session.user.id)
+      quota = await getUserQuota(session.user.id)
+    } else {
+      // 未登录：返回无用户关联的 Keys
+      if (db) {
+        keysList = await db.select().from(apiKeysTable).where(isNull(apiKeysTable.userId))
+      }
     }
 
-    const apiKeys = await getUserApiKeys(session.user.id)
-    const quota = await getUserQuota(session.user.id)
-
     // 隐藏完整的 Key，只显示前缀和后 4 位
-    const maskedKeys = apiKeys.map(key => ({
+    const maskedKeys = keysList.map(key => ({
       ...key,
       key: `${key.key.slice(0, 10)}...${key.key.slice(-4)}`,
     }))
@@ -45,26 +53,17 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/api-keys
- * 创建新的 API Key
+ * 创建新的 API Key（无需登录）
  *
  * Body:
  * - name: Key 名称
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers })
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: "未登录" },
-        { status: 401 }
-      )
-    }
-
     const body = await request.json()
     const name = body.name || "API Key"
 
-    const apiKeyRecord = await createApiKey(session.user.id, name)
+    const apiKeyRecord = await createApiKey(name)
 
     // 新创建的 Key 显示完整值，仅此一次
     return NextResponse.json({
@@ -76,13 +75,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("创建 API Key 失败:", error)
-    // 处理 Key 数量限制错误
-    if (error instanceof Error && error.message.includes("已达上限")) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 400 }
-      )
-    }
     const message = error instanceof Error ? error.message : "创建 API Key 失败"
     return NextResponse.json(
       { success: false, error: message },

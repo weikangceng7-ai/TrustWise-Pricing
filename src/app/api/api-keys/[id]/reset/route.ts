@@ -4,24 +4,18 @@ import { resetApiKey } from "@/lib/api-auth"
 
 /**
  * POST /api/api-keys/[id]/reset
- * 重置 API Key（生成新 Key 值）
+ * 重置 API Key（无需登录）
  */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers })
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: "未登录" },
-        { status: 401 }
-      )
-    }
-
     const { id } = await params
-    const newKeyRecord = await resetApiKey(session.user.id, id)
+    const session = await auth.api.getSession({ headers: request.headers })
+    const userId = session?.user?.id
+
+    const newKeyRecord = await resetApiKey(id, userId || undefined)
 
     if (!newKeyRecord) {
       return NextResponse.json(
@@ -30,7 +24,6 @@ export async function POST(
       )
     }
 
-    // 重置后显示完整新 Key，仅此一次
     return NextResponse.json({
       success: true,
       data: {

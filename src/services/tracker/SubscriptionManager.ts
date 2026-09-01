@@ -474,18 +474,25 @@ export async function markAllAlertsAsRead(
     return 0
   }
 
+  // 先查询未读数量
+  const before = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(trackerAlerts)
+    .where(and(inArray(trackerAlerts.subscriptionId, subscriptionIds), eq(trackerAlerts.isRead, false)))
+
+  const unreadCount = before[0]?.count ?? 0
+
+  if (unreadCount === 0) {
+    return 0
+  }
+
+  // 执行更新
   await db
     .update(trackerAlerts)
     .set({ isRead: true })
     .where(and(inArray(trackerAlerts.subscriptionId, subscriptionIds), eq(trackerAlerts.isRead, false)))
 
-  // 重新查询未读数以确认更新行数
-  const result = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(trackerAlerts)
-    .where(and(inArray(trackerAlerts.subscriptionId, subscriptionIds), eq(trackerAlerts.isRead, false)))
-
-  return result[0]?.count ?? 0
+  return unreadCount
 }
 
 /**
@@ -505,6 +512,19 @@ export async function markAllAlertsAsHandled(
     return 0
   }
 
+  // 先查询未处理数量
+  const before = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(trackerAlerts)
+    .where(and(inArray(trackerAlerts.subscriptionId, subscriptionIds), eq(trackerAlerts.isHandled, false)))
+
+  const unhandledCount = before[0]?.count ?? 0
+
+  if (unhandledCount === 0) {
+    return 0
+  }
+
+  // 执行更新
   await db
     .update(trackerAlerts)
     .set({
@@ -514,12 +534,7 @@ export async function markAllAlertsAsHandled(
     })
     .where(and(inArray(trackerAlerts.subscriptionId, subscriptionIds), eq(trackerAlerts.isHandled, false)))
 
-  const result = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(trackerAlerts)
-    .where(and(inArray(trackerAlerts.subscriptionId, subscriptionIds), eq(trackerAlerts.isHandled, false)))
-
-  return result[0]?.count ?? 0
+  return unhandledCount
 }
 
 /**

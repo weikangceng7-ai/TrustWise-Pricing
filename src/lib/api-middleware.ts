@@ -61,7 +61,7 @@ export async function authForTracker(
     )
   }
 
-  return { userId: validation.apiKey!.userId }
+  return { userId: validation.apiKey!.userId! }
 }
 
 /**
@@ -129,7 +129,7 @@ export async function authenticateTracker(
     }
   }
 
-  return { authenticated: true, userId: validation.apiKey!.userId }
+  return { authenticated: true, userId: validation.apiKey!.userId ?? undefined }
 }
 
 /**
@@ -253,8 +253,8 @@ export async function withApiAuth(
     // 更新最后使用时间
     await updateApiKeyLastUsed(apiKey!.id)
 
-    // 扣减配额
-    await decrementQuota(apiKey!.userId)
+    // 扣减配额（有 userId 用 userId，否则用 apiKeyId）
+    await decrementQuota(apiKey!.userId || undefined, apiKey!.id)
 
     return response
   } catch (error) {

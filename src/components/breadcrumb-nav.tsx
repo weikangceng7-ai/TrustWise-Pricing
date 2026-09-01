@@ -23,6 +23,8 @@ const PATH_KEY_MAP: Record<string, string> = {
   "success-cases": "breadcrumb.successCases",
   document: "breadcrumb.document",
   settings: "breadcrumb.settings",
+  "supply-chain": "breadcrumb.supplyChain",
+  decisions: "breadcrumb.decisions",
 }
 
 export function BreadcrumbNav() {

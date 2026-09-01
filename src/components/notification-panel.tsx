@@ -29,6 +29,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { useNotifications, type Notification, type PublicNews } from "@/hooks/use-notifications"
+import { useLanguage } from "@/contexts/language-context"
 
 const typeConfig: Record<
   string,
@@ -38,41 +39,41 @@ const typeConfig: Record<
     icon: TrendingUp,
     color: "text-red-500",
     bgColor: "bg-red-500/10",
-    label: "价格预警",
+    label: "notification.priceAlert",
   },
   inventory_alert: {
     icon: Package,
     color: "text-orange-500",
     bgColor: "bg-orange-500/10",
-    label: "库存预警",
+    label: "notification.inventoryAlert",
   },
   purchase_timing: {
     icon: Clock,
     color: "text-green-500",
     bgColor: "bg-green-500/10",
-    label: "采购时机",
+    label: "notification.purchaseTiming",
   },
   market_news: {
     icon: Newspaper,
     color: "text-blue-500",
     bgColor: "bg-blue-500/10",
-    label: "市场动态",
+    label: "notification.marketNews",
   },
   report_ready: {
     icon: FileText,
     color: "text-purple-500",
     bgColor: "bg-purple-500/10",
-    label: "报告生成",
+    label: "notification.reportReady",
   },
   system: {
     icon: Settings,
     color: "text-gray-500",
     bgColor: "bg-gray-500/10",
-    label: "系统通知",
+    label: "notification.system",
   },
 }
 
-function formatTime(dateString: string): string {
+function formatTime(dateString: string, t: (key: string) => string): string {
   const date = new Date(dateString)
   const now = new Date()
   const diff = now.getTime() - date.getTime()
@@ -80,11 +81,11 @@ function formatTime(dateString: string): string {
   const hours = Math.floor(diff / 3600000)
   const days = Math.floor(diff / 86400000)
 
-  if (minutes < 1) return "刚刚"
-  if (minutes < 60) return `${minutes} 分钟前`
-  if (hours < 24) return `${hours} 小时前`
-  if (days < 7) return `${days} 天前`
-  return date.toLocaleDateString("zh-CN")
+  if (minutes < 1) return t("notification.justNow")
+  if (minutes < 60) return `${minutes} ${t("notification.minutesAgo")}`
+  if (hours < 24) return `${hours} ${t("notification.hoursAgo")}`
+  if (days < 7) return `${days} ${t("notification.daysAgo")}`
+  return date.toLocaleDateString()
 }
 
 function NotificationItem({
@@ -96,6 +97,7 @@ function NotificationItem({
   onMarkRead: () => void
   onDelete: () => void
 }) {
+  const { t } = useLanguage()
   const router = useRouter()
   const config = typeConfig[notification.type] || typeConfig.system
   const Icon = config.icon
@@ -124,10 +126,10 @@ function NotificationItem({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">{config.label}</span>
+            <span className="text-xs text-muted-foreground">{t(config.label)}</span>
             {notification.priority === "high" && (
               <span className="text-xs bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded">
-                紧急
+                {t("notification.urgent")}
               </span>
             )}
             {!notification.isRead && (
@@ -141,7 +143,7 @@ function NotificationItem({
             {notification.content}
           </p>
           <p className="text-xs text-muted-foreground/70 mt-1">
-            {formatTime(notification.createdAt)}
+            {formatTime(notification.createdAt, t)}
           </p>
         </div>
         <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -154,7 +156,7 @@ function NotificationItem({
                 e.stopPropagation()
                 onMarkRead()
               }}
-              title="标记已读"
+              title={t("notification.markAsRead")}
             >
               <Check className="h-3 w-3" />
             </Button>
@@ -167,7 +169,7 @@ function NotificationItem({
               e.stopPropagation()
               onDelete()
             }}
-            title="删除"
+            title={t("notification.delete")}
           >
             <Trash2 className="h-3 w-3" />
           </Button>
@@ -178,6 +180,7 @@ function NotificationItem({
 }
 
 function PublicNewsItem({ news }: { news: PublicNews }) {
+  const { t } = useLanguage()
   const isInternational = news.category === "international"
   const Icon = isInternational ? Globe : MapPin
   const color = isInternational ? "text-cyan-500" : "text-amber-500"
@@ -200,14 +203,14 @@ function PublicNewsItem({ news }: { news: PublicNews }) {
           <div className="flex items-center gap-2">
             <span className={`text-xs ${color}`}>{news.label}</span>
             <span className="text-xs text-muted-foreground">
-              {isInternational ? "国际" : "国内"}
+              {isInternational ? t("notification.international") : t("notification.domestic")}
             </span>
           </div>
           <p className="text-sm font-medium mt-0.5 line-clamp-2 group-hover:text-primary transition-colors">
             {news.title}
           </p>
           <p className="text-xs text-muted-foreground/70 mt-1">
-            {formatTime(news.date)}
+            {formatTime(news.date, t)}
           </p>
         </div>
         <ExternalLink className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary transition-colors self-center" />
@@ -217,6 +220,7 @@ function PublicNewsItem({ news }: { news: PublicNews }) {
 }
 
 export function NotificationPanel() {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const {
     notifications,
@@ -240,7 +244,7 @@ export function NotificationPanel() {
             variant="ghost"
             size="icon"
             className="h-8 w-8 relative"
-            title={unreadCount > 0 ? `${unreadCount} 条未读通知` : "通知"}
+            title={unreadCount > 0 ? `${unreadCount} ${t("notification.unreadNotifications")}` : t("notification.notifications")}
           >
             <Bell className="h-4 w-4" />
             {unreadCount > 0 && (
@@ -248,7 +252,7 @@ export function NotificationPanel() {
                 {unreadCount > 99 ? "99+" : unreadCount}
               </span>
             )}
-            <span className="sr-only">通知</span>
+            <span className="sr-only">{t("notification.notifications")}</span>
           </Button>
         }
       />
@@ -257,7 +261,7 @@ export function NotificationPanel() {
           <div className="flex items-center justify-between">
             <SheetTitle className="flex items-center gap-2">
               <Bell className="h-5 w-5" />
-              通知中心
+              {t("notification.notificationCenter")}
             </SheetTitle>
             {isLoggedIn && unreadCount > 0 && (
               <Button
@@ -268,7 +272,7 @@ export function NotificationPanel() {
                 className="text-xs"
               >
                 <CheckCheck className="h-3 w-3 mr-1" />
-                全部已读
+                {t("notification.markAllAsRead")}
               </Button>
             )}
           </div>
@@ -280,7 +284,7 @@ export function NotificationPanel() {
             <div className="p-2">
               <div className="px-3 py-2 text-xs font-medium text-muted-foreground flex items-center gap-2">
                 <Newspaper className="h-3.5 w-3.5" />
-                时事速递
+                {t("notification.newsFlash")}
               </div>
               {publicNews.map((news, index) => (
                 <div key={news.url}>
@@ -300,20 +304,20 @@ export function NotificationPanel() {
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-6 text-center">
                 <Sparkles className="h-10 w-10 text-muted-foreground/50 mb-3" />
-                <p className="text-sm text-muted-foreground mb-3">暂无个人通知</p>
+                <p className="text-sm text-muted-foreground mb-3">{t("notification.noPersonalNotifications")}</p>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={createDemoNotifications}
                   disabled={isCreatingDemo}
                 >
-                  创建演示通知
+                  {t("notification.createDemoNotifications")}
                 </Button>
               </div>
             ) : (
               <div className="p-2 border-t">
                 <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
-                  个人通知
+                  {t("notification.personalNotifications")}
                 </div>
                 {notifications.map((notification, index) => (
                   <div key={notification.id}>
@@ -333,7 +337,7 @@ export function NotificationPanel() {
             !publicNews.length && (
               <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
                 <Bell className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">登录后可查看个人通知</p>
+                <p className="text-muted-foreground">{t("notification.loginToView")}</p>
               </div>
             )
           )}
@@ -342,7 +346,7 @@ export function NotificationPanel() {
         {isLoggedIn && notifications.length > 0 && (
           <div className="p-3 border-t text-center">
             <p className="text-xs text-muted-foreground">
-              共 {notifications.length} 条通知，{unreadCount} 条未读
+              {t("notification.totalCount")} {notifications.length} {t("notification.count")}，{unreadCount} {t("notification.unread")}
             </p>
           </div>
         )}

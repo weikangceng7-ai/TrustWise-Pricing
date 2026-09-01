@@ -20,15 +20,14 @@ const TABLES = [
 ]
 
 export async function GET(request: Request) {
+  const isCron = request.headers.get("authorization") === `Bearer ${process.env.CRON_SECRET}`
+  const isLocalDev = process.env.NODE_ENV === "development"
+
+  if (!isCron && !isLocalDev) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
-    // 验证 cron secret
-    const authHeader = request.headers.get("authorization")
-    const expectedSecret = process.env.CRON_SECRET
-
-    if (expectedSecret && authHeader !== `Bearer ${expectedSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     if (!db) {
       return NextResponse.json({ error: "数据库不可用" }, { status: 500 })
     }
