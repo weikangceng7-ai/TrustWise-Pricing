@@ -711,7 +711,8 @@ class SulfurPricePredictor:
         预测未来价格（含置信区间）
 
         改进点:
-        - 增强残差特征 + 双模型平均
+        - 直接预测价格变化量（与训练逻辑一致）
+        - 双模型平均（XGBoost + LightGBM）
         - 96% 置信区间量化不确定性
         - 波动率 regime 检测
 
@@ -733,63 +734,66 @@ class SulfurPricePredictor:
 
         price = self.price_data['price']
         last_date = price.index[-1]
+        last_price = float(price.iloc[-1])
 
-        # ARIMA 预测
+        # ARIMA 预测（仅用于对比和组件展示）
         arima_result = ARIMA(price, order=self.arima_order).fit()
         arima_pred = arima_result.forecast(steps=days)
 
-        # 获取残差用于特征构建
-        resid = arima_result.resid
+        # 构建价格变化特征（与训练时一致）
+        price_diff = price.diff().dropna()
+        price_features = FeatureEngineer.build_residual_features(price_diff, price=price)
+        price_features = price_features.shift(1)  # 特征滞后 1 步
 
-        # 构建增强残差特征（需要传入价格数据以保持特征一致）
-        resid_features = FeatureEngineer.build_residual_features(resid, price=price)
+        # 直接预测价格变化（Walk-forward 方式）
+        pred_changes = []
+        current_price = last_price
 
-        if len(resid_features) == 0:
-            # 如果特征不够，用均值预测
-            resid_pred = np.full(days, resid.mean())
-            arima_component = arima_pred.values
-            xgb_residual = resid_pred
-        else:
-            # 递归预测残差
-            last_known = resid_features.iloc[-1:].values[0]
-            resid_preds = []
-            arima_components = []
-            xgb_residuals = []
+        for i in range(days):
+            # 获取最新特征
+            if len(price_features) > 0:
+                last_row = price_features.iloc[[-1]]
+            else:
+                pred_changes.append(0)
+                continue
 
-            for i in range(days):
-                feat = last_known.reshape(1, -1)
-                # 添加外部因子
-                for col in self.factor_cols:
-                    feat = np.append(feat, self.last_factors.get(col, 0))
+            # 构建特征向量
+            feat_values = np.zeros((1, len(self.residual_features) + len(self.factor_cols)))
+            for j, col in enumerate(self.residual_features):
+                if col in last_row.columns:
+                    feat_values[0, j] = float(last_row[col].values[0])
+            for j, col in enumerate(self.factor_cols):
+                feat_values[0, len(self.residual_features) + j] = self.last_factors.get(col, 0)
 
-                # XGBoost 预测
-                xgb_pred = self.xgb_model.predict(feat)[0]
+            # 预测价格变化量
+            xgb_pred = self.xgb_model.predict(feat_values)[0]
+            if self.lgb_model is not None:
+                lgb_pred = self.lgb_model.predict(feat_values)[0]
+                pred_change = (xgb_pred + lgb_pred) / 2
+            else:
+                pred_change = xgb_pred
 
-                # LightGBM 预测（如果有）
-                if self.lgb_model is not None:
-                    lgb_pred = self.lgb_model.predict(feat)[0]
-                    pred_resid = (xgb_pred + lgb_pred) / 2  # 双模型平均
-                else:
-                    pred_resid = xgb_pred
+            pred_changes.append(pred_change)
 
-                resid_preds.append(pred_resid)
-                arima_components.append(arima_pred.values[i])
-                xgb_residuals.append(pred_resid)
+            # 更新特征（用预测的变化量）
+            new_diff = pd.Series([current_price + pred_change - current_price], index=[price.index[-1] + timedelta(days=i+1)])
+            new_price = pd.Series([current_price + pred_change], index=[price.index[-1] + timedelta(days=i+1)])
+            extended_price = pd.concat([price, new_price])
+            extended_diff = extended_price.diff().dropna()
+            price_features = FeatureEngineer.build_residual_features(extended_diff, price=extended_price)
+            price_features = price_features.shift(1)
 
-                # 更新特征窗口（滚动更新）
-                new_features = np.roll(last_known, -1)
-                new_features[-1] = pred_resid
-                last_known = new_features
+            current_price = current_price + pred_change
 
-            resid_pred = np.array(resid_preds)
-            arima_component = np.array(arima_components)
-            xgb_residual = np.array(xgb_residuals)
+        # 组合预测结果
+        final_pred = np.array([last_price + sum(pred_changes[:i+1]) for i in range(len(pred_changes))])
 
-        # 组合预测
-        final_pred = arima_pred.values + resid_pred
+        # ARIMA 组件（用于展示）
+        arima_component = arima_pred.values
+        xgb_residual = final_pred - arima_component
 
-        # 不确定性量化（基于残差波动率）
-        hist_vol = resid.std()
+        # 不确定性量化（基于价格变化的波动率）
+        hist_vol = price_diff.tail(30).std()  # 近 30 天价格变化标准差
         uncertainty = hist_vol * np.ones(days)
 
         # 生成预测日期
