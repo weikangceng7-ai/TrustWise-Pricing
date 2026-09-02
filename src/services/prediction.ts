@@ -315,6 +315,8 @@ export async function backtestModel(testRatio: number = 0.1, serviceUrl?: string
     rmse: number
     mape: number
     r2: number
+    r2_changes?: number
+    direction_accuracy?: number
     train_size: number
     test_size: number
     model_type: string

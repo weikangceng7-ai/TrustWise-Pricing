@@ -8,6 +8,8 @@ interface AccuracyMetrics {
   rmse: number
   mape: number
   r2: number
+  r2_changes?: number
+  direction_accuracy?: number
   totalPredictions: number
 }
 
@@ -227,7 +229,11 @@ export async function GET() {
       }))
       const metrics = computeMetrics(points)!
       const data: AccuracyData = {
-        overview: { ...metrics },
+        overview: {
+          ...metrics,
+          r2_changes: backtest.metrics?.r2_changes,
+          direction_accuracy: backtest.metrics?.direction_accuracy,
+        },
         accuracyTrend: buildAccuracyTrend(points),
         historicalPredictions: buildHistorical(points),
         byEnterprise: buildEnterpriseAccuracy(await getEnterpriseRecords()),

@@ -30,6 +30,8 @@ interface AccuracyData {
     rmse: number
     mape: number
     r2: number
+    r2_changes?: number
+    direction_accuracy?: number
     totalPredictions: number
   }
   accuracyTrend: Array<{ date: string; mape: number; mae: number }>
@@ -342,12 +344,71 @@ export function AccuracyPanel() {
         })()}
       </div>
 
+      {/* 补充指标：R²(变化) + 方向准确率 */}
+      {(overview.r2_changes !== undefined || overview.direction_accuracy !== undefined) && (
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          {overview.r2_changes !== undefined && (() => {
+            const r2cVal = overview.r2_changes!
+            const r2cColor = r2cVal > 0.5 ? "emerald" : r2cVal > 0.2 ? "amber" : "red"
+            const r2cBg = r2cColor === "emerald" ? "from-emerald-50 to-green-50 dark:from-emerald-500/10 dark:to-green-500/10" : r2cColor === "amber" ? "from-amber-50 to-yellow-50 dark:from-amber-500/10 dark:to-yellow-500/10" : "from-red-50 to-rose-50 dark:from-red-500/10 dark:to-rose-500/10"
+            const r2cBorder = r2cColor === "emerald" ? "border-emerald-200/50 dark:border-emerald-500/20" : r2cColor === "amber" ? "border-amber-200/50 dark:border-amber-500/20" : "border-red-200/50 dark:border-red-500/20"
+            const r2cText = r2cColor === "emerald" ? "text-emerald-600 dark:text-emerald-400" : r2cColor === "amber" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
+            const r2cLabel = r2cVal > 0.5 ? "优秀" : r2cVal > 0.2 ? "良好" : "需关注"
+            const r2cExplain = r2cVal > 0.5 ? "涨跌变化预测准确" : r2cVal > 0.2 ? "有一定预测能力" : "变化预测待提升"
+            return (
+              <div className={`bg-gradient-to-br ${r2cBg} backdrop-blur-sm rounded-lg p-3 border ${r2cBorder}`}>
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-sm text-slate-500 dark:text-slate-400">R² 变化 <span className="text-xs text-slate-400">(涨跌解释度)</span></span>
+                  <TrendingUp className={`h-4 w-4 ${r2cText}`} />
+                </div>
+                <span className={`text-lg font-bold ${r2cText}`}>
+                  {r2cVal.toFixed(3)}
+                </span>
+                <div className="flex items-center gap-1 mt-1">
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${r2cColor === "emerald" ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : r2cColor === "amber" ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300" : "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
+                    {r2cLabel}
+                  </span>
+                  <span className="text-xs text-slate-400">{r2cExplain}</span>
+                </div>
+              </div>
+            )
+          })()}
+
+          {overview.direction_accuracy !== undefined && (() => {
+            const dirVal = overview.direction_accuracy!
+            const dirColor = dirVal > 65 ? "emerald" : dirVal > 50 ? "amber" : "red"
+            const dirBg = dirColor === "emerald" ? "from-emerald-50 to-green-50 dark:from-emerald-500/10 dark:to-green-500/10" : dirColor === "amber" ? "from-amber-50 to-yellow-50 dark:from-amber-500/10 dark:to-yellow-500/10" : "from-red-50 to-rose-50 dark:from-red-500/10 dark:to-rose-500/10"
+            const dirBorder = dirColor === "emerald" ? "border-emerald-200/50 dark:border-emerald-500/20" : dirColor === "amber" ? "border-amber-200/50 dark:border-amber-500/20" : "border-red-200/50 dark:border-red-500/20"
+            const dirText = dirColor === "emerald" ? "text-emerald-600 dark:text-emerald-400" : dirColor === "amber" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
+            const dirLabel = dirVal > 65 ? "优秀" : dirVal > 50 ? "良好" : "需关注"
+            const dirExplain = dirVal > 65 ? "涨跌方向判断可靠" : dirVal > 50 ? "方向判断有一定参考" : "方向判断待提升"
+            return (
+              <div className={`bg-gradient-to-br ${dirBg} backdrop-blur-sm rounded-lg p-3 border ${dirBorder}`}>
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-sm text-slate-500 dark:text-slate-400">方向准确率 <span className="text-xs text-slate-400">(涨跌预测)</span></span>
+                  <Zap className={`h-4 w-4 ${dirText}`} />
+                </div>
+                <span className={`text-lg font-bold ${dirText}`}>
+                  {dirVal.toFixed(1)}%
+                </span>
+                <div className="flex items-center gap-1 mt-1">
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${dirColor === "emerald" ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : dirColor === "amber" ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300" : "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
+                    {dirLabel}
+                  </span>
+                  <span className="text-xs text-slate-400">{dirExplain}</span>
+                </div>
+              </div>
+            )
+          })()}
+        </div>
+      )}
+
       {/* 精度说明 */}
       <div className="mb-4 px-3 py-2 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
           <span className="font-medium text-slate-600 dark:text-slate-300">指标说明：</span>
           绿色 = 精度高可直接参考，黄色 = 有一定偏差建议结合判断，红色 = 偏差较大仅看趋势方向。
-          当前模型训练数据有限，精度会随数据积累逐步提升。R² 为负数表示模型尚未优于简单平均值预测，属于训练初期的正常现象。
+          R² 变化 = 模型对每日涨跌幅度的解释力（比价格水平 R² 更合理）；方向准确率 = 预测涨跌方向的正确率（&gt;50% 优于随机猜测）。
         </p>
       </div>
 

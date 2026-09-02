@@ -508,8 +508,8 @@ class SulfurPricePredictor:
                 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
                 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
-                def objective(trial):
-                    # XGBoost 参数搜索（增加正则化参数）
+                # XGBoost 参数优化
+                def xgb_objective(trial):
                     xgb_params = {
                         'n_estimators': trial.suggest_int('xgb_n_estimators', 100, 300),
                         'max_depth': trial.suggest_int('xgb_max_depth', 2, 5),
@@ -523,28 +523,64 @@ class SulfurPricePredictor:
                         'random_state': 42
                     }
 
-                    # 时间序列交叉验证（避免数据泄露）
-                    from sklearn.model_selection import TimeSeriesSplit
                     model = xgb.XGBRegressor(**xgb_params)
                     tscv = TimeSeriesSplit(n_splits=5)
                     scores = cross_val_score(model, X_train, y_train, cv=tscv, scoring='neg_mean_absolute_error')
                     return -scores.mean()
 
-                print("Optuna 调参中（时间序列交叉验证）...")
-                study = optuna.create_study(direction='minimize')
-                study.optimize(objective, n_trials=30, timeout=90)  # 增加到30次试验
+                print("Optuna 调参中（XGBoost，时间序列交叉验证）...")
+                xgb_study = optuna.create_study(direction='minimize')
+                xgb_study.optimize(xgb_objective, n_trials=30, timeout=90)
 
                 best_xgb_params = {
-                    'n_estimators': study.best_params['xgb_n_estimators'],
-                    'max_depth': study.best_params['xgb_max_depth'],
-                    'learning_rate': study.best_params['xgb_learning_rate'],
-                    'subsample': study.best_params['xgb_subsample'],
-                    'colsample_bytree': study.best_params['xgb_colsample'],
-                    'min_child_weight': study.best_params['xgb_min_child_weight'],
-                    'reg_alpha': study.best_params['xgb_reg_alpha'],
-                    'reg_lambda': study.best_params['xgb_reg_lambda'],
+                    'n_estimators': xgb_study.best_params['xgb_n_estimators'],
+                    'max_depth': xgb_study.best_params['xgb_max_depth'],
+                    'learning_rate': xgb_study.best_params['xgb_learning_rate'],
+                    'subsample': xgb_study.best_params['xgb_subsample'],
+                    'colsample_bytree': xgb_study.best_params['xgb_colsample'],
+                    'min_child_weight': xgb_study.best_params['xgb_min_child_weight'],
+                    'reg_alpha': xgb_study.best_params['xgb_reg_alpha'],
+                    'reg_lambda': xgb_study.best_params['xgb_reg_lambda'],
                 }
-                print(f"最佳参数: {best_xgb_params}")
+                print(f"XGBoost 最佳参数: {best_xgb_params}")
+
+                # LightGBM 参数优化（如果可用）
+                if _HAS_LGB:
+                    def lgb_objective(trial):
+                        lgb_params = {
+                            'n_estimators': trial.suggest_int('lgb_n_estimators', 100, 300),
+                            'max_depth': trial.suggest_int('lgb_max_depth', 2, 5),
+                            'learning_rate': trial.suggest_float('lgb_learning_rate', 0.01, 0.1, log=True),
+                            'subsample': trial.suggest_float('lgb_subsample', 0.6, 1.0),
+                            'colsample_bytree': trial.suggest_float('lgb_colsample', 0.6, 1.0),
+                            'min_child_weight': trial.suggest_int('lgb_min_child_weight', 3, 10),
+                            'reg_alpha': trial.suggest_float('lgb_reg_alpha', 0.01, 1.0, log=True),
+                            'reg_lambda': trial.suggest_float('lgb_reg_lambda', 0.1, 5.0, log=True),
+                            'objective': 'regression',
+                            'random_state': 42,
+                            'verbose': -1
+                        }
+
+                        model = lgb.LGBMRegressor(**lgb_params)
+                        tscv = TimeSeriesSplit(n_splits=5)
+                        scores = cross_val_score(model, X_train, y_train, cv=tscv, scoring='neg_mean_absolute_error')
+                        return -scores.mean()
+
+                    print("Optuna 调参中（LightGBM，时间序列交叉验证）...")
+                    lgb_study = optuna.create_study(direction='minimize')
+                    lgb_study.optimize(lgb_objective, n_trials=30, timeout=90)
+
+                    best_lgb_params = {
+                        'n_estimators': lgb_study.best_params['lgb_n_estimators'],
+                        'max_depth': lgb_study.best_params['lgb_max_depth'],
+                        'learning_rate': lgb_study.best_params['lgb_learning_rate'],
+                        'subsample': lgb_study.best_params['lgb_subsample'],
+                        'colsample_bytree': lgb_study.best_params['lgb_colsample'],
+                        'min_child_weight': lgb_study.best_params['lgb_min_child_weight'],
+                        'reg_alpha': lgb_study.best_params['lgb_reg_alpha'],
+                        'reg_lambda': lgb_study.best_params['lgb_reg_lambda'],
+                    }
+                    print(f"LightGBM 最佳参数: {best_lgb_params}")
             except Exception as e:
                 print(f"Optuna 调参失败，使用默认参数: {e}")
 
@@ -631,6 +667,14 @@ class SulfurPricePredictor:
         r2 = r2_score(test_price, final_pred)
         mape = np.mean(np.abs((test_price - final_pred) / test_price)) * 100
 
+        # 在价格变化上计算 R²（更合理的评估方式，避免随机游走偏差）
+        actual_changes = np.diff(np.concatenate([[train_price.iloc[-1]], test_price.values]))
+        pred_changes = np.diff(np.concatenate([[train_price.iloc[-1]], final_pred]))
+        r2_changes = r2_score(actual_changes, pred_changes)
+
+        # 方向准确率（预测涨跌方向的正确率）
+        direction_correct = np.sum(np.sign(actual_changes) == np.sign(pred_changes)) / len(actual_changes) * 100
+
         self.last_price = price.iloc[-1]
 
         # 拟合波动率状态检测器
@@ -645,6 +689,8 @@ class SulfurPricePredictor:
             'rmse': float(np.sqrt(mse)),
             'mae': float(mae),
             'r2': float(r2),
+            'r2_changes': float(r2_changes),  # 价格变化上的 R²（更合理）
+            'direction_accuracy': float(direction_correct),  # 方向准确率
             'mape': float(mape),
             'train_size': len(train_price),
             'test_size': len(test_price),
@@ -1770,6 +1816,8 @@ def backtest():
                 'rmse': result.get('rmse'),
                 'mape': result.get('mape'),
                 'r2': result.get('r2'),
+                'r2_changes': result.get('r2_changes'),
+                'direction_accuracy': result.get('direction_accuracy'),
                 'train_size': result.get('train_size'),
                 'test_size': result.get('test_size'),
                 'model_type': result.get('model_type'),
