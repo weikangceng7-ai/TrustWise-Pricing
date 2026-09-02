@@ -32,14 +32,19 @@ except ImportError:
 try:
     import torch
     _HAS_TORCH = True
-except ImportError:
+except (ImportError, OSError) as e:
     _HAS_TORCH = False
+    print(f'[WARN] PyTorch 不可用（{type(e).__name__}: {e}），Transformer 功能禁用')
 
 try:
     from transformers import PatchTSTConfig, PatchTSTForPrediction
     _HAS_TRANSFORMERS = True
-except ImportError:
+except (ImportError, OSError, MemoryError) as e:
     _HAS_TRANSFORMERS = False
+    if not _HAS_TORCH:
+        pass  # 已在上面打印过
+    else:
+        print(f'[WARN] Transformers 不可用（{type(e).__name__}），PatchTST 功能禁用')
 
 # PostgreSQL 数据源（可选，优先于本地 Excel）
 try:
@@ -440,59 +445,82 @@ class SulfurPricePredictor:
         train_features = resid_features.copy()
         train_labels = aligned_resid
 
-        # 尝试加入外部经济因子（FRED + 汇率）
+        # 尝试加入外部经济因子（akshare 国内数据源）
         self.factor_cols = []
         self.last_factors = {}
         try:
+            print(f'[DEBUG] 开始获取外部因子, days={len(price) + 30}...')
             factors = fetch_external_factors(days=len(price) + 30, force_refresh=False)
+            print(f'[DEBUG] fetch_external_factors 返回 {len(factors)} 个因子: '
+                  f'{[(k, len(v) if v is not None and not v.empty else 0) for k, v in factors.items()]}')
             if factors:
                 merged = merge_factors_to_price(data, factors)
+                print(f'[DEBUG] merged 列: {list(merged.columns)}, 训练集大小={len(train_features)}')
                 for col in FACTOR_COLUMNS.values():
-                    if col in merged.columns:
-                        aligned = merged[col].reindex(train_features.index, method='ffill')
-                        if aligned.notna().sum() > len(aligned) * 0.3:
-                            train_features[col] = aligned.fillna(method='ffill').fillna(0)
-                            self.factor_cols.append(col)
-                            last_vals = merged[col].dropna()
-                            self.last_factors[col] = float(last_vals.iloc[-1]) if len(last_vals) > 0 else 0.0
+                    if col not in merged.columns:
+                        print(f'[DEBUG] 列 {col} 不在 merged 中，跳过')
+                        continue
+                    aligned = merged[col].reindex(train_features.index, method='ffill')
+                    # 对训练集早期无因子数据的区间，用第一个有效值回填
+                    first_valid = aligned.dropna()
+                    if len(first_valid) > 0:
+                        aligned = aligned.bfill()
+                    non_null = int(aligned.notna().sum())
+                    threshold = int(len(aligned) * 0.15)
+                    print(f'[DEBUG] 因子 {col}: 有效={non_null}/{len(aligned)}, '
+                          f'阈值={threshold}, {"通过" if non_null > threshold else "不通过"}')
+                    if non_null > threshold:
+                        train_features[col] = aligned.fillna(0)
+                        self.factor_cols.append(col)
+                        last_vals = merged[col].dropna()
+                        self.last_factors[col] = float(last_vals.iloc[-1]) if len(last_vals) > 0 else 0.0
                 if self.factor_cols:
                     print(f'外部因子已加入特征 ({len(self.factor_cols)} 个): {self.factor_cols}')
+                else:
+                    print('[WARN] 所有外部因子均未通过覆盖率阈值，仅使用残差特征')
         except Exception as e:
             print(f'外部因子加载失败，仅使用残差特征: {e}')
+            import traceback
+            traceback.print_exc()
 
         X_train = train_features.values
         y_train = train_labels.values
 
-        # Optuna 自动调参
-        best_xgb_params = {'n_estimators': 100, 'max_depth': 3, 'learning_rate': 0.1}
-        best_lgb_params = {'n_estimators': 100, 'max_depth': 3, 'learning_rate': 0.1}
+        # Optuna 自动调参（增强正则化，防止过拟合）
+        best_xgb_params = {'n_estimators': 150, 'max_depth': 2, 'learning_rate': 0.05, 'subsample': 0.8, 'colsample_bytree': 0.8, 'min_child_weight': 5}
+        best_lgb_params = {'n_estimators': 150, 'max_depth': 2, 'learning_rate': 0.05, 'subsample': 0.8, 'colsample_bytree': 0.8, 'min_child_weight': 5}
 
         if auto_tune:
             try:
                 import optuna
+                from sklearn.model_selection import TimeSeriesSplit, cross_val_score
                 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
                 def objective(trial):
-                    # XGBoost 参数搜索
+                    # XGBoost 参数搜索（增加正则化参数）
                     xgb_params = {
-                        'n_estimators': trial.suggest_int('xgb_n_estimators', 50, 300),
-                        'max_depth': trial.suggest_int('xgb_max_depth', 2, 8),
-                        'learning_rate': trial.suggest_float('xgb_learning_rate', 0.01, 0.3, log=True),
+                        'n_estimators': trial.suggest_int('xgb_n_estimators', 100, 300),
+                        'max_depth': trial.suggest_int('xgb_max_depth', 2, 5),
+                        'learning_rate': trial.suggest_float('xgb_learning_rate', 0.01, 0.1, log=True),
                         'subsample': trial.suggest_float('xgb_subsample', 0.6, 1.0),
                         'colsample_bytree': trial.suggest_float('xgb_colsample', 0.6, 1.0),
+                        'min_child_weight': trial.suggest_int('xgb_min_child_weight', 3, 10),
+                        'reg_alpha': trial.suggest_float('xgb_reg_alpha', 0.01, 1.0, log=True),
+                        'reg_lambda': trial.suggest_float('xgb_reg_lambda', 0.1, 5.0, log=True),
                         'objective': 'reg:squarederror',
                         'random_state': 42
                     }
 
-                    # 5折交叉验证
-                    from sklearn.model_selection import cross_val_score
+                    # 时间序列交叉验证（避免数据泄露）
+                    from sklearn.model_selection import TimeSeriesSplit
                     model = xgb.XGBRegressor(**xgb_params)
-                    scores = cross_val_score(model, X_train, y_train, cv=5, scoring='neg_mean_absolute_error')
+                    tscv = TimeSeriesSplit(n_splits=5)
+                    scores = cross_val_score(model, X_train, y_train, cv=tscv, scoring='neg_mean_absolute_error')
                     return -scores.mean()
 
-                print("Optuna 调参中...")
+                print("Optuna 调参中（时间序列交叉验证）...")
                 study = optuna.create_study(direction='minimize')
-                study.optimize(objective, n_trials=20, timeout=60)  # 最多20次试验或60秒
+                study.optimize(objective, n_trials=30, timeout=90)  # 增加到30次试验
 
                 best_xgb_params = {
                     'n_estimators': study.best_params['xgb_n_estimators'],
@@ -500,6 +528,9 @@ class SulfurPricePredictor:
                     'learning_rate': study.best_params['xgb_learning_rate'],
                     'subsample': study.best_params['xgb_subsample'],
                     'colsample_bytree': study.best_params['xgb_colsample'],
+                    'min_child_weight': study.best_params['xgb_min_child_weight'],
+                    'reg_alpha': study.best_params['xgb_reg_alpha'],
+                    'reg_lambda': study.best_params['xgb_reg_lambda'],
                 }
                 print(f"最佳参数: {best_xgb_params}")
             except Exception as e:
@@ -531,44 +562,65 @@ class SulfurPricePredictor:
                 print(f"LightGBM 训练失败: {e}")
                 self.lgb_model = None
 
-        # 在测试集上评估
-        arima_pred = arima_result.forecast(steps=len(test_price))
+        # ===== 测试集评估（滚动 walk-forward）=====
+        # 核心改进：每步用前一步真实价格 + 模型预测的日变化量
+        # 避免 ARIMA 多步外推漂移，也避免固定基准与残差分布不匹配
 
-        # 使用双模型平均预测残差
-        last_known_features = resid_features.iloc[-1:].values[0]
-        resid_preds = []
+        from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
-        for _ in range(len(test_price)):
-            feat = last_known_features.reshape(1, -1)
-            # 添加外部因子
-            for col in self.factor_cols:
-                feat = np.append(feat, self.last_factors.get(col, 0))
+        # 用全数据 ARIMA 获取残差特征（与训练时一致）
+        full_arima = ARIMA(price, order=self.arima_order).fit()
+        full_resid = full_arima.resid
+        full_resid_features = FeatureEngineer.build_residual_features(full_resid, price=price)
 
-            # XGBoost 预测
-            xgb_pred = self.xgb_model.predict(feat)[0]
+        # 训练集 ARIMA 的残差均值和标准差（用于将模型残差预测转为价格变化）
+        resid_mean_train = float(resid.mean())
+        resid_std_train = float(resid.std())
 
-            # LightGBM 预测（如果有）
+        final_preds = []
+        prev_actual = float(train_price.iloc[-1])  # 从训练集最后一个真实价格开始
+
+        for i in range(len(test_price)):
+            test_date = test_price.index[i]
+
+            # 在 full_resid_features 中找到对应行
+            if test_date in full_resid_features.index:
+                row_idx = full_resid_features.index.get_loc(test_date)
+                last_row = full_resid_features.iloc[[row_idx]]
+            elif len(full_resid_features) > 0:
+                last_row = full_resid_features.iloc[[-1]]
+            else:
+                final_preds.append(prev_actual)
+                continue
+
+            # 构建特征向量（与训练时列顺序一致）
+            feat_values = np.zeros((1, len(self.residual_features) + len(self.factor_cols)))
+            for j, col in enumerate(self.residual_features):
+                if col in last_row.columns:
+                    feat_values[0, j] = float(last_row[col].values[0])
+            for j, col in enumerate(self.factor_cols):
+                feat_values[0, len(self.residual_features) + j] = self.last_factors.get(col, 0)
+
+            # 预测残差（ARIMA 残差的修正量）
+            xgb_pred = self.xgb_model.predict(feat_values)[0]
             if self.lgb_model is not None:
-                lgb_pred = self.lgb_model.predict(feat)[0]
-                pred_resid = (xgb_pred + lgb_pred) / 2  # 双模型平均
+                lgb_pred = self.lgb_model.predict(feat_values)[0]
+                pred_resid = (xgb_pred + lgb_pred) / 2
             else:
                 pred_resid = xgb_pred
 
-            resid_preds.append(pred_resid)
+            # 将残差预测转为价格预测：prev_actual + 残差修正
+            # 残差 = ARIMA预测误差，所以 价格 ≈ prev_actual + (残差 - 残差均值)
+            price_change = pred_resid - resid_mean_train
+            pred_price = prev_actual + price_change
+            final_preds.append(pred_price)
 
-            # 更新特征窗口（滚动更新）
-            new_features = np.roll(last_known_features, -1)
-            new_features[-1] = pred_resid
-            last_known_features = new_features
+            # 更新：下一步用当前真实价格（walk-forward）
+            prev_actual = float(test_price.iloc[i])
 
-        resid_pred = np.array(resid_preds)
-
-        # 组合预测结果
-        final_pred = arima_pred.values + resid_pred
+        final_pred = np.array(final_preds)
 
         # 计算评估指标
-        from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-
         mse = mean_squared_error(test_price, final_pred)
         mae = mean_absolute_error(test_price, final_pred)
         r2 = r2_score(test_price, final_pred)
