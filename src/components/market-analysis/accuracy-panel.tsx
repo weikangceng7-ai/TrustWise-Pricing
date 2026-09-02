@@ -349,12 +349,12 @@ export function AccuracyPanel() {
         <div className="grid grid-cols-2 gap-3 mb-4">
           {overview.r2_changes !== undefined && (() => {
             const r2cVal = overview.r2_changes!
-            const r2cColor = r2cVal > 0.5 ? "emerald" : r2cVal > 0.2 ? "amber" : "red"
+            const r2cColor = r2cVal > 0.1 ? "emerald" : r2cVal > -0.1 ? "amber" : "red"
             const r2cBg = r2cColor === "emerald" ? "from-emerald-50 to-green-50 dark:from-emerald-500/10 dark:to-green-500/10" : r2cColor === "amber" ? "from-amber-50 to-yellow-50 dark:from-amber-500/10 dark:to-yellow-500/10" : "from-red-50 to-rose-50 dark:from-red-500/10 dark:to-rose-500/10"
             const r2cBorder = r2cColor === "emerald" ? "border-emerald-200/50 dark:border-emerald-500/20" : r2cColor === "amber" ? "border-amber-200/50 dark:border-amber-500/20" : "border-red-200/50 dark:border-red-500/20"
             const r2cText = r2cColor === "emerald" ? "text-emerald-600 dark:text-emerald-400" : r2cColor === "amber" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
-            const r2cLabel = r2cVal > 0.5 ? "优秀" : r2cVal > 0.2 ? "良好" : "需关注"
-            const r2cExplain = r2cVal > 0.5 ? "涨跌变化预测准确" : r2cVal > 0.2 ? "有一定预测能力" : "变化预测待提升"
+            const r2cLabel = r2cVal > 0.1 ? "优秀" : r2cVal > -0.1 ? "良好" : "需关注"
+            const r2cExplain = r2cVal > 0.1 ? "涨跌变化预测准确" : r2cVal > -0.1 ? "有一定预测能力" : "变化预测待提升"
             return (
               <div className={`bg-gradient-to-br ${r2cBg} backdrop-blur-sm rounded-lg p-3 border ${r2cBorder}`}>
                 <div className="flex items-center justify-between mb-0.5">

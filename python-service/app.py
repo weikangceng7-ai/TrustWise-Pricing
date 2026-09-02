@@ -187,6 +187,31 @@ class FeatureEngineer:
             for period in [7, 14, 30]:
                 features[f'price_momentum_{period}'] = aligned_price - aligned_price.shift(period)
 
+            # ===== 新增：趋势强度特征 =====
+            # 短期趋势（5日线性回归斜率）
+            for window in [5, 10, 20]:
+                x = np.arange(window)
+                slope = aligned_price.rolling(window=window).apply(
+                    lambda y: np.polyfit(x, y, 1)[0] if len(y) == window else 0, raw=True
+                )
+                features[f'price_trend_slope_{window}'] = slope
+                # 趋势方向强度（归一化斜率）
+                features[f'price_trend_strength_{window}'] = slope / (aligned_price.rolling(window).std() + 1e-8)
+
+            # ===== 新增：价格位置特征 =====
+            # 当前价格在历史窗口中的位置（0-1）
+            for window in [20, 60]:
+                rolling_min = aligned_price.rolling(window=window).min()
+                rolling_max = aligned_price.rolling(window=window).max()
+                features[f'price_position_{window}'] = (aligned_price - rolling_min) / (rolling_max - rolling_min + 1e-8)
+
+            # ===== 新增：波动率比率特征 =====
+            # 短期波动率 / 长期波动率
+            for short_w, long_w in [(5, 20), (10, 30)]:
+                short_vol = aligned_price.pct_change().rolling(window=short_w).std()
+                long_vol = aligned_price.pct_change().rolling(window=long_w).std()
+                features[f'volatility_ratio_{short_w}_{long_w}'] = short_vol / (long_vol + 1e-8)
+
         # ===== 6. 日历特征（季节性）=====
         if hasattr(resid.index, 'month'):
             dates = resid.index
@@ -508,7 +533,7 @@ class SulfurPricePredictor:
                 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
                 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
-                # XGBoost 参数优化
+                # XGBoost 参数优化（使用 Huber loss 对异常值更鲁棒）
                 def xgb_objective(trial):
                     xgb_params = {
                         'n_estimators': trial.suggest_int('xgb_n_estimators', 100, 300),
@@ -745,56 +770,72 @@ class SulfurPricePredictor:
         price_features = FeatureEngineer.build_residual_features(price_diff, price=price)
         price_features = price_features.shift(1)  # 特征滞后 1 步
 
-        # 直接预测价格变化（Walk-forward 方式）
-        pred_changes = []
-        current_price = last_price
+        # 获取最新特征行（用于所有未来预测）
+        if len(price_features) > 0:
+            last_row = price_features.iloc[[-1]]
+        else:
+            # 特征不足，用 ARIMA 预测
+            pred_changes = [0.0] * days
+            final_pred = arima_pred.values
+            arima_component = arima_pred.values
+            xgb_residual = np.zeros(days)
+            hist_vol = price_diff.tail(30).std()
+            uncertainty = hist_vol * np.ones(days)
+            future_dates = pd.date_range(start=last_date + timedelta(days=1), periods=days, freq='D')
+            predictions = [
+                {
+                    'date': date.strftime('%Y-%m-%d'),
+                    'predicted_price': round(float(p), 2),
+                    'arima_component': round(float(a), 2),
+                    'xgb_residual': round(float(r), 2),
+                    'lower_bound': round(float(p - 1.96 * u), 2),
+                    'upper_bound': round(float(p + 1.96 * u), 2),
+                }
+                for date, p, a, r, u in zip(future_dates, final_pred, arima_component, xgb_residual, uncertainty)
+            ]
+            returns = price.pct_change().dropna()
+            regime = self.regime_detector.detect(returns)
+            risk_adjustment = self.regime_detector.get_risk_adjustment(regime)
+            return {
+                'predictions': predictions,
+                'current_price': round(last_price, 2),
+                'prediction_days': days,
+                'trend': '未知',
+                'change_percent': 0,
+                'model_type': 'Hybrid Residual Ensemble (ARIMA + XGBoost/LightGBM)',
+                'confidence': '低',
+                'regime': regime,
+                'risk_adjustment': round(risk_adjustment, 2),
+                'generated_at': datetime.now().isoformat()
+            }
 
-        for i in range(days):
-            # 获取最新特征
-            if len(price_features) > 0:
-                last_row = price_features.iloc[[-1]]
-            else:
-                pred_changes.append(0)
-                continue
+        # 构建特征向量
+        feat_values = np.zeros((1, len(self.residual_features) + len(self.factor_cols)))
+        for j, col in enumerate(self.residual_features):
+            if col in last_row.columns:
+                feat_values[0, j] = float(last_row[col].values[0])
+        for j, col in enumerate(self.factor_cols):
+            feat_values[0, len(self.residual_features) + j] = self.last_factors.get(col, 0)
 
-            # 构建特征向量
-            feat_values = np.zeros((1, len(self.residual_features) + len(self.factor_cols)))
-            for j, col in enumerate(self.residual_features):
-                if col in last_row.columns:
-                    feat_values[0, j] = float(last_row[col].values[0])
-            for j, col in enumerate(self.factor_cols):
-                feat_values[0, len(self.residual_features) + j] = self.last_factors.get(col, 0)
+        # 预测单步价格变化量（所有未来日期用同一特征，因为无法知道未来价格）
+        xgb_pred = self.xgb_model.predict(feat_values)[0]
+        if self.lgb_model is not None:
+            lgb_pred = self.lgb_model.predict(feat_values)[0]
+            pred_change = (xgb_pred + lgb_pred) / 2
+        else:
+            pred_change = xgb_pred
 
-            # 预测价格变化量
-            xgb_pred = self.xgb_model.predict(feat_values)[0]
-            if self.lgb_model is not None:
-                lgb_pred = self.lgb_model.predict(feat_values)[0]
-                pred_change = (xgb_pred + lgb_pred) / 2
-            else:
-                pred_change = xgb_pred
-
-            pred_changes.append(pred_change)
-
-            # 更新特征（用预测的变化量）
-            new_diff = pd.Series([current_price + pred_change - current_price], index=[price.index[-1] + timedelta(days=i+1)])
-            new_price = pd.Series([current_price + pred_change], index=[price.index[-1] + timedelta(days=i+1)])
-            extended_price = pd.concat([price, new_price])
-            extended_diff = extended_price.diff().dropna()
-            price_features = FeatureEngineer.build_residual_features(extended_diff, price=extended_price)
-            price_features = price_features.shift(1)
-
-            current_price = current_price + pred_change
-
-        # 组合预测结果
-        final_pred = np.array([last_price + sum(pred_changes[:i+1]) for i in range(len(pred_changes))])
+        # 累积预测价格（每日加上预测的变化量）
+        final_pred = np.array([last_price + pred_change * (i + 1) for i in range(days)])
 
         # ARIMA 组件（用于展示）
         arima_component = arima_pred.values
         xgb_residual = final_pred - arima_component
 
         # 不确定性量化（基于价格变化的波动率）
-        hist_vol = price_diff.tail(30).std()  # 近 30 天价格变化标准差
-        uncertainty = hist_vol * np.ones(days)
+        hist_vol = price_diff.tail(30).std()
+        # 不确定性随预测天数增加（累积误差）
+        uncertainty = hist_vol * np.sqrt(np.arange(1, days + 1))
 
         # 生成预测日期
         future_dates = pd.date_range(
