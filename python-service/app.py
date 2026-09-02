@@ -426,8 +426,26 @@ class SulfurPricePredictor:
         train_price = price[:split_index]
         test_price = price[split_index:]
 
-        # 训练 ARIMA 模型
+        # 训练 ARIMA 模型（自动选择最优阶数，扩展搜索范围）
         print("训练 ARIMA 模型...")
+        best_order = self.arima_order
+        best_aic = float('inf')
+
+        # 尝试多种 ARIMA 阶数组合（扩展范围）
+        for p in range(0, 4):
+            for d in range(0, 3):
+                for q in range(0, 4):
+                    try:
+                        model = ARIMA(train_price, order=(p, d, q))
+                        result = model.fit()
+                        if result.aic < best_aic:
+                            best_aic = result.aic
+                            best_order = (p, d, q)
+                    except:
+                        continue
+
+        print(f"最优 ARIMA 阶数: {best_order} (AIC={best_aic:.2f})")
+        self.arima_order = best_order
         self.arima_model = ARIMA(train_price, order=self.arima_order)
         arima_result = self.arima_model.fit()
 
@@ -436,39 +454,37 @@ class SulfurPricePredictor:
         self.resid_mean = resid.mean()
         self.resid_std = resid.std()
 
-        # 构建增强残差特征（改进点：20+ 维 vs 原文 3 阶滞后）
-        resid_features = FeatureEngineer.build_residual_features(resid, price=train_price)
+        # 构建价格变化特征（直接预测日价格变化量，而非 ARIMA 残差）
+        # 核心改进：训练目标 = price[t] - price[t-1]，特征来自价格历史
+        # 关键：特征滞后 1 步，确保预测 t 时只用 t-1 及之前的数据（避免数据泄露）
+        price_diff = train_price.diff().dropna()
+        resid_features = FeatureEngineer.build_residual_features(price_diff, price=train_price)
         self.residual_features = resid_features.columns.tolist()
 
+        # 特征滞后 1 步：预测 t 的 diff 时，只用 t-1 及之前的价格特征
+        resid_features = resid_features.shift(1)
+
         # 对齐数据
-        aligned_resid = resid.loc[resid_features.index]
+        aligned_diff = price_diff.loc[resid_features.index]
         train_features = resid_features.copy()
-        train_labels = aligned_resid
+        train_labels = aligned_diff
 
         # 尝试加入外部经济因子（akshare 国内数据源）
         self.factor_cols = []
         self.last_factors = {}
         try:
-            print(f'[DEBUG] 开始获取外部因子, days={len(price) + 30}...')
             factors = fetch_external_factors(days=len(price) + 30, force_refresh=False)
-            print(f'[DEBUG] fetch_external_factors 返回 {len(factors)} 个因子: '
-                  f'{[(k, len(v) if v is not None and not v.empty else 0) for k, v in factors.items()]}')
             if factors:
                 merged = merge_factors_to_price(data, factors)
-                print(f'[DEBUG] merged 列: {list(merged.columns)}, 训练集大小={len(train_features)}')
                 for col in FACTOR_COLUMNS.values():
                     if col not in merged.columns:
-                        print(f'[DEBUG] 列 {col} 不在 merged 中，跳过')
                         continue
                     aligned = merged[col].reindex(train_features.index, method='ffill')
-                    # 对训练集早期无因子数据的区间，用第一个有效值回填
                     first_valid = aligned.dropna()
                     if len(first_valid) > 0:
                         aligned = aligned.bfill()
                     non_null = int(aligned.notna().sum())
                     threshold = int(len(aligned) * 0.15)
-                    print(f'[DEBUG] 因子 {col}: 有效={non_null}/{len(aligned)}, '
-                          f'阈值={threshold}, {"通过" if non_null > threshold else "不通过"}')
                     if non_null > threshold:
                         train_features[col] = aligned.fillna(0)
                         self.factor_cols.append(col)
@@ -476,12 +492,8 @@ class SulfurPricePredictor:
                         self.last_factors[col] = float(last_vals.iloc[-1]) if len(last_vals) > 0 else 0.0
                 if self.factor_cols:
                     print(f'外部因子已加入特征 ({len(self.factor_cols)} 个): {self.factor_cols}')
-                else:
-                    print('[WARN] 所有外部因子均未通过覆盖率阈值，仅使用残差特征')
         except Exception as e:
             print(f'外部因子加载失败，仅使用残差特征: {e}')
-            import traceback
-            traceback.print_exc()
 
         X_train = train_features.values
         y_train = train_labels.values
@@ -562,38 +574,36 @@ class SulfurPricePredictor:
                 print(f"LightGBM 训练失败: {e}")
                 self.lgb_model = None
 
-        # ===== 测试集评估（滚动 walk-forward）=====
-        # 核心改进：每步用前一步真实价格 + 模型预测的日变化量
-        # 避免 ARIMA 多步外推漂移，也避免固定基准与残差分布不匹配
+        # ===== 测试集评估（Walk-forward：直接预测价格变化量）=====
+        # 核心改进：不再依赖 ARIMA 残差，直接用 XGBoost/LightGBM 预测日价格变化
+        # 训练目标 = price[t] - price[t-1]，特征来自价格历史
+        # 修复数据泄露：特征滞后 1 步，确保预测 t 时只用 t-1 及之前的数据
 
         from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
-        # 用全数据 ARIMA 获取残差特征（与训练时一致）
-        full_arima = ARIMA(price, order=self.arima_order).fit()
-        full_resid = full_arima.resid
-        full_resid_features = FeatureEngineer.build_residual_features(full_resid, price=price)
+        # 构建价格变化特征（与训练时结构对齐）
+        price_diff = price.diff().dropna()
+        price_features = FeatureEngineer.build_residual_features(price_diff, price=price)
 
-        # 训练集 ARIMA 的残差均值和标准差（用于将模型残差预测转为价格变化）
-        resid_mean_train = float(resid.mean())
-        resid_std_train = float(resid.std())
+        # 关键修复：特征滞后 1 步，避免使用未来价格
+        price_features = price_features.shift(1)
 
         final_preds = []
-        prev_actual = float(train_price.iloc[-1])  # 从训练集最后一个真实价格开始
+        prev_actual = float(train_price.iloc[-1])
 
         for i in range(len(test_price)):
             test_date = test_price.index[i]
 
-            # 在 full_resid_features 中找到对应行
-            if test_date in full_resid_features.index:
-                row_idx = full_resid_features.index.get_loc(test_date)
-                last_row = full_resid_features.iloc[[row_idx]]
-            elif len(full_resid_features) > 0:
-                last_row = full_resid_features.iloc[[-1]]
+            if test_date in price_features.index:
+                row_idx = price_features.index.get_loc(test_date)
+                last_row = price_features.iloc[[row_idx]]
+            elif len(price_features) > 0:
+                last_row = price_features.iloc[[-1]]
             else:
                 final_preds.append(prev_actual)
                 continue
 
-            # 构建特征向量（与训练时列顺序一致）
+            # 构建特征向量
             feat_values = np.zeros((1, len(self.residual_features) + len(self.factor_cols)))
             for j, col in enumerate(self.residual_features):
                 if col in last_row.columns:
@@ -601,21 +611,16 @@ class SulfurPricePredictor:
             for j, col in enumerate(self.factor_cols):
                 feat_values[0, len(self.residual_features) + j] = self.last_factors.get(col, 0)
 
-            # 预测残差（ARIMA 残差的修正量）
+            # 预测价格变化量
             xgb_pred = self.xgb_model.predict(feat_values)[0]
             if self.lgb_model is not None:
                 lgb_pred = self.lgb_model.predict(feat_values)[0]
-                pred_resid = (xgb_pred + lgb_pred) / 2
+                pred_change = (xgb_pred + lgb_pred) / 2
             else:
-                pred_resid = xgb_pred
+                pred_change = xgb_pred
 
-            # 将残差预测转为价格预测：prev_actual + 残差修正
-            # 残差 = ARIMA预测误差，所以 价格 ≈ prev_actual + (残差 - 残差均值)
-            price_change = pred_resid - resid_mean_train
-            pred_price = prev_actual + price_change
+            pred_price = prev_actual + pred_change
             final_preds.append(pred_price)
-
-            # 更新：下一步用当前真实价格（walk-forward）
             prev_actual = float(test_price.iloc[i])
 
         final_pred = np.array(final_preds)
