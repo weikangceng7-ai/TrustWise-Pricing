@@ -330,7 +330,7 @@ export async function backtestModel(testRatio: number = 0.1, serviceUrl?: string
       method: 'POST',
       headers: buildHeaders(apiKey),
       body: JSON.stringify({ test_ratio: testRatio }),
-      signal: AbortSignal.timeout(15000), // 15秒超时，训练 ARIMA+XGBoost 需要时间
+      signal: AbortSignal.timeout(60000), // 60秒超时，训练 ARIMA+XGBoost 需要时间
     })
 
     return await response.json()

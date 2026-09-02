@@ -187,13 +187,10 @@ class FeatureEngineer:
             for period in [7, 14, 30]:
                 features[f'price_momentum_{period}'] = aligned_price - aligned_price.shift(period)
 
-            # ===== 新增：趋势强度特征 =====
-            # 短期趋势（5日线性回归斜率）
+            # ===== 新增：趋势强度特征（向量化计算，避免 rolling.apply 慢速）=====
             for window in [5, 10, 20]:
-                x = np.arange(window)
-                slope = aligned_price.rolling(window=window).apply(
-                    lambda y: np.polyfit(x, y, 1)[0] if len(y) == window else 0, raw=True
-                )
+                # 用差分近似斜率：(price[t] - price[t-window]) / window
+                slope = (aligned_price - aligned_price.shift(window)) / window
                 features[f'price_trend_slope_{window}'] = slope
                 # 趋势方向强度（归一化斜率）
                 features[f'price_trend_strength_{window}'] = slope / (aligned_price.rolling(window).std() + 1e-8)
